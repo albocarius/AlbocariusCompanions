@@ -33,4 +33,15 @@ public static class IssueCodes
     public const string InvalidLanguageCode = "invalid_language_code";
     public const string PlayerTokenInVoicedLine = "player_token_in_voiced_line";
     public const string InvalidAudioPath = "invalid_audio_path";
+
+    // Runtime resolution (SPEC rule 9)
+    public const string CultureFallbackUsed = "culture_fallback_used";
+    public const string CultureMissing = "culture_missing";
+    public const string EquipmentFallbackUsed = "equipment_fallback_used";
+    public const string EquipmentMissing = "equipment_missing";
+    public const string SkillMissing = "skill_missing";
+    public const string TraitMissing = "trait_missing";
+    public const string ItemMissing = "item_missing";
+    public const string ItemDoesNotFitSlot = "item_does_not_fit_slot";
+    public const string FixedSetEmpty = "fixed_set_empty";
 }
