@@ -40,7 +40,7 @@ scaffold last because its template must contain the final slot list and lang for
   greater than supported → validation error with a clear message. Accept: one test per case; test_companion updated.
   OGG part (was 33): `audio` with an extension other than `.ogg` → validation **error** (today a silent skip
   in VoicedLinesXml). Accept: `.wav`, no extension, `.OGG` ok.
-- [ ] 34-hire-cost-gte (self) — CompanionDialogs hire_pay condition `Gold >= hireCost`; hireCost 0 hireable with 0 gold.
+- [x] 34-hire-cost-gte (self) — CompanionDialogs hire_pay condition `Gold >= hireCost`; hireCost 0 hireable with 0 gold.
   Our own condition (not vanilla), no new API.
 - [ ] 35-required-modules-core (worker) — remove `cultureFallback` and `equipment.fallbackTemplateId` (models, validation
   codes, CompanionResolver, ResolverTests, test_companion, SCHEMA.md); add optional `requiredModules: string[]`
@@ -50,16 +50,16 @@ scaffold last because its template must contain the final slot list and lang for
   skip only that companion with a log line naming the missing module (no template, no spawn, no dialogs). A saved hero of
   a skipped companion: untouched, one warning (spawn pass lists mapped ids that have no template). Example ids in docs:
   `NavalDLC` (GAME_MAP Q13); `EOE_Armory` is only an illustrative example (user).
-- [ ] 37-gm-notifications (self) — GAME_MAP entry: `InformationManager.DisplayMessage` + `InformationMessage(text, Color)`,
+- [x] 37-gm-notifications (self) — GAME_MAP entry: `InformationManager.DisplayMessage` + `InformationMessage(text, Color)`,
   when the UI can show it (campaign started/loaded). Verify in decomp.
-- [ ] 38-notifications-core (worker) — Core `NotificationQueue`: collects warnings/errors from ModLogger (info stays
+- [x] 38-notifications-core (self; done together with 39 while the worker ran 32) — Core `NotificationQueue`: collects warnings/errors from ModLogger (info stays
   file-only), dedupes by text per session, drains once; summary line builder "N companions loaded, M skipped — see log".
   Accept: dedupe, order, severity, summary with/without skips.
-- [ ] 39-notifications-game (self) — hook queue into ModLogger, flush on OnSessionLaunched / OnGameLoadFinished
+- [x] 39-notifications-game (self) — hook queue into ModLogger, flush on OnSessionLaunched / OnGameLoadFinished
   (errors red, warnings yellow), summary once per campaign start/load.
 
 ### T3 — authoring ergonomics
-- [ ] 40-folder-is-id (worker) — remove `id` from companion.json; id = folder name, `[a-z0-9_]+` else error; `_shared` is
+- [ ] 40-folder-is-id (self; one schema migration together with 41 and 49, so fixtures and test_companion change once) — remove `id` from companion.json; id = folder name, `[a-z0-9_]+` else error; `_shared` is
   reserved and skipped by the loader. Migrate test_companion + fixtures, SCHEMA.md.
 - [ ] 41-local-line-ids (self) — dialogs.json lines use local ids (`intro_01`); loader derives full id
   `<companionId>_<localId>`; local unique per companion, full unique globally (incl. player line ids, T6). Full id used for
@@ -91,7 +91,10 @@ scaffold last because its template must contain the final slot list and lang for
   line's `{=full id}` drives text and voice), Game random source = `MBRandom`.
 
 ### T6 — player lines + per-language files (decisions below)
-- [ ] 48-gm-q14-language-decision (self) — extend Q14: how to read the active game language at dialog registration
+Decision from 48 (GAME_MAP Q14 note 2): dialog lines are registered once as `{=!}{<VAR>}`; the condition sets `<VAR>` to
+`{=<full id>}<text in the active language>` (vanilla VOICED_LINE pattern). This also gives T5 its random pick and keeps voice
+and lipsync working in every language; a mid-session language change needs no re-registration.
+- [x] 48-gm-q14-language-decision (self) — extend Q14: how to read the active game language at dialog registration
   (API + when it is valid, what happens on a language change mid-session); mapping ISO 639-1 code → game language id
   (`en`→`English`, `tr`→`Türkçe`, …). Voice stays language-independent (decision 5).
 - [ ] 49-lang-files-core (self) — schema: `text` removed from dialogs/player lines; `<folder>/lang/<code>.json` =
