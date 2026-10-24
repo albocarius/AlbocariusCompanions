@@ -28,7 +28,7 @@ public sealed class SubModule : MBSubModuleBase
         // Documents\Mount and Blade II Bannerlord\AlbocariusCompanions\ (GAME_MAP Q15).
         var logPath = Safe.Run(ModRuntime.Log, "log path", () => FileHelper.GetFileFullPath(
             new PlatformFilePath(new PlatformDirectoryPath(PlatformFileType.User, LogFolderName), LogFileName)), string.Empty);
-        ModRuntime.Log = new ModLogger(logPath);
+        ModRuntime.Log = new ModLogger(logPath) { Notify = InGameNotifications.OnLogged };
         var log = ModRuntime.Log;
         log.StartSession($"{ModRuntime.ModuleId} {Assembly.GetExecutingAssembly().GetName().Version} starting");
 
@@ -44,6 +44,7 @@ public sealed class SubModule : MBSubModuleBase
             if (skipped.Count > 0)
                 log.Warning($"Companions skipped because of errors: {string.Join(", ", skipped)}.");
             log.Info($"{catalog.Registry.Count} companion(s) ready from {root}.");
+            ModRuntime.SkippedAtLoad = skipped.Count;
             ModRuntime.Registry = catalog.Registry;
         });
 

@@ -108,7 +108,7 @@ internal static class CompanionDialogs
 
         // 4. Player answers (all passing options are listed, Q7).
         starter.AddPlayerLine(prefix + "hire_pay", hireResponseToken, hireAcceptToken, PlayerHirePay,
-            Condition("hire_pay", () => Hero.MainHero.Gold > hireCost && !TooManyCompanions()),
+            Condition("hire_pay", () => Hero.MainHero.Gold >= hireCost && !TooManyCompanions()),
             Consequence("hire_pay", () => Hire(id, hireCost)));
         starter.AddPlayerLine(prefix + "hire_full", hireResponseToken, hireDeclineToken, PlayerHireFull,
             Condition("hire_full", TooManyCompanions), null);

@@ -981,6 +981,21 @@ Post-translation the string goes through the tokenizer (`{SETVAR}` variables, `{
 
 **Orchestrator note (verified).** `MBTextManager.GetLocalizedText` (line 232): English returns the fallback (comments stripped), `!`/`*` ids are never translated, otherwise `LocalizedTextManager.GetTranslatedText`; a null result falls back to the embedded text. Mod lines registered as `{=<line id>}<en text>` therefore show English until a language file with `<string id="<line id>">` exists. Module language files and `language_data.xml` have no XSD; only `GameText` string tables are schema-validated (`GameText.xsd`). No language files are generated this run.
 
+**Orchestrator note 2 (verified, core-gaps T6 — no language XML, text picked at runtime).** Active language:
+`MBTextManager.ActiveTextLanguage` is the game language id (`English`, `Türkçe`, …), set by `MBTextManager.ChangeLanguage`.
+`BannerlordConfig.Language` calls it at start-up and again from its setter, so **the player can change the language
+mid-session from the options**. Our ISO 639-1 lang files are mapped through the registration: `LanguageData.GetLanguageData(id)
+.SupportedIsoCodes` lists the ISO codes of a language (vanilla `Türkçe` = `tr,tur,tr-tr`, `English` = `en-GB,en-US,en,…`,
+`Deutsch` = `de,…`); a lang file `<code>.json` applies when its code is in that list (case-insensitive), else `en.json`.
+Runtime text + voice pattern (vanilla `LordConversationsCampaignBehavior` uses it: line text `{=!}{VOICED_LINE}`, condition calls
+`MBTextManager.SetTextVariable("VOICED_LINE", textObject)`): the dialog line is registered once as `{=!}{<VAR>}` and its
+condition sets `<VAR>` to `new TextObject("{=<full line id>}" + <text in the active language>)` at the moment the line is
+shown. Voice: `MBTextManager.TryGetVoiceObject` → `ProcessTextForVocalization` sees the `!` id, walks the tokens and follows
+the text variable to its raw `TextObject` (`GetRawTextVariable`), whose `{=<full line id>}` finds our VoiceOver (Q12) — voice
+and lipsync are independent of the language. Display: for a non-English language the game has no translation for our id, so
+`GetLocalizedText` returns the embedded text, which already is the active-language text. Because the text is chosen when the
+line is shown, a mid-session language change and the random pick of T5 both work without re-registering dialogs.
+
 ### Evidence
 
 - `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedTextManager.cs` — `LocalizedTextManager.LoadLocalizationXmls` — recursive `Directory.GetFiles("<module>/ModuleData/Languages", "language_data.xml", AllDirectories)` per module; `LanguageData.LoadFromXml(doc, <Languages dir>)` — hence all `xml_path` attrs resolve relative to the module Languages root.
@@ -1022,6 +1037,13 @@ Post-translation the string goes through the tokenizer (`{SETVAR}` variables, `{
 - `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` — `MBTextManager.TryChangeVoiceLanguage` — validates against `GetVoiceLanguageIds`, then rebuilds the voice dict for that voice language only — voice is keyed per voice-language, independent of the text language (Q12).
 - `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedVoiceManager.cs` — `LocalizedVoiceManager.GetVoiceLanguageIds` — voicable = `IsValid` AND ≥1 registered `<VoiceFile>`; in the local vanilla copy only `English` qualifies, so non-English UI languages default to English audio.
 - `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/BannerlordConfig.cs` — `BannerlordConfig.Initialize` — boot tail applies `TryChangeVoiceLanguage(VoiceLanguage)` then `ChangeLanguage(Language)` then `LocalizationDebugMode` from the config file.
+
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` — `MBTextManager.ActiveTextLanguage` — returns the active text language id; `ChangeLanguage(string)` sets it.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/BannerlordConfig.cs` — `BannerlordConfig.Language` — setter calls `MBTextManager.ChangeLanguage` (options change at runtime); `Initialize` calls it at start-up.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LanguageData.cs` — `LanguageData.SupportedIsoCodes` — ISO codes of a registered language; `GetLanguageData(string)` looks a language up by id.
+- `~/bannerlord/moduledata_win/Native/ModuleData/Languages/TR/language_data.xml` — `supported_iso` — vanilla `Türkçe` registration with `supported_iso="tr,tur,tr-tr"`.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` — `ProcessTextForVocalization` — `!` id → follows identifier tokens via `GetRawTextVariable` to the variable's own `{=id}` for the voice lookup.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/LordConversationsCampaignBehavior.cs` — `VOICED_LINE` — vanilla registers `{=!}{VOICED_LINE}` and sets the variable to a TextObject in the condition.
 
 ### Uncertain
 
@@ -1205,6 +1227,58 @@ Practical split for this mod: Harmony patching and reflection setup in `OnSubMod
 - **UNCERTAIN**: what the native bridge does with an exception escaping `Module.Initialize` (e.g. `SubModuleClassType` naming a missing type → `NullReferenceException` in `Module.AddSubModule`) — `Module.Initialize` has no try/catch and is itself invoked from the native callback bridge, whose `TaleWorlds.*.AutoGenerated` glue is not decompiled; resolve by pointing `SubModuleClassType` at a non-existent type in a throwaway module and observing whether the game aborts or continues.
 - **UNCERTAIN**: whether a non-public or nested `SubModuleClassType` is accepted in practice — `GetType` + a `NonPublic` constructor lookup in `Module.AddSubModule` suggests yes, but no vanilla module uses one (all are public top-level types) and the cast to `MBSubModuleBase` plus `Managed.AddTypes` may add constraints; resolve with a test mod using an `internal` submodule class.
 
+## Q17 — In-game notifications
+
+Status: VERIFIED
+
+### Answer
+**API.** `InformationManager.DisplayMessage(InformationMessage)` (TaleWorlds.Library, static) only raises the static event
+`DisplayMessageInternal`; it does nothing itself and never throws for a missing listener (`?.Invoke`). The message type has
+`InformationMessage(string information, Color color)`; `Colors.Red` / `Colors.Yellow` are static `Color` fields of
+TaleWorlds.Library. This is the vanilla way mods print a line in the bottom-left message log; no new dependency.
+
+**Who shows it, and when it is safe.** The only singleplayer listener is the chat-log view model `MPChatVM`, which
+subscribes in its constructor. It is created by `GauntletChatLogView` (Native's GauntletUI module), whose static
+`Initialize` runs in `GauntletUISubModule.OnBeforeInitialModuleScreenSetAsRoot` — after every `OnSubModuleLoad`. A message
+sent from `OnSubModuleLoad` (where companions are loaded and validated) is therefore lost: nobody listens yet. Messages must
+be queued and sent once a campaign runs; the mod's behavior hooks `OnSessionLaunchedEvent` (new game and load, Q8) and
+`OnGameLoadFinishedEvent` are both after UI initialization. `MPChatVM.OnDisplayMessageReceived` drops the message when
+`IsChatAllowedByOptions()` is false (singleplayer: the player turned the chat box off, or a mission with battle UI hidden) —
+the log file stays the authoritative record.
+
+### Evidence
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `InformationManager.DisplayMessage` — `public static void DisplayMessage(InformationMessage message)` invokes `DisplayMessageInternal?.Invoke(message)` only.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `DisplayMessageInternal` — `public static event Action<InformationMessage> DisplayMessageInternal`.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationMessage.cs` — `InformationMessage` — constructor `InformationMessage(string information, Color color)`.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/Colors.cs` — `Colors` — `public static readonly Color Red`, `Yellow`.
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer/MPChatVM.cs` — `MPChatVM` — constructor subscribes `InformationManager.DisplayMessageInternal += OnDisplayMessageReceived`, the only subscriber in the game DLLs.
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Multiplayer/MPChatVM.cs` — `IsChatAllowedByOptions` — singleplayer: `BannerlordConfig.EnableSingleplayerChatBox`, and in a mission `!BannerlordConfig.HideBattleUI`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletChatLogView.cs` — `GauntletChatLogView` — `_dataSource = new MPChatVM()` in its constructor; static `Initialize`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletUISubModule.cs` — `OnBeforeInitialModuleScreenSetAsRoot` — calls `GauntletChatLogView.Initialize()` (after sub-module load).
+
+### Uncertain
+None. (ViewModelCollection and Native GauntletUI were decompiled with ilspycmd into `~/bannerlord/decomp` for this section.)
+
+## Q18 — Vanilla wanderer/companion dialog points
+
+Status: TODO
+
+### Answer
+
+### Evidence
+
+### Uncertain
+
+## Q19 — Companion dismissal
+
+Status: TODO
+
+### Answer
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
@@ -1296,3 +1370,6 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `VoiceObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | postfix parameter |
 | `VoiceObject.VoicePaths` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | find the mod voice path |
 | `Settlement.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | readable town name in the log |
+| `InformationManager.DisplayMessage` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` | Q17 | show queued warnings/errors in the message log |
+| `InformationMessage` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationMessage.cs` | Q17 | message text + color |
+| `Colors` | `decomp/TaleWorlds.Library/TaleWorlds.Library/Colors.cs` | Q17 | red errors, yellow warnings |
