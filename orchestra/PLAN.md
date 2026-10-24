@@ -47,12 +47,13 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [ ] Milestone end: all sections VERIFIED or UNCERTAIN with resolution; commit `phase 1: game map`.
 
 ## M2 — Core (SPEC Phase 2)
-- [ ] 15-core-models (self) — models for §4 schema, `ValidationIssue` (severity, code, companionId, message),
+- [x] 15-core-models (self) — models for §4 schema, `ValidationIssue` (severity, code, companionId, message),
   Slot definitions (§4.3), line-id rule helper, Newtonsoft package. Design work → self.
   Edit: `src/AlbocariusCompanions.Core/**`, Core csproj. Accept: build + a few unit tests.
+  Done in worktree `../AlbocariusCompanions-core` (branch `orchestra/core`), merged between worker runs. Public API stubs for 16–20b throw NotImplementedException.
 - [ ] 16-core-loader (worker) — scan `<root>/*/`, load companion.json + dialogs.json, collect errors,
   skip broken folder, continue. Accept: valid+broken folder, missing file, malformed JSON.
-- [ ] 17-core-registry (worker) — read-only lookup by id, `AllIds` set. Accept: lookup, unknown id, ids set.
+- [ ] 17-core-registry (worker) — `CompanionRegistry`: read-only lookup by id, `Ids` set. Accept: lookup, unknown id, ids set, duplicate ctor guard.
 - [ ] 18-core-validation-companion (worker) — companion.json rules (id format/uniqueness/folder name,
   required fields, ranges per GAME_MAP, cultureFallback≠culture, fallbackTemplateId≠templateId,
   voice ∈ vanilla voice types, likes/dislikes/relations shape). Accept: one failing test per rule + valid companion.
@@ -61,6 +62,7 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
   `audio` relative & no `..`. Accept: one failing test per rule.
 - [ ] 20-core-missing-audio (worker) — report voiced lines whose audio file is missing (default path
   `audio/<line id>.ogg` when `audio` absent). Accept: present/missing/default path cases.
+- [ ] 20b-core-catalog (worker) — `CompanionCatalog.Load`: loader + validator + registry; folders with errors skipped by folder name. Needs 16–19.
 - [ ] 21-placeholder-companion (self) — `module/ModuleData/Companions/test_companion/` per SPEC §5 with
   ids from GAME_MAP; acceptance test that loads it from disk and validates clean.
 - [ ] Milestone end: full tests; commit `phase 2: core`.
