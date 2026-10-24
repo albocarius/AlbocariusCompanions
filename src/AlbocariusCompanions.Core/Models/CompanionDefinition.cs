@@ -13,7 +13,6 @@ public sealed class CompanionDefinition
     [JsonProperty("voice")] public string? Voice { get; set; }
     [JsonProperty("age")] public int? Age { get; set; }
     [JsonProperty("culture")] public string? Culture { get; set; }
-    [JsonProperty("cultureFallback")] public string? CultureFallback { get; set; }
     /// <summary>BodyProperties key; null = default per GAME_MAP.</summary>
     [JsonProperty("bodyProperties")] public string? BodyProperties { get; set; }
     /// <summary>Attribute name (vigor, control, ...) → value.</summary>
@@ -28,12 +27,13 @@ public sealed class CompanionDefinition
     [JsonProperty("likes")] public List<ReactionDefinition>? Likes { get; set; }
     [JsonProperty("dislikes")] public List<ReactionDefinition>? Dislikes { get; set; }
     [JsonProperty("relations")] public List<RelationDefinition>? Relations { get; set; }
+    /// <summary>Module ids (SubModule.xml &lt;Id&gt;). Absent or [] = no dependency; the companion is skipped when a listed module is not loaded.</summary>
+    [JsonProperty("requiredModules")] public List<string>? RequiredModules { get; set; }
 }
 
 public sealed class EquipmentDefinition
 {
     [JsonProperty("templateId")] public string? TemplateId { get; set; }
-    [JsonProperty("fallbackTemplateId")] public string? FallbackTemplateId { get; set; }
     /// <summary>Optional fixed battle set: slot (Item0..Item3, Head, Body, Leg, Gloves, Cape, Horse, HorseHarness) → item id.</summary>
     [JsonProperty("battle")] public Dictionary<string, string>? Battle { get; set; }
     /// <summary>Optional fixed civilian set, same shape as <see cref="Battle"/>.</summary>

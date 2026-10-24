@@ -14,7 +14,6 @@ Companion data lives in `module/ModuleData/Companions/<folder>/`. Every schema c
 | `voice` | string | yes | `curt`, `earnest`, `ironic`, `softspoken` (vanilla voice types) | `"earnest"` |
 | `age` | int | yes | 18..80 | `32` |
 | `culture` | string | yes | game culture id | `"empire"` |
-| `cultureFallback` | string \| null | no | game culture id, ≠ `culture` | `null` |
 | `bodyProperties` | string \| null | no | BodyProperties key; null = template default | `null` |
 | `attributes` | object | yes | all six of `vigor`, `control`, `endurance`, `cunning`, `social`, `intelligence`, each 1..10 | `{ "vigor": 4, … }` |
 | `skills` | object | yes | game skill id → 0..330 | `{ "OneHanded": 80 }` |
@@ -25,13 +24,13 @@ Companion data lives in `module/ModuleData/Companions/<folder>/`. Every schema c
 | `likes` | array | no | `{ "event", "reaction", "slot" }` — shape-validated only, no effect yet | `[]` |
 | `dislikes` | array | no | same as `likes` | `[]` |
 | `relations` | array | no | `{ "companion", "attitude": "friend"\|"rival" }`, not self — shape only | `[]` |
+| `requiredModules` | string array | no | module ids, exactly as in that module's `SubModule.xml` `<Id>`; the companion is skipped when a listed module is not loaded; no blank or duplicate entry | `["NavalDLC"]` |
 
 ### `equipment`
 
 | Field | Type | Required | Rule | Example |
 |---|---|---|---|---|
 | `templateId` | string | yes | game equipment roster id | `"npc_wanderer_equipment_template_empire"` |
-| `fallbackTemplateId` | string \| null | no | ≠ `templateId` | `null` |
 | `battle` | object | no | slot → item id; slots `Item0`–`Item3`, `Head`, `Body`, `Leg`, `Gloves`, `Cape`, `Horse`, `HorseHarness` | `{ "Body": "monk_robe" }` |
 | `civilian` | object | no | same as `battle` | `{ "Head": "pilgrim_hood" }` |
 

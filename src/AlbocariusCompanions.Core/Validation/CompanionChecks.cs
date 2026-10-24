@@ -66,19 +66,9 @@ public static class CompanionChecks
         }
 
         if (c.Equipment == null)
-        {
             Missing(issues, folder, "equipment");
-        }
         else if (string.IsNullOrWhiteSpace(c.Equipment.TemplateId))
-        {
             Missing(issues, folder, "equipment.templateId");
-        }
-        else if (!string.IsNullOrWhiteSpace(c.Equipment.FallbackTemplateId) &&
-                 string.Equals(c.Equipment.FallbackTemplateId, c.Equipment.TemplateId, StringComparison.Ordinal))
-        {
-            issues.Add(ValidationIssue.Error(IssueCodes.SameAsFallback, folder,
-                $"'equipment.fallbackTemplateId' equals 'templateId' ('{c.Equipment.TemplateId}'); a fallback must differ from the primary id."));
-        }
 
         if (c.Equipment != null)
         {
@@ -92,12 +82,7 @@ public static class CompanionChecks
             issues.Add(ValidationIssue.Error(IssueCodes.OutOfRange, folder,
                 $"hireCost value {c.HireCost.Value} is out of range (must be >= 0)."));
 
-        if (!string.IsNullOrWhiteSpace(c.CultureFallback) && c.Culture != null &&
-            string.Equals(c.CultureFallback, c.Culture, StringComparison.Ordinal))
-        {
-            issues.Add(ValidationIssue.Error(IssueCodes.SameAsFallback, folder,
-                $"'cultureFallback' equals 'culture' ('{c.Culture}'); a fallback must differ from the primary id."));
-        }
+        ValidateRequiredModules(c.RequiredModules, folder, issues);
 
         ValidateReactions(c.Likes, "likes", folder, issues);
         ValidateReactions(c.Dislikes, "dislikes", folder, issues);
@@ -158,6 +143,28 @@ public static class CompanionChecks
             else if (string.IsNullOrWhiteSpace(entry.Value))
                 issues.Add(ValidationIssue.Error(IssueCodes.InvalidEquipmentItem, folder,
                     $"{field}.{entry.Key} has an empty item id."));
+        }
+    }
+
+    /// <summary>requiredModules: no blank id, no duplicate (ordinal). One error per bad entry.</summary>
+    private static void ValidateRequiredModules(List<string>? modules, string folder, List<ValidationIssue> issues)
+    {
+        if (modules == null)
+            return;
+
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var id in modules)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                issues.Add(ValidationIssue.Error(IssueCodes.InvalidRequiredModule, folder,
+                    "requiredModules contains a blank entry; expected a module id as in that module's SubModule.xml <Id>."));
+                continue;
+            }
+
+            if (!seen.Add(id))
+                issues.Add(ValidationIssue.Error(IssueCodes.InvalidRequiredModule, folder,
+                    $"requiredModules lists module '{id}' more than once."));
         }
     }
 

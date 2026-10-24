@@ -28,10 +28,10 @@ public class CompanionResolverTests
     }
 
     static string Valid(string equipment = """
-        { "templateId": "tpl_empire", "fallbackTemplateId": null }
+        { "templateId": "tpl_empire" }
         """) => $$"""
         { "id": "{{Id}}", "name": "N", "isFemale": true, "voice": "curt", "age": 25,
-          "culture": "empire", "cultureFallback": null, "bodyProperties": null,
+          "culture": "empire", "bodyProperties": null,
           "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
           "skills": { "OneHanded": 100 }, "traits": { "Valor": 1 },
           "equipment": {{equipment}},
@@ -124,44 +124,37 @@ public class CompanionResolverTests
     }
 
     [Fact]
-    public void Culture_fallback_is_not_used_while_the_primary_culture_exists()
+    public void A_culture_that_is_not_in_the_game_is_one_error_and_no_companion()
     {
-        var json = Valid().Replace(@"""cultureFallback"": null", @"""cultureFallback"": ""vlandia""");
-        Assert.Empty(Resolve(json).Issues);
-    }
-
-    [Fact]
-    public void Both_culture_and_fallback_missing_is_one_error_and_no_companion()
-    {
-        var json = Valid().Replace(@"""culture"": ""empire""", @"""culture"": null, ""cultureFallback"": null");
+        var json = Valid().Replace(@"""culture"": ""empire""", @"""culture"": ""nord_dlc_only""");
         var r = Resolve(json);
 
         Assert.Null(r.Companion);
         var issue = Assert.Single(r.Issues);
         Assert.Equal(IssueCodes.CultureMissing, issue.Code);
         Assert.True(issue.IsError);
+        Assert.Contains("nord_dlc_only", issue.Message);
     }
 
     [Fact]
-    public void Equipment_fallback_without_a_civilian_twin_keeps_the_companion()
+    public void A_roster_that_is_not_in_the_game_skips_the_companion()
     {
-        var json = Valid("""{ "templateId": "dlc_tpl", "fallbackTemplateId": "tpl_empire" }""");
-        var r = Resolve(json);
+        var r = Resolve(Valid("""{ "templateId": "dlc_tpl" }"""));
 
+        Assert.Null(r.Companion);
         var issue = Assert.Single(r.Issues);
-        Assert.Equal(IssueCodes.EquipmentFallbackUsed, issue.Code);
-        Assert.Equal("tpl_empire", r.Companion!.BattleEquipmentRosterId);
-        Assert.Null(r.Companion.CivilianEquipmentRosterId);
+        Assert.Equal(IssueCodes.EquipmentMissing, issue.Code);
+        Assert.True(issue.IsError);
+        Assert.Contains("dlc_tpl", issue.Message);
     }
 
     [Fact]
-    public void Civilian_twin_is_derived_from_the_resolved_roster_not_the_primary()
+    public void The_civilian_twin_is_derived_from_the_resolved_roster()
     {
         var game = new StubGame();
         game.Rosters.Add("tpl_empire_civilian");
-        var json = Valid("""{ "templateId": "dlc_tpl", "fallbackTemplateId": "tpl_empire" }""");
 
-        Assert.Equal("tpl_empire_civilian", Resolve(json, game).Companion!.CivilianEquipmentRosterId);
+        Assert.Equal("tpl_empire_civilian", Resolve(Valid(), game).Companion!.CivilianEquipmentRosterId);
     }
 
     [Fact]

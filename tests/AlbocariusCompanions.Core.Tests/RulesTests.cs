@@ -95,12 +95,12 @@ public class ModelJsonTests
         const string json = """
         {
           "id": "test_companion", "name": "Test Companion", "isFemale": false, "voice": "earnest", "age": 32,
-          "culture": "empire", "cultureFallback": null, "bodyProperties": null,
+          "culture": "empire", "bodyProperties": null,
           "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
           "skills": { "OneHanded": 100 }, "traits": { "Valor": 1 },
-          "equipment": { "templateId": "x", "fallbackTemplateId": null },
+          "equipment": { "templateId": "x" },
           "hireCost": 500, "voiceProfile": { "reference": null, "style": null },
-          "likes": [], "dislikes": [], "relations": []
+          "likes": [], "dislikes": [], "relations": [], "requiredModules": ["NavalDLC"]
         }
         """;
         var c = JsonConvert.DeserializeObject<CompanionDefinition>(json)!;
@@ -110,6 +110,7 @@ public class ModelJsonTests
         Assert.Equal("x", c.Equipment!.TemplateId);
         Assert.Equal(500, c.HireCost);
         Assert.Empty(c.Relations!);
+        Assert.Equal(new[] { "NavalDLC" }, c.RequiredModules);
     }
 
     [Fact]
