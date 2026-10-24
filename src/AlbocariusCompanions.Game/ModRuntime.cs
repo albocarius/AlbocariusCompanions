@@ -16,6 +16,9 @@ internal static class ModRuntime
     /// <summary>Valid companions loaded from ModuleData/Companions; empty until OnSubModuleLoad finished.</summary>
     public static CompanionRegistry Registry { get; set; } = new CompanionRegistry(new List<Core.Models.CompanionPackage>());
 
+    /// <summary>Companion folders skipped at load because of errors (for the in-game summary).</summary>
+    public static int SkippedAtLoad { get; set; }
+
     /// <summary>Companion id → registered template for the current campaign (AfterRegisterSubModuleObjects).</summary>
     public static IReadOnlyDictionary<string, CharacterObject> Templates { get; set; } = new Dictionary<string, CharacterObject>();
 

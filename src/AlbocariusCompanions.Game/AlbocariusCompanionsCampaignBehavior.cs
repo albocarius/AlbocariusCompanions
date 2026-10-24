@@ -66,6 +66,13 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
     private void OnSessionLaunched(CampaignGameStarter starter)
     {
         Safe.Run(ModRuntime.Log, "OnSessionLaunched", () => CompanionDialogs.Register(starter));
+        Safe.Run(ModRuntime.Log, "in-game notifications", () =>
+        {
+            // Templates that failed to resolve count as skipped too (CompanionTemplates logs why).
+            var loaded = ModRuntime.Templates.Count;
+            var skipped = ModRuntime.SkippedAtLoad + (ModRuntime.Registry.Count - loaded);
+            InGameNotifications.OnCampaignReady(loaded, skipped);
+        });
     }
 
     /// <summary>

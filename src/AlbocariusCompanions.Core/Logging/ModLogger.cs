@@ -40,6 +40,9 @@ public sealed class ModLogger
 
     public string LogFilePath { get; }
 
+    /// <summary>Optional listener for warnings and errors (in-game notifications); its exceptions are swallowed.</summary>
+    public Action<LogLevel, string>? Notify { get; set; }
+
     /// <summary>Starts a new session: truncates the file and writes a header line. Never throws.</summary>
     public void StartSession(string header)
     {
@@ -61,6 +64,7 @@ public sealed class ModLogger
 
     public void Error(string message, Exception exception)
     {
+        RaiseNotify(LogLevel.Error, message);
         lock (_gate)
         {
             try
@@ -99,6 +103,8 @@ public sealed class ModLogger
 
     private void Append(LogLevel level, string message)
     {
+        if (level != LogLevel.Info)
+            RaiseNotify(level, message);
         lock (_gate)
         {
             try
@@ -109,6 +115,12 @@ public sealed class ModLogger
             }
             catch (Exception) { /* never throw out of a log call */ }
         }
+    }
+
+    private void RaiseNotify(LogLevel level, string message)
+    {
+        try { Notify?.Invoke(level, message); }
+        catch (Exception) { /* a broken listener must not break logging */ }
     }
 
     /// <summary>Folder of the log file, or null when the path has none (root file, empty path).</summary>
