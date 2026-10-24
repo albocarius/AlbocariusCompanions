@@ -35,3 +35,4 @@
 | 394f143 town names in log | – | self | out of plan, user request |
 | 32-schema-version-ogg | 1 | PASS, review fix | clean SchemaVersions/OGG check; had exempted empty documents because my LoaderTests fixture lacked schemaVersion → test fixed, exemption removed |
 | 35-required-modules-core | 1 | PASS | clean: fallbacks removed end to end, RequiredModules.Missing + InvalidRequiredModule |
+| 42-gm-q18-vanilla-dialog-points | 1 | PASS (exit 124 timeout, section complete), verified | very thorough: 8 tables, ~100 points, spot checks correct |
