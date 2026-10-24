@@ -18,7 +18,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - XML formats: reference `xmlschemas/` (game XSDs, user-provided 2026-10-24). Every XML generated at build time is validated against its schema in tests where one exists.
 - JSON: `Newtonsoft.Json.dll` 13.0.1 exists in `~/bannerlord/dlls/bin` → Game references that file
   (Private=false); Core/tests use NuGet `Newtonsoft.Json` 13.0.1.
-- Harmony: NuGet `Lib.Harmony` compile-only (ExcludeAssets=runtime); runtime dependency on
+- Harmony: NuGet `Lib.Harmony` 2.4.2 compile-only (ExcludeAssets=runtime; latest, works with game 1.4.8 per user); runtime dependency on
   `Bannerlord.Harmony` module in SubModule.xml. No Harmony DLL in `~/bannerlord/dlls`.
 - Decompiled sources lack TaleWorlds.Library / Localization / Engine / ModuleManager; when needed,
   decompile with `ilspycmd` into the session scratchpad (outside the repo, never committed).
@@ -72,10 +72,13 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 
 ## M3 — Game layer (SPEC Phase 3)
 Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP entry; self reviews worker diffs against GAME_MAP.
-- [ ] 22-game-build (self) — Game csproj: HintPath refs into `~/bannerlord/dlls` (Private=false),
+- [x] 22-game-build (self) — Game csproj: HintPath refs into `~/bannerlord/dlls` (Private=false),
   Newtonsoft from game bin (Private=false), Lib.Harmony compile-only; post-build target assembling
   `dist/AlbocariusCompanions/` (SubModule.xml, bin/Win64_Shipping_Client/{Game,Core}.dll, ModuleData/Companions/**).
   **Core's Newtonsoft copy must not go to dist** (user decision). Accept: acceptance test on dist layout incl. no Newtonsoft.Json.dll in dist.
+  Done: `GameDlls` property (default `$(HOME)/bannerlord/dlls`, build errors if missing), Lib.Harmony 2.4.2 compile-only (latest, works with game 1.4.8 per user),
+  Core's Newtonsoft `PrivateAssets=all`, `AssembleDist` target copies only Game+Core DLLs and mirrors `module/`.
+  Tests: `DistLayoutTests` (layout, only mod DLLs, module mirror, Core has no TaleWorlds refs, no NavalDLC refs, Newtonsoft 13.0.0.0).
 - [ ] 22b-xml-schema-tests (self) — acceptance tests validating every XML in `dist/` against the game XSDs:
   for each `Xmls/XmlNode` in dist SubModule.xml, validate its file against `xmlschemas/<id>.xsd` when that schema exists
   (same rule as `ModuleHelper.GetXsdPath`); generated character template → `NPCCharacters.xsd`; language files /
