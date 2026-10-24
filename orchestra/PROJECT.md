@@ -4,6 +4,7 @@ Bannerlord mod: Warband-style unique companions, defined purely by data (JSON).
 The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are binding).
 
 ## Stack
+- Target game version: Bannerlord 1.4.8. Harmony: Lib.Harmony 2.4.2 (compile-only; runtime from the Bannerlord.Harmony module).
 - .NET SDK 10.0.113 (Linux). Game runs on a separate Windows machine; nobody can run it here.
 - `src/AlbocariusCompanions.Core` — netstandard2.0, **no TaleWorlds references**. Models, JSON loading,
   registry, validation, slots, line-id rules. Everything testable lives here.
