@@ -1249,3 +1249,20 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `PlatformDirectoryPath` | `decomp/TaleWorlds.Library/TaleWorlds.Library/PlatformDirectoryPath.cs` | Q15 | log folder |
 | `PlatformFileType.User` | `decomp/TaleWorlds.Library/TaleWorlds.Library/PlatformFileType.cs` | Q15 | Documents bucket |
 | `ModuleHelper.GetModuleFullPath` | `decomp/TaleWorlds.ModuleManager/TaleWorlds.ModuleManager/ModuleHelper.cs` | Q16 | module folder (trailing /) |
+| `CampaignEvents.OnNewGameCreatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | spawn pass on a new campaign |
+| `CampaignEvents.OnGameLoadFinishedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | spawn pass after loading a save |
+| `CampaignEvents.OnSessionLaunchedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | dialog registration per session |
+| `CampaignEvents` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | static campaign event receivers |
+| `IMbEvent.AddNonSerializedListener` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IMbEvent.cs` | Q8 | subscribe handlers (owner = this behavior) |
+| `IDataStore.SyncData` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IDataStore.cs` | Q8 | save/load of the companion id → hero map |
+| `CampaignGameStarter` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` | Q8 | parameter of OnNewGameCreated / OnSessionLaunched |
+| `Hero.AllAliveHeroes` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q1 | re-link scan, alive heroes first |
+| `Hero.DeadOrDisabledHeroes` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | re-link scan, dead or disabled heroes second |
+| `Hero.MainHero` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q1 | town candidate exclusion (vanilla spawn predicate) |
+| `Hero.CurrentSettlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q3 | the player's settlement, excluded from towns |
+| `Town.AllTowns` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Town.cs` | Q1 | spawn town candidates |
+| `Town.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Town.cs` | Q1 | prefer a town of the template's culture |
+| `SettlementComponent.Settlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/SettlementComponent.cs` | Q3 | town → settlement (born + placement) |
+| `CharacterObject.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` | Q5 | template culture for the town preference |
+| `EnterSettlementAction.ApplyForCharacterOnly` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/EnterSettlementAction.cs` | Q3 | place the new partyless hero in the town |
+| `MBRandom.RandomInt` | `decomp/TaleWorlds.Core/TaleWorlds.Core/MBRandom.cs` | Q1 | random pick from the town candidate pool |
