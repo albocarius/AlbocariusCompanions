@@ -8,7 +8,35 @@ namespace AlbocariusCompanions.Core.Logging;
 /// </summary>
 public static class Safe
 {
-    public static void Run(ModLogger log, string context, Action action) => throw new NotImplementedException("task 24-core-logging");
+    public static void Run(ModLogger log, string context, Action action)
+    {
+        try
+        {
+            action();
+        }
+        catch (Exception ex)
+        {
+            LogSwallowed(log, context, ex);
+        }
+    }
 
-    public static T Run<T>(ModLogger log, string context, Func<T> func, T fallback) => throw new NotImplementedException("task 24-core-logging");
+    public static T Run<T>(ModLogger log, string context, Func<T> func, T fallback)
+    {
+        try
+        {
+            return func();
+        }
+        catch (Exception ex)
+        {
+            LogSwallowed(log, context, ex);
+            return fallback;
+        }
+    }
+
+    /// <summary>Even the error report is guarded: a dead logger must not turn a swallowed exception into a crash.</summary>
+    private static void LogSwallowed(ModLogger? log, string context, Exception ex)
+    {
+        try { log?.Error(context, ex); }
+        catch (Exception) { /* nothing left to do but keep the game running */ }
+    }
 }

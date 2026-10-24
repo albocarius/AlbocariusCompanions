@@ -95,7 +95,7 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   SubModule.xml has no XSD → structural test (task 23). Fails if `xmlschemas/` is missing.
 - [ ] 23-game-submodule-xml (worker) — `module/SubModule.xml` (id, name, version 0.1.0, deps from GAME_MAP,
   Bannerlord.Harmony, SubModule class). Accept: XML parse test checking ids/version/deps.
-- [ ] 24-core-logging (worker; tests staged, task ready) — Core `ModLogger` (System.IO, never throws) + `Safe.Run` guard.
+- [x] 24-core-logging (worker; tests staged, task ready) — Core `ModLogger` (System.IO, never throws) + `Safe.Run` guard.
   Game glue (path via `PlatformFileType.User`, GAME_MAP Q15) is part of 30.
 - [ ] 25-core-resolver (worker; tests staged, task ready) — SPEC rule 9 logic in Core behind `IGameObjectLookup`; the Game implementation
   (`MBObjectManager.GetObject<T>` + `Equipment.IsItemFitsToSlot`) is part of 26. Original scope:
