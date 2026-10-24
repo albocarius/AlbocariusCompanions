@@ -1266,3 +1266,20 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `CharacterObject.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` | Q5 | template culture for the town preference |
 | `EnterSettlementAction.ApplyForCharacterOnly` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/EnterSettlementAction.cs` | Q3 | place the new partyless hero in the town |
 | `MBRandom.RandomInt` | `decomp/TaleWorlds.Core/TaleWorlds.Core/MBRandom.cs` | Q1 | random pick from the town candidate pool |
+| `CampaignGameStarter.AddDialogLine` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` | Q7 | NPC dialog lines |
+| `CampaignGameStarter.AddPlayerLine` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` | Q7 | player dialog options |
+| `ConversationSentence.OnConditionDelegate` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationSentence.cs` | Q7 | dialog conditions |
+| `ConversationSentence.OnConsequenceDelegate` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationSentence.cs` | Q7 | dialog consequences |
+| `Hero.HasMet` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | intro only on first meeting |
+| `Hero.SetHasMet` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | mark met after intro |
+| `Hero.IsPlayerCompanion` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | hide hire offer once hired |
+| `Hero.PartyBelongedTo` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | hide hire offer while in a party |
+| `Hero.Gold` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | strict gold check |
+| `Clan.PlayerClan` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q6 | player clan |
+| `Clan.Companions` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q6 | companion count |
+| `Clan.CompanionLimit` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q6 | companion limit |
+| `GiveGoldAction.ApplyBetweenCharacters` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveGoldAction.cs` | Q6 | pay hire cost |
+| `AddCompanionAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddCompanionAction.cs` | Q6 | join player clan |
+| `AddHeroToPartyAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddHeroToPartyAction.cs` | Q6 | join main party |
+| `MobileParty.MainParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q6 | player party |
+| `MBTextManager.SetTextVariable` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | hire cost in player line |
