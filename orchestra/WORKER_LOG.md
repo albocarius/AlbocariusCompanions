@@ -12,3 +12,4 @@
 | 08-gm-q08-lifecycle | 1 | PASS, verified | correct; replaced copied SyncData body with prose. Check failed 3x on CLR crash -> retry raised to 3 |
 | 09-gm-q09-existing-saves | 1 | PASS, verified | correct (LoadBehaviorData miss => no SyncData); added design note. Strata-off experiment: CLR crash 5/15 => not RAM |
 | 10-gm-q10-harmony-target | 1 | PASS, verified | excellent: prefix on AddToAliveCompanions (single Add site) also blocks TryKillCompanion |
+| 11-gm-q11-generation-decision | 1 | PASS, verified | strong: recommends runtime in-memory NPCCharacters XML (B) + Special-occupation template; worker set Status VERIFIED itself (should be DRAFT) |
