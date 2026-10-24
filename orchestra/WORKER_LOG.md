@@ -26,3 +26,4 @@
 | 15-gm-q15-logging-paths | 1 | PASS, verified | good; 3 UNCERTAINs resolved on the live Windows install |
 | 16-gm-q16-submodule-lifecycle | 1 | PASS, verified | excellent; Sandbox id lowercase b confirmed on live files |
 | 24-core-logging | 1 | PASS | clean, lock-guarded, never throws |
+| 25-core-resolver | 1 | PASS | clean, rule 9 exactly |

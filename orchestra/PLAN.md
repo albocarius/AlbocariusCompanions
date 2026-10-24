@@ -97,7 +97,7 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   Bannerlord.Harmony, SubModule class). Accept: XML parse test checking ids/version/deps.
 - [x] 24-core-logging (worker; tests staged, task ready) — Core `ModLogger` (System.IO, never throws) + `Safe.Run` guard.
   Game glue (path via `PlatformFileType.User`, GAME_MAP Q15) is part of 30.
-- [ ] 25-core-resolver (worker; tests staged, task ready) — SPEC rule 9 logic in Core behind `IGameObjectLookup`; the Game implementation
+- [x] 25-core-resolver (worker; tests staged, task ready) — SPEC rule 9 logic in Core behind `IGameObjectLookup`; the Game implementation
   (`MBObjectManager.GetObject<T>` + `Equipment.IsItemFitsToSlot`) is part of 26. Original scope:
   fixed items: `GetObject<ItemObject>` + `Equipment.IsItemFitsToSlot`, drop misfits with a warning, all dropped → template set (GAME_MAP Q5).
 - [x] 26-game-hero-creation (self) — code in Game/{GameObjectLookup,CompanionTemplates,CompanionHeroFactory}.cs; builds against the game DLLs;
