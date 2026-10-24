@@ -56,7 +56,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
   Slot definitions (§4.3), line-id rule helper, Newtonsoft package. Design work → self.
   Edit: `src/AlbocariusCompanions.Core/**`, Core csproj. Accept: build + a few unit tests.
   Done in a temporary worktree, merged into `orchestra/foundation` (cea5c0a), worktree removed. Public API stubs for 16–20b throw NotImplementedException.
-- [ ] 16-core-loader (worker) — scan `<root>/*/`, load companion.json + dialogs.json, collect errors,
+- [x] 16-core-loader (worker) — scan `<root>/*/`, load companion.json + dialogs.json, collect errors,
   skip broken folder, continue. Accept: valid+broken folder, missing file, malformed JSON.
 - [ ] 17-core-registry (worker) — `CompanionRegistry`: read-only lookup by id, `Ids` set. Accept: lookup, unknown id, ids set, duplicate ctor guard.
 - [ ] 18-core-validation-companion (worker) — companion.json rules (id format/uniqueness/folder name,

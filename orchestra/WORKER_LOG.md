@@ -16,3 +16,4 @@
 | 12-gm-q12-voice-over | 1 | PASS, verified | correct and detailed; no XSD for voiced lines / language_data |
 | 13-gm-q13-war-sails | 1 | PASS, verified | correct; NavalDLC id, 3 skills, no cultures/traits, GetObject null |
 | 14-gm-q14-localization | 1 | PASS, verified | correct; M1 complete |
+| 16-core-loader | 1 | PASS | clean; strict Newtonsoft, IO errors mapped to InvalidJson; worker used SDK 10.0.402 |
