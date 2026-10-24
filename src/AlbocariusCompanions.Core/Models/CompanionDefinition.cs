@@ -6,6 +6,7 @@ namespace AlbocariusCompanions.Core.Models;
 /// <summary>companion.json (SPEC §4.1). Required values are nullable so validation can report them as missing.</summary>
 public sealed class CompanionDefinition
 {
+    [JsonProperty("schemaVersion")] public int? SchemaVersion { get; set; }
     [JsonProperty("id")] public string? Id { get; set; }
     [JsonProperty("name")] public string? Name { get; set; }
     [JsonProperty("isFemale")] public bool? IsFemale { get; set; }

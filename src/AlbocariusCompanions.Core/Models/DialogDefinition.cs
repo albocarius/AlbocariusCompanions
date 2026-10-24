@@ -6,6 +6,7 @@ namespace AlbocariusCompanions.Core.Models;
 /// <summary>dialogs.json (SPEC §4.2).</summary>
 public sealed class DialogFile
 {
+    [JsonProperty("schemaVersion")] public int? SchemaVersion { get; set; }
     [JsonProperty("lines")] public List<DialogLine>? Lines { get; set; }
 }
 

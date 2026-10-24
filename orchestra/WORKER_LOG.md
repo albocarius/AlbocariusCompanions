@@ -33,3 +33,4 @@
 | 7981805 fix: JSON name | – | self | out of plan, after the in-game test: Special templates got a random culture name |
 | aa503f1 voice/lipsync | – | self | out of plan: voiced-lines XML rewritten at start + Harmony postfix; Rhubarb lipsync verified in game |
 | 394f143 town names in log | – | self | out of plan, user request |
+| 32-schema-version-ogg | 1 | PASS, review fix | clean SchemaVersions/OGG check; had exempted empty documents because my LoaderTests fixture lacked schemaVersion → test fixed, exemption removed |

@@ -7,6 +7,9 @@ public static class IssueCodes
     public const string MissingCompanionFile = "missing_companion_file";
     public const string MissingDialogsFile = "missing_dialogs_file";
     public const string InvalidJson = "invalid_json";
+    public const string MissingSchemaVersion = "missing_schema_version";
+    public const string InvalidSchemaVersion = "invalid_schema_version";
+    public const string UnsupportedSchemaVersion = "unsupported_schema_version";
     public const string RootNotFound = "root_not_found";
 
     // companion.json
@@ -33,6 +36,7 @@ public static class IssueCodes
     public const string InvalidLanguageCode = "invalid_language_code";
     public const string PlayerTokenInVoicedLine = "player_token_in_voiced_line";
     public const string InvalidAudioPath = "invalid_audio_path";
+    public const string InvalidAudioExtension = "invalid_audio_extension";
 
     // Runtime resolution (SPEC rule 9)
     public const string CultureFallbackUsed = "culture_fallback_used";

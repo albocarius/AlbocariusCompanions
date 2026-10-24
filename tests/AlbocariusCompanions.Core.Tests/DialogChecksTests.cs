@@ -118,4 +118,51 @@ public class DialogChecksTests
             "{ \"lines\": [ { \"id\": \"a_intro_01\", \"slot\": \"intro\", \"text\": { \"en\": \"Hi\" }, \"voiced\": false, \"audio\": \"" + audio + "\" } ] }"));
         Assert.DoesNotContain(issues, i => i.Code == IssueCodes.InvalidAudioPath);
     }
+
+    [Theory]
+    [InlineData("audio/x.wav")]
+    [InlineData("audio/x.mp3")]
+    [InlineData("audio/x")]
+    [InlineData("audio/x.ogg.wav")]
+    [InlineData("audio/x.oggx")]
+    [InlineData("audio/ogg")]
+    [InlineData(".ogg")]
+    public void Audio_must_be_an_ogg_file(string audio)
+    {
+        var issues = Issues(Pkg("a",
+            "{ \"lines\": [ { \"id\": \"a_intro_01\", \"slot\": \"intro\", \"text\": { \"en\": \"Hi\" }, \"voiced\": false, \"audio\": \"" + audio + "\" } ] }"));
+
+        var issue = Assert.Single(issues, i => i.Code == IssueCodes.InvalidAudioExtension);
+        Assert.Contains("a_intro_01", issue.Message);
+        Assert.Contains(audio, issue.Message);
+        Assert.Contains(".ogg", issue.Message);
+    }
+
+    [Fact]
+    public void Voiced_line_audio_extension_is_checked_too()
+    {
+        var issues = Issues(Pkg("a",
+            "{ \"lines\": [ { \"id\": \"a_intro_01\", \"slot\": \"intro\", \"text\": { \"en\": \"Hi\" }, \"voiced\": true, \"audio\": \"audio/x.wav\" } ] }"));
+        Assert.Contains(issues, i => i.Code == IssueCodes.InvalidAudioExtension);
+    }
+
+    [Theory]
+    [InlineData("audio/x.OGG")]
+    [InlineData("audio/x.Ogg")]
+    public void Ogg_extension_any_case_is_accepted(string audio)
+    {
+        var issues = Issues(Pkg("a",
+            "{ \"lines\": [ { \"id\": \"a_intro_01\", \"slot\": \"intro\", \"text\": { \"en\": \"Hi\" }, \"voiced\": false, \"audio\": \"" + audio + "\" } ] }"));
+        Assert.DoesNotContain(issues, i => i.Code == IssueCodes.InvalidAudioExtension);
+    }
+
+    [Fact]
+    public void Unsafe_audio_path_reports_only_the_path_error()
+    {
+        var issues = Issues(Pkg("a",
+            "{ \"lines\": [ { \"id\": \"a_intro_01\", \"slot\": \"intro\", \"text\": { \"en\": \"Hi\" }, \"voiced\": false, \"audio\": \"../x.wav\" } ] }"));
+
+        Assert.Single(issues, i => i.Code == IssueCodes.InvalidAudioPath);
+        Assert.DoesNotContain(issues, i => i.Code == IssueCodes.InvalidAudioExtension);
+    }
 }

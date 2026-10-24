@@ -7,6 +7,7 @@ Companion data lives in `module/ModuleData/Companions/<folder>/`. Every schema c
 
 | Field | Type | Required | Rule | Example |
 |---|---|---|---|---|
+| `schemaVersion` | int | yes | must be `1` (the only version this build of the mod supports) | `1` |
 | `id` | string | yes | `[a-z0-9_]+`, equals the folder name, unique | `"test_companion"` |
 | `name` | string | yes | non-empty | `"Test Companion"` |
 | `isFemale` | bool | yes | | `false` |
@@ -37,16 +38,17 @@ Companion data lives in `module/ModuleData/Companions/<folder>/`. Every schema c
 ## `dialogs.json`
 
 ```json
-{ "lines": [ { "id": "test_companion_intro_01", "slot": "intro", "text": { "en": "Greetings, Captain." }, "voiced": true } ] }
+{ "schemaVersion": 1, "lines": [ { "id": "test_companion_intro_01", "slot": "intro", "text": { "en": "Greetings, Captain." }, "voiced": true } ] }
 ```
 
 | Field | Type | Required | Rule |
 |---|---|---|---|
+| `schemaVersion` | int | yes | must be `1` (the only version this build of the mod supports) |
 | `lines` | array | yes | |
 | `lines[].id` | string | yes | `<companionId>_<slot>_<nn>`, globally unique; localization key `{=id}` and voice-over id |
 | `lines[].slot` | string | yes | required slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; optional (no effect yet): `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle` |
 | `lines[].text` | object | yes | language code → text; `en` required; no `{PLAYER…}` tokens in voiced lines |
 | `lines[].voiced` | bool | no | default `false` |
-| `lines[].audio` | string | no | relative to the companion folder, no `..`; default `audio/<line id>.ogg` |
+| `lines[].audio` | string | no | relative to the companion folder, no `..`, must end in `.ogg` (any case) — anything else is an error; default `audio/<line id>.ogg` |
 
 Audio: `audio/<line id>.ogg`; an optional Rhubarb lipsync file with the same name and `.xml` sits next to it.

@@ -23,8 +23,8 @@ public class CompanionLoaderTests
         return dir;
     }
 
-    private const string MiniCompanion = """{ "id": "a_companion" }""";
-    private const string MiniDialogs = """{ "lines": [] }""";
+    private const string MiniCompanion = """{ "schemaVersion": 1, "id": "a_companion" }""";
+    private const string MiniDialogs = """{ "schemaVersion": 1, "lines": [] }""";
 
     [Fact]
     public void Missing_root_issue_has_empty_folder_and_mentions_the_root()
@@ -86,7 +86,7 @@ public class CompanionLoaderTests
         using var tmp = new TempDir();
         var dir = WriteFolder(tmp.Path, "c", MiniCompanion, null);
         File.WriteAllText(Path.Combine(dir, "dialogs.json"),
-            """{ "lines": [ { "id": "c_intro_01", "slot": "intro", "text": { "tr": "Selam, Kaptan." }, "voiced": false } ] }""",
+            """{ "schemaVersion": 1, "lines": [ { "id": "c_intro_01", "slot": "intro", "text": { "tr": "Selam, Kaptan." }, "voiced": false } ] }""",
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
         var result = CompanionLoader.LoadAll(tmp.Path);
@@ -113,11 +113,62 @@ public class CompanionLoaderTests
     public void Id_missing_still_loads_and_package_id_falls_back_to_folder_name()
     {
         using var tmp = new TempDir();
-        WriteFolder(tmp.Path, "folder_name", """{ "name": "No Id" }""", MiniDialogs);
+        WriteFolder(tmp.Path, "folder_name", """{ "schemaVersion": 1, "name": "No Id" }""", MiniDialogs);
 
         var result = CompanionLoader.LoadAll(tmp.Path);
 
         Assert.Empty(result.Issues);
         Assert.Equal("folder_name", Assert.Single(result.Packages).Id);
+    }
+
+    [Fact]
+    public void Missing_version_in_an_otherwise_valid_file_is_a_loader_error_that_skips_the_folder()
+    {
+        using var tmp = new TempDir();
+        WriteFolder(tmp.Path, "c", """{ "id": "a_companion" }""", MiniDialogs);
+
+        var result = CompanionLoader.LoadAll(tmp.Path);
+
+        var issue = Assert.Single(result.Issues);
+        Assert.Equal(IssueCodes.MissingSchemaVersion, issue.Code);
+        Assert.Contains("c/companion.json", issue.Message);
+        Assert.Contains("schemaVersion", issue.Message);
+        Assert.Empty(result.Packages);
+    }
+
+    [Fact]
+    public void Unsupported_version_is_reported_even_when_the_rest_of_the_file_is_broken()
+    {
+        using var tmp = new TempDir();
+        WriteFolder(tmp.Path, "c", """{ "schemaVersion": 2, "id": "c", "age": "old" }""", MiniDialogs);
+
+        var issue = Assert.Single(CompanionLoader.LoadAll(tmp.Path).Issues);
+
+        Assert.Equal(IssueCodes.UnsupportedSchemaVersion, issue.Code);
+        Assert.Contains("schemaVersion 2", issue.Message);
+        Assert.Contains("schemaVersion 1", issue.Message);
+    }
+
+    [Fact]
+    public void Missing_version_never_hides_a_json_error()
+    {
+        using var tmp = new TempDir();
+        WriteFolder(tmp.Path, "c", """{ "id": "c", "age": "old" }""", MiniDialogs);
+
+        var issue = Assert.Single(CompanionLoader.LoadAll(tmp.Path).Issues);
+
+        Assert.Equal(IssueCodes.InvalidJson, issue.Code);
+    }
+
+    [Fact]
+    public void Empty_document_still_needs_a_schemaVersion()
+    {
+        using var tmp = new TempDir();
+        WriteFolder(tmp.Path, "c", MiniCompanion, "{}");
+
+        var result = CompanionLoader.LoadAll(tmp.Path);
+
+        Assert.Empty(result.Packages);
+        Assert.Equal(IssueCodes.MissingSchemaVersion, Assert.Single(result.Issues).Code);
     }
 }

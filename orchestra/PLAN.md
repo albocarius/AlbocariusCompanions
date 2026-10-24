@@ -35,7 +35,7 @@ scaffold last because its template must contain the final slot list and lang for
   field: type, required, example) so later tasks only update them.
 
 ### T2 — small fixes
-- [ ] 32-schema-version-ogg (worker; merged with 33) — schemaVersion: — Core: one `SchemaVersions` check point used by the loader; `schemaVersion` (int,
+- [x] 32-schema-version-ogg (worker; merged with 33) — schemaVersion: — Core: one `SchemaVersions` check point used by the loader; `schemaVersion` (int,
   required, current 1) at the top of companion.json and dialogs.json (player_lines.json and lang files join in 49). Missing / not int /
   greater than supported → validation error with a clear message. Accept: one test per case; test_companion updated.
   OGG part (was 33): `audio` with an extension other than `.ogg` → validation **error** (today a silent skip

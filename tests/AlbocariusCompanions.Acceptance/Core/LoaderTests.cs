@@ -92,7 +92,7 @@ public class LoaderTests
     public void Dialogs_without_lines_load_as_empty_list()
     {
         using var tmp = new TempDir();
-        Fixtures.Write(tmp.Path, "a", Fixtures.Companion("a"), new Newtonsoft.Json.Linq.JObject());
+        Fixtures.Write(tmp.Path, "a", Fixtures.Companion("a"), new Newtonsoft.Json.Linq.JObject { ["schemaVersion"] = 1 });
 
         var result = CompanionLoader.LoadAll(tmp.Path);
 

@@ -107,8 +107,24 @@ public static class DialogChecks
             return;
 
         if (string.IsNullOrWhiteSpace(audio) || IsRooted(audio) || HasParentSegment(audio))
+        {
             issues.Add(ValidationIssue.Error(IssueCodes.InvalidAudioPath, folder,
                 LineRef(line) + $" audio path '{audio}' is invalid: it must be a relative path inside the companion folder (no root, no drive, no '..')."));
+            return;
+        }
+
+        if (!HasOggExtension(audio))
+            issues.Add(ValidationIssue.Error(IssueCodes.InvalidAudioExtension, folder,
+                LineRef(line) + $" audio path '{audio}' must end in .ogg: every audio file is an OGG file."));
+    }
+
+    /// <summary>Extension of the last path segment, any case. A bare ".ogg" name counts as having no extension.</summary>
+    private static bool HasOggExtension(string path)
+    {
+        var separator = Math.Max(path.LastIndexOf('/'), path.LastIndexOf('\\'));
+        var fileName = path.Substring(separator + 1);
+        var dot = fileName.LastIndexOf('.');
+        return dot > 0 && fileName.Substring(dot).Equals(".ogg", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>Rooted on any platform: '/x', '\x' or a drive-qualified path like 'C:\x' or 'C:/x'.</summary>

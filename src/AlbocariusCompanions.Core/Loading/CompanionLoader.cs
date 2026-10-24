@@ -6,6 +6,7 @@ using System.Text;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Validation;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AlbocariusCompanions.Core.Loading;
 
@@ -72,15 +73,42 @@ public static class CompanionLoader
         where T : class
     {
         value = null;
+        JObject document;
         try
         {
-            value = JsonConvert.DeserializeObject<T>(File.ReadAllText(path, Encoding.UTF8), StrictSettings)
-                ?? throw new JsonSerializationException("document is null or empty");
+            document = JObject.Parse(File.ReadAllText(path, Encoding.UTF8));
         }
         catch (Exception ex) when (ex is JsonException || ex is IOException || ex is UnauthorizedAccessException)
         {
             issues.Add(ValidationIssue.Error(IssueCodes.InvalidJson, folder,
                 $"{folder}/{fileName} is not valid: {ex.Message}"));
+            return false;
+        }
+
+        // The one version check (SchemaVersions). A present but wrong version skips the folder before the model is read;
+        // a missing one is reported only after the model parsed, so a broken file surfaces its JSON error first.
+        var versionIssue = SchemaVersions.Check(document, folder, fileName);
+        if (versionIssue != null && versionIssue.Code != IssueCodes.MissingSchemaVersion)
+        {
+            issues.Add(versionIssue);
+            return false;
+        }
+
+        try
+        {
+            value = document.ToObject<T>(JsonSerializer.Create(StrictSettings))
+                ?? throw new JsonSerializationException("document is null or empty");
+        }
+        catch (JsonException ex)
+        {
+            issues.Add(ValidationIssue.Error(IssueCodes.InvalidJson, folder,
+                $"{folder}/{fileName} is not valid: {ex.Message}"));
+            return false;
+        }
+
+        if (versionIssue != null)
+        {
+            issues.Add(versionIssue);
             return false;
         }
         return true;

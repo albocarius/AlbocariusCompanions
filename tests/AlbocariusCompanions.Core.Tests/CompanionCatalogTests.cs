@@ -16,7 +16,7 @@ public class CompanionCatalogTests
     }
 
     private static string CompanionJson(string id, string voice = "earnest") => $$"""
-    { "id": "{{id}}", "name": "Test Companion", "isFemale": false, "voice": "{{voice}}", "age": 32,
+    { "schemaVersion": 1, "id": "{{id}}", "name": "Test Companion", "isFemale": false, "voice": "{{voice}}", "age": 32,
       "culture": "empire",
       "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
       "skills": { "OneHanded": 100 }, "equipment": { "templateId": "npc_wanderer_equipment_template_empire" },
@@ -28,7 +28,7 @@ public class CompanionCatalogTests
         var slots = DialogSlots.Required;
         var lines = string.Join(",", slots.Select(slot =>
             $$"""{ "id": "{{id}}_{{slot}}_01", "slot": "{{slot}}", "text": { "en": "Greetings, Captain." }, "voiced": false }"""));
-        return $$"""{ "lines": [{{lines}}] }""";
+        return $$"""{ "schemaVersion": 1, "lines": [{{lines}}] }""";
     }
 
     private static void Write(string root, string folder, string? companionJson, string? dialogsJson)
@@ -121,7 +121,7 @@ public class CompanionCatalogTests
     {
         using var tmp = new TempDir();
         Write(tmp.Path, "bad",
-            """{ "id": "bad", "name": "Bad", "isFemale": false, "voice": "curt", "age": 5, """
+            """{ "schemaVersion": 1, "id": "bad", "name": "Bad", "isFemale": false, "voice": "curt", "age": 5, """
             + """ "culture": "empire", "attributes": { "vigor": 4, "control": 3, "endurance": 4, """
             + """ "cunning": 2, "social": 2, "intelligence": 2, "luck": 1 }, "skills": {}, """
             + """ "equipment": { "templateId": "t" }, "hireCost": 0 }""",

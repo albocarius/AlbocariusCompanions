@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "lines": [
     { "id": "test_companion_intro_01", "slot": "intro", "text": { "en": "Greetings, Captain. I am a placeholder companion.", "tr": "Selam, Kaptan. Ben yer tutucu bir yoldaşım." }, "voiced": true },
     { "id": "test_companion_backstory_01", "slot": "backstory", "text": { "en": "There is no story here yet, Captain. This line is only a test." }, "voiced": true },

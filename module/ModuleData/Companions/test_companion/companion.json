@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "id": "test_companion",
   "name": "Test Companion",
   "isFemale": false,
