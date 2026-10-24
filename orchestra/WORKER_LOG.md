@@ -19,3 +19,4 @@
 | 16-core-loader | 1 | PASS | clean; strict Newtonsoft, IO errors mapped to InvalidJson; worker used SDK 10.0.402 |
 | 17-core-registry | 1 | PASS | clean |
 | 18-core-validation-companion | 1 | PASS | clean, 61 acceptance tests |
+| 19-core-validation-dialogs | 1 | PASS | clean |

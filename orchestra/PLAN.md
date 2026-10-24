@@ -64,7 +64,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 - [x] 18-core-validation-companion (worker) — companion.json rules (id format/uniqueness/folder name,
   required fields, ranges per GAME_MAP, cultureFallback≠culture, fallbackTemplateId≠templateId,
   voice ∈ vanilla voice types, likes/dislikes/relations shape). Accept: one failing test per rule + valid companion.
-- [ ] 19-core-validation-dialogs (worker) — line-id format + global uniqueness, required slots,
+- [x] 19-core-validation-dialogs (worker) — line-id format + global uniqueness, required slots,
   unknown slot, `text` language keys + `en` required, no player-name tokens in voiced lines (all languages),
   `audio` relative & no `..`. Accept: one failing test per rule.
 - [ ] 20-core-missing-audio (worker) — report voiced lines whose audio file is missing (default path
