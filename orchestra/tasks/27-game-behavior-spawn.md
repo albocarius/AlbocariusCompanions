@@ -12,7 +12,7 @@
 - Game layer: `src/AlbocariusCompanions.Game` (net472, compiled against the real game DLLs). There is no way to run the game here:
   the check is the build plus the acceptance tests (incl. `ApiIndexTests`). The orchestrator reviews every API call.
 - **Every TaleWorlds type/member you use must have a row in the `## API index` table at the end of `docs/GAME_MAP.md`**
-  (format: `| \`Type.Member\` | \`decomp/<path>.cs\` | Q<n> | used for |`, the Q must be a VERIFIED section). The APIs listed below are
+  (format: `| `Type.Member` | `decomp/<path>.cs` | Q<n> | used for |`, the Q must be a VERIFIED section). The APIs listed below are
   already verified in the decomp; add the missing rows yourself. Do not use any API that is not listed here or already in the index.
 - Every delegate/handler the game calls must be wrapped with `Safe.Run(ModRuntime.Log, "<context>", ...)` (GAME_MAP Q15: the game
   catches nothing). Conditions use the `Safe.Run<bool>(..., fallback: false)` overload.
