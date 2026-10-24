@@ -47,6 +47,9 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [ ] Milestone end: all sections VERIFIED or UNCERTAIN with resolution; commit `phase 1: game map`.
 
 ## M2 — Core (SPEC Phase 2)
+Acceptance tests for 16–20b are written and staged in `orchestra/staged-tests/` (they fail with NotImplementedException);
+each file is moved into `tests/AlbocariusCompanions.Acceptance/Core/` only when its task is assigned, so TEST_CMD stays green for other workers.
+Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixtures.cs` is already in the acceptance project.
 - [x] 15-core-models (self) — models for §4 schema, `ValidationIssue` (severity, code, companionId, message),
   Slot definitions (§4.3), line-id rule helper, Newtonsoft package. Design work → self.
   Edit: `src/AlbocariusCompanions.Core/**`, Core csproj. Accept: build + a few unit tests.

@@ -1,0 +1,269 @@
+using AlbocariusCompanions.Core.Models;
+using AlbocariusCompanions.Core.Validation;
+using Newtonsoft.Json.Linq;
+
+namespace AlbocariusCompanions.Acceptance.Core;
+
+// Task 18-core-validation-companion. Each test breaks exactly one rule and expects exactly that error.
+public class CompanionValidationTests
+{
+    const string Id = "test_companion";
+
+    static IReadOnlyList<ValidationIssue> Validate(Action<JObject> mutate, string folder = Id)
+    {
+        var c = Fixtures.Companion(Id);
+        mutate(c);
+        return CompanionChecks.Validate(new[] { Fixtures.Package(folder, c, Fixtures.Dialogs(Id)) });
+    }
+
+    static ValidationIssue SingleError(IReadOnlyList<ValidationIssue> issues, string code)
+    {
+        var error = Assert.Single(issues.Errors());
+        Assert.Equal(code, error.Code);
+        return error;
+    }
+
+    [Fact]
+    public void Valid_companion_has_no_issues() => Assert.Empty(Validate(_ => { }));
+
+    [Fact]
+    public void Validation_never_throws_on_an_empty_definition()
+    {
+        var pkg = new CompanionPackage("x", "/tmp/x", new CompanionDefinition(), new DialogFile());
+        var issues = CompanionChecks.Validate(new[] { pkg });
+        Assert.NotEmpty(issues.Errors());
+    }
+
+    [Theory]
+    [InlineData("Test_Companion")]
+    [InlineData("test-companion")]
+    [InlineData("test companion")]
+    public void Id_must_be_lowercase_snake(string badId)
+    {
+        var issues = Validate(c => c["id"] = badId, folder: badId);
+        Assert.Equal(badId, SingleError(issues, IssueCodes.InvalidId).Folder);
+    }
+
+    [Fact]
+    public void Id_must_equal_folder_name()
+    {
+        var issues = Validate(_ => { }, folder: "other_folder");
+        Assert.Equal("other_folder", SingleError(issues, IssueCodes.IdFolderMismatch).Folder);
+    }
+
+    [Fact]
+    public void Duplicate_ids_across_folders_flag_every_folder()
+    {
+        var first = Fixtures.Package(Id);
+        var second = Fixtures.Package("copy_folder", Fixtures.Companion(Id), Fixtures.Dialogs(Id));
+
+        var issues = CompanionChecks.Validate(new[] { first, second });
+
+        var dupFolders = issues.Where(i => i.Code == IssueCodes.DuplicateId).Select(i => i.Folder).OrderBy(f => f);
+        Assert.Equal(new[] { "copy_folder", Id }, dupFolders);
+    }
+
+    [Theory]
+    [InlineData("id")]
+    [InlineData("name")]
+    [InlineData("isFemale")]
+    [InlineData("voice")]
+    [InlineData("age")]
+    [InlineData("culture")]
+    [InlineData("attributes")]
+    [InlineData("skills")]
+    [InlineData("equipment")]
+    [InlineData("hireCost")]
+    public void Required_field_missing(string field)
+    {
+        var issues = Validate(c => c.Remove(field));
+        Assert.Contains(field, SingleError(issues, IssueCodes.MissingField).Message);
+    }
+
+    [Theory]
+    [InlineData("id")]
+    [InlineData("name")]
+    [InlineData("culture")]
+    public void Required_string_blank(string field)
+    {
+        var issues = Validate(c => c[field] = "  ");
+        Assert.Contains(field, SingleError(issues, IssueCodes.MissingField).Message);
+    }
+
+    [Fact]
+    public void Equipment_template_id_missing()
+    {
+        var issues = Validate(c => ((JObject)c["equipment"]!).Remove("templateId"));
+        Assert.Contains("templateId", SingleError(issues, IssueCodes.MissingField).Message);
+    }
+
+    [Theory]
+    [InlineData("vigor")]
+    [InlineData("intelligence")]
+    public void Each_attribute_is_required(string attribute)
+    {
+        var issues = Validate(c => ((JObject)c["attributes"]!).Remove(attribute));
+        Assert.Contains(attribute, SingleError(issues, IssueCodes.MissingField).Message);
+    }
+
+    [Fact]
+    public void Unknown_attribute()
+    {
+        var issues = Validate(c => c["attributes"]!["charisma"] = 3);
+        Assert.Contains("charisma", SingleError(issues, IssueCodes.UnknownAttribute).Message);
+    }
+
+    [Fact]
+    public void Optional_fields_may_be_absent()
+    {
+        var issues = Validate(c =>
+        {
+            foreach (var f in new[] { "cultureFallback", "bodyProperties", "traits", "voiceProfile", "likes", "dislikes", "relations" })
+                c.Remove(f);
+            ((JObject)c["equipment"]!).Remove("fallbackTemplateId");
+        });
+        Assert.Empty(issues);
+    }
+
+    [Theory]
+    [InlineData("skill", -1)]
+    [InlineData("skill", 331)]
+    [InlineData("attribute", 0)]
+    [InlineData("attribute", 11)]
+    [InlineData("age", 17)]
+    [InlineData("age", 81)]
+    [InlineData("hireCost", -1)]
+    public void Value_out_of_range(string what, int value)
+    {
+        var issues = Validate(c => Set(c, what, value));
+        SingleError(issues, IssueCodes.OutOfRange);
+    }
+
+    [Theory]
+    [InlineData("skill", 0)]
+    [InlineData("skill", 330)]
+    [InlineData("attribute", 1)]
+    [InlineData("attribute", 10)]
+    [InlineData("age", 18)]
+    [InlineData("age", 80)]
+    [InlineData("hireCost", 0)]
+    public void Range_bounds_are_inclusive(string what, int value) => Assert.Empty(Validate(c => Set(c, what, value)));
+
+    static void Set(JObject c, string what, int value)
+    {
+        switch (what)
+        {
+            case "skill": c["skills"]!["OneHanded"] = value; break;
+            case "attribute": c["attributes"]!["vigor"] = value; break;
+            default: c[what] = value; break;
+        }
+    }
+
+    [Theory]
+    [InlineData("angry")]
+    [InlineData("Earnest")]
+    [InlineData("")]
+    public void Voice_must_be_a_vanilla_voice_type(string voice)
+    {
+        var issues = Validate(c => c["voice"] = voice);
+        SingleError(issues, IssueCodes.InvalidVoice);
+    }
+
+    [Theory]
+    [InlineData("curt")]
+    [InlineData("earnest")]
+    [InlineData("ironic")]
+    [InlineData("softspoken")]
+    public void Vanilla_voice_types_are_accepted(string voice) => Assert.Empty(Validate(c => c["voice"] = voice));
+
+    [Fact]
+    public void Culture_fallback_must_differ_from_culture()
+    {
+        var issues = Validate(c => c["cultureFallback"] = "empire");
+        Assert.Contains("cultureFallback", SingleError(issues, IssueCodes.SameAsFallback).Message);
+    }
+
+    [Fact]
+    public void Equipment_fallback_must_differ_from_template()
+    {
+        var issues = Validate(c => c["equipment"]!["fallbackTemplateId"] = "npc_wanderer_equipment_template_empire");
+        Assert.Contains("fallbackTemplateId", SingleError(issues, IssueCodes.SameAsFallback).Message);
+    }
+
+    [Fact]
+    public void Different_fallbacks_are_fine() => Assert.Empty(Validate(c =>
+    {
+        c["cultureFallback"] = "vlandia";
+        c["equipment"]!["fallbackTemplateId"] = "npc_wanderer_equipment_template_vlandia";
+    }));
+
+    [Theory]
+    [InlineData("likes")]
+    [InlineData("dislikes")]
+    public void Valid_reaction_entry(string list) => Assert.Empty(Validate(c =>
+        c[list] = new JArray(new JObject { ["event"] = "battle_won", ["reaction"] = 2, ["slot"] = "like_reaction" })));
+
+    [Theory]
+    [InlineData("likes", "event")]
+    [InlineData("likes", "reaction")]
+    [InlineData("likes", "slot")]
+    [InlineData("dislikes", "event")]
+    public void Reaction_entry_missing_part(string list, string missing)
+    {
+        var issues = Validate(c =>
+        {
+            var entry = new JObject { ["event"] = "battle_won", ["reaction"] = -1, ["slot"] = "dislike_reaction" };
+            entry.Remove(missing);
+            c[list] = new JArray(entry);
+        });
+        SingleError(issues, IssueCodes.InvalidReaction);
+    }
+
+    [Fact]
+    public void Reaction_entry_with_unknown_slot()
+    {
+        var issues = Validate(c => c["likes"] = new JArray(new JObject { ["event"] = "e", ["reaction"] = 1, ["slot"] = "nope" }));
+        SingleError(issues, IssueCodes.InvalidReaction);
+    }
+
+    [Theory]
+    [InlineData("enemy")]
+    [InlineData(null)]
+    public void Relation_attitude_must_be_friend_or_rival(string? attitude)
+    {
+        var issues = Validate(c => c["relations"] = new JArray(new JObject { ["companion"] = "someone", ["attitude"] = attitude }));
+        Assert.Contains(issues.Errors(), i => i.Code == IssueCodes.InvalidRelation);
+        Assert.All(issues.Errors(), i => Assert.Equal(IssueCodes.InvalidRelation, i.Code));
+    }
+
+    [Fact]
+    public void Relation_without_companion_is_invalid()
+    {
+        var issues = Validate(c => c["relations"] = new JArray(new JObject { ["attitude"] = "friend" }));
+        SingleError(issues, IssueCodes.InvalidRelation);
+    }
+
+    [Fact]
+    public void Relation_to_unknown_companion_is_only_a_warning()
+    {
+        var issues = Validate(c => c["relations"] = new JArray(new JObject { ["companion"] = "not_loaded", ["attitude"] = "rival" }));
+
+        Assert.Empty(issues.Errors());
+        var warning = Assert.Single(issues);
+        Assert.Equal(IssueCodes.UnknownRelationTarget, warning.Code);
+        Assert.Equal(IssueSeverity.Warning, warning.Severity);
+    }
+
+    [Fact]
+    public void Relation_to_loaded_companion_is_clean()
+    {
+        var a = Fixtures.Companion("a");
+        a["relations"] = new JArray(new JObject { ["companion"] = "b", ["attitude"] = "friend" });
+        var issues = CompanionChecks.Validate(new[]
+        {
+            Fixtures.Package("a", a, Fixtures.Dialogs("a")),
+            Fixtures.Package("b"),
+        });
+        Assert.Empty(issues);
+    }
+}
