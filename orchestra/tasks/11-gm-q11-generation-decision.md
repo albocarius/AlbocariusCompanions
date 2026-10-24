@@ -18,6 +18,8 @@ The question (from orchestra/SPEC.md):
 
 Earlier sections Q1–Q5 of docs/GAME_MAP.md are VERIFIED — read them first and do not repeat them; reference them instead. Game XSD schemas are in `xmlschemas/` (cite as `xmlschemas/<Name>.xsd`). Use `xmlschemas/NPCCharacters.xsd` for the template format if XML generation is recommended.
 
+Context from VERIFIED sections: Q4 (wanderer-occupation templates override the passed age with template age + 0..4), Q5 (`IsTemplate` is settable only via XML; options: XML file listed in SubModule.xml `Xmls/XmlNode` with id `NPCCharacters`, or in-memory `MBObjectManager.LoadXml(XmlDocument)` / `CreateObjectFromXmlNode`), Q9/Q10 (mod heroes are identified by `hero.Template.StringId` == companion id, so the template id must equal the JSON companion id). SPEC rule 8: JSON is the single source of truth; generated XML only in dist/, never hand-edited or committed. Compare (A) build-time generated `NPCCharacters` XML in dist + SubModule.xml XmlNode, (B) runtime in-memory XML from JSON via LoadXml, (C) pure C# without template. For each: when it runs relative to `CompanionsCampaignBehavior.InitializeCompanionTemplateList`, save/load behaviour, how `voice`, skills (`<skills>`), traits (`<Traits>`), equipment (`<Equipments><EquipmentSet id=.../>`), culture and age map, and how missing DLC ids (fallbacks) can be handled. Validate the shape against `xmlschemas/NPCCharacters.xsd`. Recommend one.
+
 Where to start: Combine Q4 and Q5. State clearly: can a hero be created at runtime purely from JSON data (no XML template), or must a native XML character template be generated at build time? Give the concrete API path for the recommended option with evidence.
 
 ## Files

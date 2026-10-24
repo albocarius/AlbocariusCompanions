@@ -5,7 +5,7 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
 
 ## Stack
 - Target game version: Bannerlord 1.4.8. Harmony: Lib.Harmony 2.4.2 (compile-only; runtime from the Bannerlord.Harmony module).
-- .NET SDK 10.0.113 (Linux). Game runs on a separate Windows machine; nobody can run it here.
+- .NET SDK 10.0.402 from `~/.dotnet-ms` (Microsoft build; set via orchestra/config.env). The distro SDK 10.0.113 crashes intermittently — do not use it. Game runs on a separate Windows machine; nobody can run it here.
 - `src/AlbocariusCompanions.Core` — netstandard2.0, **no TaleWorlds references**. Models, JSON loading,
   registry, validation, slots, line-id rules. Everything testable lives here.
 - `src/AlbocariusCompanions.Game` — net472, references Core + game DLLs (HintPath, Private=false).
@@ -45,7 +45,7 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
 - No DLC assembly references anywhere.
 
 ## Environment notes
-- dotnet 10.0.113 intermittently aborts at CLI startup with `Internal CLR error (0x80131506)` (~10-15% of runs, not
+- (Resolved) the distro dotnet 10.0.113 intermittently aborted at CLI startup with `Internal CLR error (0x80131506)` (~10-15% of runs, not
   code-related; RAM is mostly taken by the local model server). Not fixed by disabling node reuse, a GC heap limit or
   W^X. check_worker.sh retries up to 3 times on that message; when running TEST_CMD by hand, just rerun.
 - `orchestra/logs/` is gitignored; the rest of `orchestra/` is tracked.

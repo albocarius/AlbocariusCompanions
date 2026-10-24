@@ -11,3 +11,4 @@
 | 07-gm-q07-dialog-api | 1 | PASS, verified | correct; key finding: vanilla hire option needs Harmony prefix to hide. check hit CLR crash twice in a row (retry also crashed), manual rerun passed |
 | 08-gm-q08-lifecycle | 1 | PASS, verified | correct; replaced copied SyncData body with prose. Check failed 3x on CLR crash -> retry raised to 3 |
 | 09-gm-q09-existing-saves | 1 | PASS, verified | correct (LoadBehaviorData miss => no SyncData); added design note. Strata-off experiment: CLR crash 5/15 => not RAM |
+| 10-gm-q10-harmony-target | 1 | PASS, verified | excellent: prefix on AddToAliveCompanions (single Add site) also blocks TryKillCompanion |
