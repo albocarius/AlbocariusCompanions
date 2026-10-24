@@ -6,7 +6,7 @@ using AlbocariusCompanions.Core.Validation;
 
 namespace AlbocariusCompanions.Core.Resolution;
 
-/// <summary>SPEC rule 9: resolve every game id of a validated companion against the live game; fallbacks, warnings, never throws.</summary>
+/// <summary>SPEC rule 9: resolve every game id of a validated companion against the live game; warnings, never throws.</summary>
 public static class CompanionResolver
 {
     /// <summary>Suffix vanilla uses for the civilian twin of a wanderer roster (GAME_MAP Q4/Q5).</summary>
@@ -18,7 +18,7 @@ public static class CompanionResolver
         var folder = package.FolderName;
         var definition = package.Companion;
 
-        var cultureId = ResolveCulture(definition.Culture, definition.CultureFallback, game, folder, issues);
+        var cultureId = ResolveCulture(definition.Culture, game, folder, issues);
         if (cultureId == null)
             return new ResolutionResult(null, issues);
 
@@ -42,45 +42,26 @@ public static class CompanionResolver
         return new ResolutionResult(companion, issues);
     }
 
-    /// <summary>Missing culture → cultureFallback (warning); both missing → error, null skips the companion.</summary>
-    private static string? ResolveCulture(string? culture, string? fallback, IGameObjectLookup game, string folder, List<ValidationIssue> issues)
+    /// <summary>Culture not in the running game → error, null skips the companion.</summary>
+    private static string? ResolveCulture(string? culture, IGameObjectLookup game, string folder, List<ValidationIssue> issues)
     {
         if (culture != null && game.CultureExists(culture))
             return culture;
 
-        var missing = culture ?? "(missing)";
-        if (!string.IsNullOrEmpty(fallback) && game.CultureExists(fallback!))
-        {
-            issues.Add(ValidationIssue.Warning(IssueCodes.CultureFallbackUsed, folder,
-                $"culture '{missing}' is not available in the running game; using cultureFallback '{fallback}'."));
-            return fallback;
-        }
-
         issues.Add(ValidationIssue.Error(IssueCodes.CultureMissing, folder,
-            $"culture '{missing}' is not available in the running game" +
-            (string.IsNullOrEmpty(fallback) ? " and no cultureFallback is set; companion skipped." : $" and cultureFallback '{fallback}' is missing too; companion skipped.")));
+            $"culture '{culture ?? "(missing)"}' is not available in the running game; companion skipped."));
         return null;
     }
 
-    /// <summary>Missing equipment template → fallbackTemplateId (warning); both missing → error, null skips the companion.</summary>
+    /// <summary>Equipment roster not in the running game → error, null skips the companion.</summary>
     private static string? ResolveEquipmentRoster(EquipmentDefinition? equipment, IGameObjectLookup game, string folder, List<ValidationIssue> issues)
     {
         var templateId = equipment?.TemplateId;
         if (templateId != null && game.EquipmentRosterExists(templateId))
             return templateId;
 
-        var missing = templateId ?? "(missing)";
-        var fallback = equipment?.FallbackTemplateId;
-        if (!string.IsNullOrEmpty(fallback) && game.EquipmentRosterExists(fallback!))
-        {
-            issues.Add(ValidationIssue.Warning(IssueCodes.EquipmentFallbackUsed, folder,
-                $"equipment template '{missing}' is not available in the running game; using fallbackTemplateId '{fallback}'."));
-            return fallback;
-        }
-
         issues.Add(ValidationIssue.Error(IssueCodes.EquipmentMissing, folder,
-            $"equipment template '{missing}' is not available in the running game" +
-            (string.IsNullOrEmpty(fallback) ? " and no equipment.fallbackTemplateId is set; companion skipped." : $" and fallbackTemplateId '{fallback}' is missing too; companion skipped.")));
+            $"equipment template '{templateId ?? "(missing)"}' is not available in the running game; companion skipped."));
         return null;
     }
 
@@ -144,7 +125,7 @@ public sealed class ResolutionResult
         Issues = issues;
     }
 
-    /// <summary>Null when a required value and its fallback are both missing: skip this companion only.</summary>
+    /// <summary>Null when a required game id (culture, equipment roster) is missing: skip this companion only.</summary>
     public ResolvedCompanion? Companion { get; }
     public IReadOnlyList<ValidationIssue> Issues { get; }
 }

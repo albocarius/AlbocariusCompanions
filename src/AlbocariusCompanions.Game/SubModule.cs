@@ -1,7 +1,9 @@
 using System.Linq;
 using System.Reflection;
 using AlbocariusCompanions.Core.Logging;
+using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Registry;
+using AlbocariusCompanions.Core.Validation;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
@@ -40,7 +42,10 @@ public sealed class SubModule : MBSubModuleBase
                 CompanionTemplates.LogIssue(log, issue);
             foreach (var package in catalog.Registry.All)
                 log.Info($"Companion loaded: {package.Id} ({package.Dialogs.Lines?.Count ?? 0} dialog lines).");
-            var skipped = catalog.Issues.Where(i => i.IsError).Select(i => i.Folder).Distinct().ToList();
+            foreach (var language in MissingTranslations.CountByLanguage(catalog.Issues))
+                log.Info($"Missing translations in '{language.Key}': {language.Value} line(s) fall back to English.");
+            var skipped = catalog.Issues.Where(i => i.IsError && i.Folder != SharedPackage.FolderName)
+                .Select(i => i.Folder).Distinct().ToList();
             if (skipped.Count > 0)
                 log.Warning($"Companions skipped because of errors: {string.Join(", ", skipped)}.");
             log.Info($"{catalog.Registry.Count} companion(s) ready from {root}.");

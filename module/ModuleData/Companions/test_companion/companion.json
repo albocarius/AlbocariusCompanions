@@ -5,43 +5,17 @@
   "voice": "earnest",
   "age": 32,
   "culture": "empire",
-  "cultureFallback": null,
   "bodyProperties": null,
-  "attributes": {
-    "vigor": 4,
-    "control": 3,
-    "endurance": 4,
-    "cunning": 2,
-    "social": 2,
-    "intelligence": 2
-  },
-  "skills": {
-    "OneHanded": 80,
-    "Athletics": 60,
-    "Riding": 40,
-    "Leadership": 30
-  },
-  "traits": {
-    "Valor": 1
-  },
+  "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
+  "skills": { "OneHanded": 80, "Athletics": 60, "Riding": 40, "Leadership": 30 },
+  "traits": { "Valor": 1 },
   "equipment": {
     "templateId": "npc_wanderer_equipment_template_empire",
-    "fallbackTemplateId": null,
-    "battle": {
-      "Body": "monk_robe",
-      "Head": "pilgrim_hood",
-      "Item0": "bo_staff"
-    },
-    "civilian": {
-      "Body": "monk_robe",
-      "Head": "pilgrim_hood"
-    }
+    "battle": { "Body": "monk_robe", "Head": "pilgrim_hood", "Item0": "bo_staff" },
+    "civilian": { "Body": "monk_robe", "Head": "pilgrim_hood" }
   },
   "hireCost": 500,
-  "voiceProfile": {
-    "reference": null,
-    "style": null
-  },
+  "voiceProfile": { "reference": null, "style": null },
   "likes": [],
   "dislikes": [],
   "relations": []

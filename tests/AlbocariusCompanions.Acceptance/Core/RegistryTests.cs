@@ -59,8 +59,9 @@ public class RegistryTests
     [Fact]
     public void Duplicate_ids_are_rejected()
     {
+        // The id is the folder name, so only two packages for the same folder can clash.
         var a1 = Fixtures.Package("a");
-        var a2 = Fixtures.Package("a_copy", Fixtures.Companion("a"), Fixtures.Dialogs("a"));
+        var a2 = Fixtures.Package("a");
 
         Assert.Throws<ArgumentException>(() => new CompanionRegistry(new[] { a1, a2 }));
     }

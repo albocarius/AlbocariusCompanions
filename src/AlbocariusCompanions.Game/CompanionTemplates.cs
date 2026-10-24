@@ -71,6 +71,8 @@ internal static class CompanionTemplates
         var line = $"[{issue.Folder}] {issue.Code}: {issue.Message}";
         if (issue.IsError)
             log.Error(line);
+        else if (issue.Code == IssueCodes.MissingTranslation)
+            log.Info(line); // expected while translations are partial: file only, counted per language at load
         else
             log.Warning(line);
     }

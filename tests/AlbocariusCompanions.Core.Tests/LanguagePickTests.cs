@@ -32,3 +32,21 @@ public class LanguagePickTests
     public void Missing_active_language_falls_back_to_en() =>
         Assert.Equal("en", LanguagePick.Choose(new[] { "tr" }, null, GameLanguage));
 }
+
+public class MissingTranslationsTests
+{
+    [Fact]
+    public void Counts_missing_translations_per_language()
+    {
+        var issues = new[]
+        {
+            Validation.ValidationIssue.Warning(Validation.IssueCodes.MissingTranslation, "a", "Line 'x' has no text in lang/tr.json; English is shown instead."),
+            Validation.ValidationIssue.Warning(Validation.IssueCodes.MissingTranslation, "b", "Line 'y' has no text in lang/tr.json; English is shown instead."),
+            Validation.ValidationIssue.Warning(Validation.IssueCodes.MissingTranslation, "a", "Line 'x' has no text in lang/de.json; English is shown instead."),
+            Validation.ValidationIssue.Warning(Validation.IssueCodes.UnknownTranslationId, "a", "lang/tr.json has a text for 'z'."),
+        };
+
+        Assert.Equal(new[] { new KeyValuePair<string, int>("de", 1), new KeyValuePair<string, int>("tr", 2) },
+            Validation.MissingTranslations.CountByLanguage(issues));
+    }
+}

@@ -19,7 +19,7 @@ public static class IssueCodes
     public const string OutOfRange = "out_of_range";
     public const string UnknownAttribute = "unknown_attribute";
     public const string InvalidVoice = "invalid_voice";
-    public const string SameAsFallback = "same_as_fallback";
+    public const string InvalidRequiredModule = "invalid_required_module";
     public const string InvalidReaction = "invalid_reaction";
     public const string InvalidRelation = "invalid_relation";
     public const string UnknownRelationTarget = "unknown_relation_target";
@@ -40,9 +40,7 @@ public static class IssueCodes
     public const string InvalidAudioExtension = "invalid_audio_extension";
 
     // Runtime resolution (SPEC rule 9)
-    public const string CultureFallbackUsed = "culture_fallback_used";
     public const string CultureMissing = "culture_missing";
-    public const string EquipmentFallbackUsed = "equipment_fallback_used";
     public const string EquipmentMissing = "equipment_missing";
     public const string SkillMissing = "skill_missing";
     public const string TraitMissing = "trait_missing";

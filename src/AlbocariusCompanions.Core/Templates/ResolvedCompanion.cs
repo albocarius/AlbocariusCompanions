@@ -4,7 +4,7 @@ namespace AlbocariusCompanions.Core.Templates;
 
 /// <summary>
 /// Companion data after the Game layer resolved every game id against the live object registry
-/// (fallbacks applied, unknown skills/traits dropped). Input of <see cref="NpcCharacterXml"/>.
+/// (unknown skills/traits dropped). Input of <see cref="NpcCharacterXml"/>.
 /// </summary>
 public sealed class ResolvedCompanion
 {

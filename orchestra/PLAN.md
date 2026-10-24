@@ -42,7 +42,7 @@ scaffold last because its template must contain the final slot list and lang for
   in VoicedLinesXml). Accept: `.wav`, no extension, `.OGG` ok.
 - [x] 34-hire-cost-gte (self) — CompanionDialogs hire_pay condition `Gold >= hireCost`; hireCost 0 hireable with 0 gold.
   Our own condition (not vanilla), no new API.
-- [ ] 35-required-modules-core (worker) — remove `cultureFallback` and `equipment.fallbackTemplateId` (models, validation
+- [x] 35-required-modules-core (worker) — remove `cultureFallback` and `equipment.fallbackTemplateId` (models, validation
   codes, CompanionResolver, ResolverTests, test_companion, SCHEMA.md); add optional `requiredModules: string[]`
   (non-empty strings, no duplicates). Tests may use `EOE_Armory` as an example of a module that is not loaded. Core `RequiredModules.Missing(package, Func<string,bool> isModuleActive)`.
   Accept: removed fields rejected as unknown by the strict loader, filter tests with a fake predicate.

@@ -10,10 +10,10 @@ public class CompanionChecksTests
 {
     static string Valid(string id = "a") => $$"""
     { "id": "{{id}}", "name": "N", "isFemale": false, "voice": "earnest", "age": 30,
-      "culture": "empire", "cultureFallback": null, "bodyProperties": null,
+      "culture": "empire", "bodyProperties": null,
       "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
       "skills": { "OneHanded": 100 }, "traits": {},
-      "equipment": { "templateId": "tpl_empire", "fallbackTemplateId": null },
+      "equipment": { "templateId": "tpl_empire" },
       "hireCost": 500, "likes": [], "dislikes": [], "relations": [] }
     """;
 
@@ -100,15 +100,46 @@ public class CompanionChecksTests
     }
 
     [Fact]
-    public void Blank_equipment_template_is_a_missing_field_not_a_fallback_issue()
+    public void Blank_equipment_template_is_a_missing_field_error()
     {
-        var json = Valid().Replace("\"templateId\": \"tpl_empire\", \"fallbackTemplateId\": null",
-            "\"templateId\": \"  \", \"fallbackTemplateId\": \"tpl_empire\"");
+        var json = Valid().Replace("\"templateId\": \"tpl_empire\"", "\"templateId\": \"  \"");
         var issues = Issues(Pkg("a", json));
 
         var issue = Assert.Single(issues);
         Assert.Equal(IssueCodes.MissingField, issue.Code);
         Assert.Contains("templateId", issue.Message);
+    }
+
+    [Theory]
+    [InlineData(@"[""""]")]
+    [InlineData(@"[""  ""]")]
+    [InlineData(@"[""NavalDLC"", null]")]
+    public void Blank_required_module_entries_are_reported_one_per_entry(string modules)
+    {
+        var json = Valid().Replace("\"relations\": []", $"\"relations\": [], \"requiredModules\": {modules}");
+        var issues = Issues(Pkg("a", json));
+
+        Assert.All(issues, i => Assert.Equal(IssueCodes.InvalidRequiredModule, i.Code));
+        Assert.Contains("requiredModules", Assert.Single(issues).Message);
+    }
+
+    [Fact]
+    public void Duplicate_required_module_is_reported_once_with_the_module_id()
+    {
+        var json = Valid().Replace("\"relations\": []", "\"relations\": [], \"requiredModules\": [\"NavalDLC\", \"eoe\", \"NavalDLC\"]");
+        var issues = Issues(Pkg("a", json));
+
+        var issue = Assert.Single(issues);
+        Assert.Equal(IssueCodes.InvalidRequiredModule, issue.Code);
+        Assert.Contains("requiredModules", issue.Message);
+        Assert.Contains("NavalDLC", issue.Message);
+    }
+
+    [Fact]
+    public void Distinct_required_modules_and_an_absent_list_are_clean()
+    {
+        Assert.Empty(Issues(Pkg("a", Valid().Replace("\"relations\": []", "\"relations\": [], \"requiredModules\": [\"NavalDLC\", \"eoe\"]"))));
+        Assert.Empty(Issues(Pkg("a", Valid().Replace("\"relations\": []", "\"relations\": [], \"requiredModules\": []"))));
     }
 
     [Fact]
