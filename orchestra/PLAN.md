@@ -69,7 +69,7 @@ scaffold last because its template must contain the final slot list and lang for
   (`test_companion_intro_01.ogg` → `intro_01.ogg`); listed in the checklist, never done by us.
 
 ### T4.0 — vanilla dialog points as slots
-- [ ] 42-gm-vanilla-dialog-points (worker discovery → self verify) — new GAME_MAP section: every vanilla dialog point
+- [x] 42-gm-vanilla-dialog-points (worker as 42-gm-q18-vanilla-dialog-points → self verify) — new GAME_MAP section: every vanilla dialog point
   where a wanderer/companion speaks or is spoken to (meeting, hiring, dismissal, others): token flow, conditions, vanilla
   English text and its `{=id}`, decomp path + method for each.
 - [x] 43-slots-from-vanilla (self) — add each point as a slot in the Core slot list (required vs optional). Empty slot →
