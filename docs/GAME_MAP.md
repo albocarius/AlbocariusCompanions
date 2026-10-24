@@ -763,13 +763,98 @@ With (B) all three become ordinary pre-write checks: the mod probes `GetObject<�
 
 ## Q12 — Voice-over resolution
 
-Status: TODO
+Status: VERIFIED
 
 ### Answer
 
+**Pipeline.** When a conversation sentence starts, `ConversationManager.ProcessSentence` calls `MBTextManager.TryGetVoiceObject(sentenceText, out vo, out vocalizationId)` and, on success, `Campaign.Current.Models.VoiceOverModel.GetSoundPathForCharacter(speaker.Character, vo)`; the returned string goes to `CampaignMission.OnConversationPlay(...)` → `MapConversationTableau.PlayConversationSoundEvent`. The same lookup serves map dialog notifications (`CampaignInformationManager.GetSoundPath`) and eavesdropping barks. `VoiceOverModel` is an `MBGameModel<VoiceOverModel>`; SandBox registers `DefaultVoiceOverModel` via `gameStarter.AddModel`. StoryMode registers `StoryModeVoiceOverModel` (hard-codes two scripted characters, delegates everything else to `BaseModel.GetSoundPathForCharacter`) — the pattern a mod would follow to customize resolution.
+
+**Voiced-lines XML loading chain.** At boot `Module.Initialize` → `LocalizedTextManager.LoadLocalizationXmls(moduleFolderPaths)`: for every loaded module it recursively searches `<module>/ModuleData/Languages/**/language_data.xml` and parses each as `LanguageData`. `LanguageData.Deserialize` reads `<VoiceFile xml_path="..."/>` children into `VoiceXmlPathsAndModulePaths` (full xml path → the module's Languages dir, first registration of a path wins); `<LanguageFile>` entries are plain text and register nothing voice-related. Vanilla (UTF-16 file):
+```
+<LanguageData id="English">
+  <VoiceFile xml_path="VoicedLines/sandbox_voiced_lines_en.xml" />
+</LanguageData>
+```
+Languages with zero `<VoiceFile>` are not voicable — `LocalizedVoiceManager.GetVoiceLanguageIds()` lists only `IsValid` languages with `VoiceXmlPathsAndModulePaths.Count > 0`. The active voice language is a separate game option (`BannerlordConfig.VoiceLanguage`, with fallback to "English") and triggers `MBTextManager.TryChangeVoiceLanguage` → `LocalizedVoiceManager.LoadLanguage(id)`: the global id→`VoiceObject` dict is cleared and rebuilt from that language's registered XMLs, so voice entries are per voice-language (independent of text language — see Q14). Duplicate `<VoiceOver id>` across files/modules MERGE (existing entry gets `VoiceObject.AddVoicePaths` appended). A mod's own `ModuleData/Languages/**/language_data.xml` + voiced XML are picked up by the same scan at boot (`Module.LoadSingleModule` → `AddLocalizationXml` covers runtime module adds). Parser-expected shape (root element name is not checked, only the `<VoiceOvers>` child):
+```
+<VoiceOvers>
+  <VoiceOver id="lineid">        <!-- matches {=lineid} text prefix -->
+    <Voice path="VoicedLines\EN\$PLATFORM\aserai_male_earnest_001" />
+  </VoiceOver>
+</VoiceOvers>
+```
+Stored path = `<module>/ModuleData/Languages` + `/` + `path` attribute verbatim (vanilla attrs evidently use backslash separators — the matching regexes below require a literal `\` before the name — and no extension).
+
+**{=ID} → voice entry matching.** `MBTextManager.ProcessTextForVocalization` gives a line a voice only if its raw text starts with `{=`; the localization id is the substring between `{=` and the first `}` (the same key as the GameText key, see Q14). Id `!` means deliberately unvoiced (it recurses into identifier tokens instead). The id is looked up via `LocalizedVoiceManager.GetLocalizedVoice`; a miss prints "Voice object for text id is not found: <id>" and returns null → sentence plays silently, no crash. So `{=<line id>}<text>` in the text XML + `<VoiceOver id="<line id>">` in a voiced-lines XML is the complete contract.
+
+**Naming / fallback order (`DefaultVoiceOverModel.GetSoundPathForCharacter`).** Candidates are the `Voice path` strings; first non-empty tier wins:
+```
+T1: contains <charId>_male|female exact (break) / <charId>_ loose (last wins)
+T2: regex ".+\\<accent>_<gender>_<persona>_.+", ".+\\<accent>_<gender>_generic_.+"
+T3: <accent>_<persona>  <accent>_generic  <gender>_<persona>  <gender>_generic
+T4: <persona>_  generic_  <accent>_  (last tier: _male/_female token must match speaker)
+regexes are case-insensitive; ".+\\" = one literal backslash = final path segment
+pick: hero -> HeroObject.RandomInt (stable per hero); else party RandomInt / random
+```
+`<accent>` = `GetAccentClass(character.Culture, ConversationTagHelper.UsesHighRegister(character))`: `imperial_high`/`imperial_low` (empire, register switch), `vlandian`, `sturgian`, `khuzait`, `aserai`, `battanian`, `forest_bandits`, `sea_raiders`, `mountain_bandits`, `desert_bandits`, `steppe_bandits`, `looters`; else "" (no regex match → silent). Quirk: T1's gender token uses `CharacterObject.PlayerCharacter.IsFemale`, not the speaker's (T2–T4 use `character.IsFemale`). No match → returns "" → no audio. `<charId>_...` tiers mean per-character lines override everything.
+
+**Voice types.** The `<persona>` slot is `character.GetPersona().StringId`. Personas are `TraitObject`s; vanilla ids `curt, earnest, ironic, softspoken` are registered in code (`DefaultTraits.RegisterAll`, `Create("curt")` … — defined in decomp C#, not in any XML). Characters pick one via the XML `voice="curt"` attribute (`CharacterObject` deserialize reads attribute `voice`; `NPCCharacters.xsd` types it as an optional free-form string, no enum), default when absent is `PersonaSoftspoken` (`GetPersona`). `generic` is not a persona object — only the filename fallback token (`GenericPersonaId`). Vanilla corpus on disk: `~/bannerlord/moduledata/SandBox/Languages/VoicedLines/EN/PC/` — 455 `.ogg` + 454 lipsync `.xml`, named `<accent>_<gender>_<persona>_<entry>.ogg` (`imperial_high_female_curt_003`, `aserai_male_softspoken_4j7uEWlA`), bandits accent-only (`desert_bandits_01_xQ0aBavD`).
+
+**Format.** OGG — the model unconditionally appends `.ogg` after replacing `$PLATFORM`→`PC`; playback is `SoundEvent.CreateEventFromExternalFile("event:/Extra/voiceover", path, scene, is3d: true, isBlocking: false)` — a raw external file under an FMOD programmer event; no format constraints visible in managed code.
+
+**Lipsync (Rhubarb).** `MapConversationTableau.GetRhubarbXmlPathFromSoundPath` swaps the `.ogg` extension for `.xml` (same folder, same base name) and passes it plus the fresh sound id to `MBAgentVisuals.StartRhubarbRecord(path, soundId)` (engine interop; no managed body). Vanilla `.xml` are Rhubarb lip-reader output; sample:
+```
+<rhubarbResult><metadata><duration>2.72</duration></metadata>
+<mouthCues><mouthCue start="0.00" end="0.14">X</mouthCue>
+<mouthCue start="0.14" end="0.22">A</mouthCue> …</mouthCues></rhubarbResult>
+```
+1 of 455 vanilla oggs lacks the xml pair, so a missing lipsync file is apparently tolerated. No "lipsync"/"viseme" vocabulary exists in decomp — only Rhubarb.
+
+**Schemas (xmlschemas/).** There is NO schema for the voiced-lines XML (`<VoiceOvers>`) and none for `language_data.xml` — those files are parsed ad-hoc by `LanguageData`/`LocalizedVoiceManager`, not through `MBObjectManager`, so they need no SubModule `<Xml>` node and have no XSD. `soln_voice_definitions.xsd` is NOT about dialog voice-over: it schemas the engine's agent/skin voice definitions (mission barks: `voice_type_declarations`, `voice_definition` with `voice type/path/face_anim`, pitch multipliers, `only_for_npcs`), merged for the native voice manager by `Module.CreateProcessedVoiceDefinitionsXMLForNative` under the object-manager key `soln_voice_definitions`. `GameText.xsd` covers only `<strings><string>` text tables.
+
+**Orchestrator note (verified).** Checked `DefaultVoiceOverModel` (per-character token `character.StringId + "_"`, persona `GetPersona().StringId`, `$PLATFORM`→`PC`, `.ogg` appended) and `CharacterObject.GetPersona` (default `DefaultTraits.PersonaSoftspoken`). Core's `CompanionRules.VoiceTypes` = `curt, earnest, ironic, softspoken` is confirmed; JSON `voice` maps to the template's `voice` attribute (Q11). Audio is out of scope this run; the voiced-lines XML and `language_data.xml` have no XSD, so a later generator gets structural tests only.
+
 ### Evidence
 
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.ComponentInterfaces/VoiceOverModel.cs` — `VoiceOverModel.GetSoundPathForCharacter` — abstract game-model interface (`MBGameModel<VoiceOverModel>`) plus abstract `GetAccentClass`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/SandBoxManager.cs` — `SandBoxManager.AddModel` — campaign starter registers `DefaultVoiceOverModel`; StoryMode registers its own override instead.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultVoiceOverModel.cs` — `DefaultVoiceOverModel.GetSoundPathForCharacter` — tiers: charId exact/loose, then regex `.+\<accent>_<gender>_<persona>_` … down to `<accent>_`; hero-stable RandomInt pick; `$PLATFORM`→"PC"; returns `path + ".ogg"`, "" = silent.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultVoiceOverModel.cs` — `DefaultVoiceOverModel.GetAccentClass` — culture→accent table (imperial_high/low, vlandian, sturgian, khuzait, aserai, battanian, bandit/raider/looter classes), else "".
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation.Tags/ConversationTagHelper.cs` — `ConversationTagHelper.UsesHighRegister` — high-vs-low register flag fed into `GetAccentClass`.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` — `MBTextManager.TryGetVoiceObject` — routes through `ProcessTextForVocalization`: id extracted only when text starts `{=`, substring up to `}`; id `!` = unvoiced marker.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` — `MBTextManager.TryChangeVoiceLanguage` — validates against `GetVoiceLanguageIds` then reloads the voice dict for that language.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/BannerlordConfig.cs` — `BannerlordConfig.VoiceLanguage` — dedicated voice-language setting separate from text language; on invalid value falls back to "English".
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs` — `Module.LoadLocalizationXmls` — boot-time scan of every loaded module's `FolderPath` (module `Initialize`), and `LoadSingleModule` → `AddLocalizationXml` for runtime-added modules.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedTextManager.cs` — `LocalizedTextManager.LoadLocalizationXmls` — recursive `Directory.GetFiles(.../ModuleData/Languages, "language_data.xml")` per module, `LanguageData.LoadFromXml(doc, moduleLanguagesDir)`.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LanguageData.cs` — `LanguageData.Deserialize` — `<VoiceFile xml_path>` children → `VoiceXmlPathsAndModulePaths` (first wins); `IsValid` requires `supported_iso`; `<LanguageFile>` fills the separate text-path list.
+- `~/bannerlord/moduledata/SandBox/Languages/language_data.xml` — `VoiceFile` — vanilla example: `LanguageData id="English"` registers `VoicedLines/sandbox_voiced_lines_en.xml` (file is UTF-16); SandBox language dirs without VoiceFile are unvoiced.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedVoiceManager.cs` — `LocalizedVoiceManager.LoadLanguage` — clears dict, parses each registered xml, finds `VoiceOvers` child, per `VoiceOver id` deserializes or merges via `AddVoicePaths`.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedVoiceManager.cs` — `LocalizedVoiceManager.GetLocalizedVoice` — id lookup; miss prints "Voice object for text id is not found: <id>" and returns null (silent line).
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedVoiceManager.cs` — `LocalizedVoiceManager.GetVoiceLanguageIds` — languages that are `IsValid` AND have at least one registered voice xml.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` — `VoiceObject.Deserialize` — `Voice path` attribute → stored `modulePath + "/" + path`; dict value is the candidate path list.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` — `ConversationManager.ProcessSentence` — TryGetVoiceObject on the sentence, `GetSoundPathForCharacter(SpeakerAgent.Character, vo)`, hands path to `CampaignMission.OnConversationPlay`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignInformationManager.cs` — `CampaignInformationManager.GetSoundPath` — same voice lookup for dialog notifications; FailedAssert when no voice object found.
+- `decomp/SandBox.View/SandBox.View.Map/MapConversationTableau.cs` — `MapConversationTableau.PlayConversationSoundEvent` — plays path and then `StartRhubarbRecord(GetRhubarbXmlPathFromSoundPath(soundPath), soundId)`; that helper replaces the extension with `.xml`.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/SoundEvent.cs` — `SoundEvent.CreateEventFromExternalFile` — raw external file under programmer event `event:/Extra/voiceover`, 3D, non-blocking.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBAgentVisuals.cs` — `MBAgentVisuals.StartRhubarbRecord` — lipsync entry point (interop stub; implementation is native engine).
+- `~/bannerlord/moduledata/SandBox/Languages/VoicedLines/EN/PC/imperial_high_female_curt_003.xml` — `rhubarbResult` — real vanilla lipsync pair: `<metadata><duration>` + `mouthCue start/end` letters A–F/X; folder holds 455 .ogg vs 454 .xml named `<accent>_<gender>_<persona>_<id>`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` — `CharacterObject.GetPersona` — persona fallback `DefaultTraits.PersonaSoftspoken`; XML attribute `voice` is stored as a `TraitObject` in `_persona`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CharacterDevelopment/DefaultTraits.cs` — `DefaultTraits.RegisterAll` — defines the four vanilla persona/voice ids in code: `curt`, `ironic`, `earnest`, `softspoken`.
+- `~/bannerlord/moduledata/SandBoxCore/spnpccharactertemplates.xml` — `voice` — live usage `voice="curt"` on `NPCCharacter` template elements (21 occurrences).
+- `xmlschemas/NPCCharacters.xsd` — `voice` — the character attribute is schema-typed as optional free-form `xs:string` (no enum of voice types).
+- `xmlschemas/soln_voice_definitions.xsd` — `voice_definitions` — schemas the engine's skin/agent voice definitions (mission barks, `voice_type_declarations`, `face_anim`, pitch multipliers) — NOT dialog voice-over.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs` — `Module.CreateProcessedVoiceDefinitionsXMLForNative` — merges `soln_voice_definitions` XMLs for the native voice manager (SkinVoiceManager), a separate system from VoiceOverModel.
+- `xmlschemas/GameText.xsd` — `strings` — the only text-related schema (std text tables `<string id text>`); no XSD exists for `language_data.xml` or the `<VoiceOvers>` voiced-lines format.
+- `decomp/StoryMode/StoryMode.GameComponents/StoryModeVoiceOverModel.cs` — `StoryModeVoiceOverModel.GetSoundPathForCharacter` — override pattern: two scripted exceptions, everything else `BaseModel.GetSoundPathForCharacter`.
+- `decomp/SandBox/SandBox.Missions/EavesdroppingMissionLogic.cs` — `EavesdropSound` — shows voice paths are module-relative: concatenates `BasePath.Name + "Modules/StoryMode/ModuleData/Languages/" + soundPath + ".ogg"`.
+
 ### Uncertain
+
+- **UNCERTAIN**: the real vanilla `sandbox_voiced_lines_en.xml` body is absent from the local `~/bannerlord/moduledata` extract (only its `<VoiceFile>` registration and the `VoicedLines/EN/PC` audio corpus are present) — the `<VoiceOver>/<Voice path>` attribute form, backslash separators, `$PLATFORM` token and extension-less paths are derived from the parser code + on-disk file naming; resolve by dumping that file from a full game install.
+- **UNCERTAIN**: whether the engine tolerates a missing lipsync `.xml` at `StartRhubarbRecord` (one of 455 vanilla EN/PC oggs has no pair) — the method body is native engine code, nothing managed to read.
+- **UNCERTAIN**: lipsync `.xml` validation/accepted fields beyond what the vanilla sample shows (`rhubarbResult/metadata/mouthCues`) — no XSD exists and there is no managed parser.
+- **UNCERTAIN**: whether the tier-1 gender-token quirk (gender token built from `CharacterObject.PlayerCharacter.IsFemale` instead of the speaker) ever mismatches in practice for per-character paths — source quirk only, untested in-game; irrelevant for tiers 2–4 which use the speaker's gender.
+- **UNCERTAIN**: FMOD-side requirements of `event:/Extra/voiceover` (sample rate, channels, `VoiceOverVolume` wiring) — engine sound assets not inspected.
 
 ## Q13 — War Sails DLC
 
