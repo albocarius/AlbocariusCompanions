@@ -103,13 +103,13 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
 - [x] 26-game-hero-creation (self) — code in Game/{GameObjectLookup,CompanionTemplates,CompanionHeroFactory}.cs; builds against the game DLLs;
   runtime behaviour only verifiable in-game. GAME_MAP "API index" + ApiIndexTests added (SPEC rule 1). Original scope: — at `AfterRegisterSubModuleObjects`: resolve ids (25), generate XML (20c), `MBObjectManager.LoadXml`,
   write debug copy to the log folder; hero via `HeroCreator.CreateSpecialHero` + `SetNewOccupation(Wanderer)`, attributes via `HeroDeveloper` (GAME_MAP Q4/Q5/Q11).
-- [ ] 27-game-behavior-spawn (worker, review self) — campaign behavior: new-game spawn, game-loaded spawn of missing,
+- [ ] 27-game-behavior-spawn (worker, review self; task ready, skeleton class in place) — campaign behavior: new-game spawn, game-loaded spawn of missing,
   SyncData id→hero mapping, no duplicates, wanderer-style placement; uses 25 + 26.
-- [ ] 28-game-harmony-count (self) — patch per GAME_MAP Q10 excluding registry ids; plus prefix on
+- [x] 28-game-harmony-count (self) — Game/HarmonyPatches.cs (two prefixes, try/catch → vanilla on failure) — patch per GAME_MAP Q10 excluding registry ids; plus prefix on
   `LordConversationsCampaignBehavior.conversation_hero_hire_on_condition` returning false for registry heroes (GAME_MAP Q7).
-- [ ] 29-game-dialogs-hire (worker, review self) — generic dialog registration from dialogs.json (`{=<line id>}<en>`),
+- [ ] 29-game-dialogs-hire (worker, review self; task ready, skeleton class in place) — generic dialog registration from dialogs.json (`{=<line id>}<en>`),
   intro/backstory/hire offer/accept/decline, vanilla join-clan, limit + hireCost.
-- [ ] 30-game-submodule (self) — SubModule class wiring: load registry, log validation, register behavior, apply Harmony; all entry points wrapped.
+- [x] 30-game-submodule (self) — Game/SubModule.cs + ModRuntime.cs; GameAssemblyTests check the class/patch types via metadata — SubModule class wiring: load registry, log validation, register behavior, apply Harmony; all entry points wrapped.
 - [ ] Milestone end: build + tests, dist layout check, every API traced to GAME_MAP; commit `phase 3: game layer`.
 
 ## M4 — Report

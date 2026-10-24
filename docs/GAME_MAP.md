@@ -1229,3 +1229,23 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `HeroDeveloper.AddAttribute` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CharacterDevelopment/HeroDeveloper.cs` | Q4 | set attributes (checkUnspentPoints: false, clamped 0..10) |
 | `Occupation.Wanderer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Occupation.cs` | Q2 | wanderer occupation |
 | `Settlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | born settlement parameter |
+| `MBObjectBase.StringId` | `decomp/TaleWorlds.ObjectSystem/TaleWorlds.ObjectSystem/MBObjectBase.cs` | Q10 | template id = companion id |
+| `Hero.Template` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | identify mod heroes |
+| `Hero.OneToOneConversationHero` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q7 | current conversation partner |
+| `CompanionsCampaignBehavior.AddToAliveCompanions` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionsCampaignBehavior.cs` | Q10 | Harmony prefix target (private) |
+| `LordConversationsCampaignBehavior.conversation_hero_hire_on_condition` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/LordConversationsCampaignBehavior.cs` | Q7 | Harmony prefix target (private) |
+| `MBSubModuleBase.OnSubModuleLoad` | `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBSubModuleBase.cs` | Q16 | load registry, Harmony |
+| `MBSubModuleBase.InitializeGameStarter` | `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBSubModuleBase.cs` | Q16 | add campaign behavior |
+| `MBSubModuleBase.AfterRegisterSubModuleObjects` | `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBSubModuleBase.cs` | Q11 | register templates |
+| `Game.GameType` | `decomp/TaleWorlds.Core/TaleWorlds.Core/Game.cs` | Q16 | campaign check |
+| `Campaign` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` | Q16 | campaign game type |
+| `IGameStarter` | `decomp/TaleWorlds.Core/TaleWorlds.Core/IGameStarter.cs` | Q16 | starter parameter |
+| `CampaignGameStarter.AddBehavior` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` | Q16 | register the behavior |
+| `CampaignBehaviorBase.RegisterEvents` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignBehaviorBase.cs` | Q8 | behavior base, explicit StringId ctor |
+| `CampaignBehaviorBase.SyncData` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignBehaviorBase.cs` | Q8 | persistence |
+| `IDataStore` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IDataStore.cs` | Q8 | SyncData store |
+| `FileHelper.GetFileFullPath` | `decomp/TaleWorlds.Library/TaleWorlds.Library/FileHelper.cs` | Q15 | log path |
+| `PlatformFilePath` | `decomp/TaleWorlds.Library/TaleWorlds.Library/PlatformFilePath.cs` | Q15 | log path |
+| `PlatformDirectoryPath` | `decomp/TaleWorlds.Library/TaleWorlds.Library/PlatformDirectoryPath.cs` | Q15 | log folder |
+| `PlatformFileType.User` | `decomp/TaleWorlds.Library/TaleWorlds.Library/PlatformFileType.cs` | Q15 | Documents bucket |
+| `ModuleHelper.GetModuleFullPath` | `decomp/TaleWorlds.ModuleManager/TaleWorlds.ModuleManager/ModuleHelper.cs` | Q16 | module folder (trailing /) |
