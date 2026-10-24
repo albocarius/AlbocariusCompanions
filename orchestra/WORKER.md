@@ -39,4 +39,4 @@ Final message format:
 # Reference data (read-only)
 - `decomp/` — decompiled game source.
 - `xmlschemas/` — the game's XSD schemas (e.g. `NPCCharacters.xsd`, `GameText.xsd`). For any XML format question, cite the schema; for any XML the mod generates, it must validate against its schema when one exists.
-- `~/bannerlord/moduledata/` — vanilla ModuleData XML samples.
+- `~/bannerlord/moduledata_win/` — full vanilla ModuleData XML of all official modules incl. NavalDLC and every SubModule.xml (prefer this); `~/bannerlord/moduledata/` — older partial copy.

@@ -24,7 +24,9 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
 ## External, read-only paths (never commit, never copy into repo)
 - Game DLLs: `~/bannerlord/dlls/bin/*.dll`, `~/bannerlord/dlls/Modules/<Native|SandBoxCore|SandBox|StoryMode|CustomBattle|NavalDLC>/...`
   - `Newtonsoft.Json.dll` exists in `~/bannerlord/dlls/bin`.
-- Vanilla XML: `~/bannerlord/moduledata/{SandBox,SandBoxCore}`
+- Vanilla XML: `~/bannerlord/moduledata/{SandBox,SandBoxCore}` (partial) and `~/bannerlord/moduledata_win/` = full XML/XSD of
+  Native, SandBoxCore, SandBox, StoryMode, NavalDLC, CustomBattle + every SubModule.xml + Bannerlord.Harmony's SubModule.xml,
+  copied from the user's live install (game v1.4.8). Read-only, never commit. Prefer it over the partial copy.
 - Decompiled source: `decomp/` (symlink to `~/bannerlord/decomp`). Contains TaleWorlds.CampaignSystem, .Core,
   .MountAndBlade, .ObjectSystem, SandBox*, StoryMode*, NavalDLC*. **Not** decompiled: TaleWorlds.Library,
   TaleWorlds.Localization, TaleWorlds.Engine, TaleWorlds.ModuleManager — use `ilspycmd` on the DLL into a
@@ -45,6 +47,9 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
 - No DLC assembly references anywhere.
 
 ## Environment notes
+- Windows test machine (game install, Bannerlord.Harmony v2.4.2.248 from Workshop): `ssh aliboron@100.94.114.51` (key via ssh-agent).
+  Game: `C:\GAMES\steamapps\common\Mount & Blade II Bannerlord`. Mod log folder: `Documents\Mount and Blade II Bannerlord\AlbocariusCompanions\`.
+  Native logs: `C:\ProgramData\Mount and Blade II Bannerlord\logs\`. Never write to the game folder without asking the user.
 - (Resolved) the distro dotnet 10.0.113 intermittently aborted at CLI startup with `Internal CLR error (0x80131506)` (~10-15% of runs, not
   code-related; RAM is mostly taken by the local model server). Not fixed by disabling node reuse, a GC heap limit or
   W^X. check_worker.sh retries up to 3 times on that message; when running TEST_CMD by hand, just rerun.

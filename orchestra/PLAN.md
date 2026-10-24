@@ -47,7 +47,7 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [ ] 21-gm-q13-war-sails (worker → verify)
 - [ ] 22-gm-q14-localization (worker → verify)
 - [x] Milestone end: all sections VERIFIED or UNCERTAIN with resolution; commit `phase 1: game map`.
-- [ ] 15-gm-q15-logging-paths (worker → verify) — added for M3 tasks 24/26 (writable folder, logging, exception safety)
+- [x] 15-gm-q15-logging-paths (worker → verify) — added for M3 tasks 24/26 (writable folder, logging, exception safety)
 - [ ] 16-gm-q16-submodule-lifecycle (worker → verify) — added for M3 tasks 23/30 (SubModule.xml format, module ids, override order)
 
 ## M2 — Core (SPEC Phase 2)
