@@ -1,6 +1,6 @@
-# SPEC — Warband Companions (Bannerlord mod) — Foundation run
+# SPEC — Albocarius's Companions (Bannerlord mod) — Foundation run
 
-> Working name: `AlbocariusCompanions` (rename freely; keep it consistent everywhere).
+> Working name: `AlbocariusCompanions`
 > This spec is for the orchestrator. Read it fully before assigning any task.
 
 ## 0. Context

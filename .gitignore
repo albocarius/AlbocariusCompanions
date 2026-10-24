@@ -4,6 +4,6 @@ dist/
 *.user
 .vs/
 decomp/
-orchestra/
+orchestra/logs/
 .claude/
 decomp
