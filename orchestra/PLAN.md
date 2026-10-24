@@ -32,7 +32,7 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [x] 01-gm-q01-wanderer-spawn (worker → verify)
 - [x] 02-gm-q02-wanderer-count (worker → verify)
 - [x] 03-gm-q03-tavern-placement (worker → verify)
-- [ ] 04-gm-q04-hero-creation (worker → verify) — also value ranges for validation
+- [x] 04-gm-q04-hero-creation (worker → verify) — also value ranges for validation
 - [ ] 05-gm-q05-char-templates (worker → verify) — also culture/equipment ids for placeholder
 - [ ] 06-gm-q06-hiring (worker → verify)
 - [ ] 15-gm-q07-dialog-api (worker → verify)

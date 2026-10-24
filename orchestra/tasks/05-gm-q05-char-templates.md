@@ -16,6 +16,8 @@ The question (from orchestra/SPEC.md):
 
 5. **Character templates:** how wanderer templates are defined (XML in which module, which element/attributes), and whether a mod can create a hero at runtime **without** an XML template.
 
+Known from Q1–Q4 (already VERIFIED in docs/GAME_MAP.md, read them first): the vanilla wanderer template XML (`occupation="Wanderer"`, `is_template="true"`, probably `spspecialcharacters.xml`) is NOT in the local `~/bannerlord/moduledata` extract — do not spend time hunting for it; document the element/attribute format from `CharacterObject.Deserialize` / `BasicCharacterObject.Deserialize` and the template-shaped entries that do exist (`spnpccharactertemplates.xml`). Also find out how a module's XML files get loaded into MBObjectManager (e.g. `<XmlNode>` entries in SubModule.xml / `MBObjectManager.LoadXML` / `XmlResource`), since a mod would need that path.
+
 Where to start: Search `~/bannerlord/moduledata/SandBox/spnpccharactertemplates.xml` and `spnpccharacters.xml` for wanderer templates (occupation="Wanderer", ids like spc_wanderer_*). Record element/attribute names. In decomp, find how templates are selected (CharacterObject.Templates / culture NotableAndWandererTemplates or similar). Also determine whether a CharacterObject can be created at runtime without XML (search `MBObjectManager.CreateObject`, `CharacterObject` constructors). Also list 2-3 valid culture string ids from `~/bannerlord/moduledata/SandBoxCore/spcultures.xml` (or SandBox) and 2-3 equipment roster/template ids usable for a wanderer.
 
 ## Files
