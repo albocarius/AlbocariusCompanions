@@ -29,7 +29,7 @@ Order follows dependencies: schema changes first (T2/T3 ids), then the slot list
 scaffold last because its template must contain the final slot list and lang format.
 
 ### T1 — close the foundation round
-- [ ] 31-close-foundation (self) — RUN_REPORT "known gaps" aligned with this spec's list; WORKER_LOG rows for the
+- [x] 31-close-foundation (self) — RUN_REPORT "known gaps" aligned with this spec's list; WORKER_LOG rows for the
   out-of-plan work (7981805 name fix, aa503f1 voice/lipsync, 394f143 town names in log); fix stale boxes in the archive
   (M1 15–22, M2/M3 milestone ends were done). Also create `docs/IDEAS.md` and `docs/SCHEMA.md` (current schema, every
   field: type, required, example) so later tasks only update them.
@@ -151,14 +151,14 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [x] 04-gm-q04-hero-creation (worker → verify) — also value ranges for validation
 - [x] 05-gm-q05-char-templates (worker → verify) — also culture/equipment ids for placeholder
 - [x] 06-gm-q06-hiring (worker → verify)
-- [ ] 15-gm-q07-dialog-api (worker → verify)
-- [ ] 16-gm-q08-lifecycle (worker → verify)
-- [ ] 17-gm-q09-existing-saves (worker → verify)
-- [ ] 18-gm-q10-harmony-target (worker → verify)
-- [ ] 19-gm-q11-generation-decision (worker → verify)
-- [ ] 20-gm-q12-voice-over (worker → verify) — also vanilla voice type ids
-- [ ] 21-gm-q13-war-sails (worker → verify)
-- [ ] 22-gm-q14-localization (worker → verify)
+- [x] 15-gm-q07-dialog-api (worker → verify)
+- [x] 16-gm-q08-lifecycle (worker → verify)
+- [x] 17-gm-q09-existing-saves (worker → verify)
+- [x] 18-gm-q10-harmony-target (worker → verify)
+- [x] 19-gm-q11-generation-decision (worker → verify)
+- [x] 20-gm-q12-voice-over (worker → verify) — also vanilla voice type ids
+- [x] 21-gm-q13-war-sails (worker → verify)
+- [x] 22-gm-q14-localization (worker → verify)
 - [x] Milestone end: all sections VERIFIED or UNCERTAIN with resolution; commit `phase 1: game map`.
 - [x] 15-gm-q15-logging-paths (worker → verify) — added for M3 tasks 24/26 (writable folder, logging, exception safety)
 - [x] 16-gm-q16-submodule-lifecycle (worker → verify) — added for M3 tasks 23/30 (SubModule.xml format, module ids, override order)
@@ -188,7 +188,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
   Acceptance: output validates against `xmlschemas/NPCCharacters.xsd`; field mapping tests. (SPEC rule 8 amendment, GAME_MAP Q11.)
 - [x] 21-placeholder-companion (self) — `module/ModuleData/Companions/test_companion/` per SPEC §5 with
   ids from GAME_MAP; acceptance test that loads it from disk and validates clean.
-- [ ] Milestone end: full tests; commit `phase 2: core`.
+- [x] Milestone end: full tests; commit `phase 2: core`.
 
 ### M3 — Game layer (SPEC Phase 3)
 Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP entry; self reviews worker diffs against GAME_MAP.
@@ -223,7 +223,7 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
 - [x] 29-game-dialogs-hire (worker, review self; task ready, skeleton class in place) — generic dialog registration from dialogs.json (`{=<line id>}<en>`),
   intro/backstory/hire offer/accept/decline, vanilla join-clan, limit + hireCost.
 - [x] 30-game-submodule (self) — Game/SubModule.cs + ModRuntime.cs; GameAssemblyTests check the class/patch types via metadata — SubModule class wiring: load registry, log validation, register behavior, apply Harmony; all entry points wrapped.
-- [ ] Milestone end: build + tests, dist layout check, every API traced to GAME_MAP; commit `phase 3: game layer`.
+- [x] Milestone end: build + tests, dist layout check, every API traced to GAME_MAP; commit `phase 3: game layer`.
 
 ### M4 — Report
 - [x] 30-run-report (self) — `docs/RUN_REPORT.md` per SPEC §6 (completed work, UNCERTAINs, BLOCKERS, morning checklist).
@@ -234,6 +234,8 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   voiced-lines XML builders, logging); Game layer (SubModule.xml, runtime templates, spawn/persist/re-link behavior,
   generic dialogs + hire, Harmony guards, voice-over postfix); placeholder `test_companion`.
 - Tests: Core.Tests 140/140, Acceptance 242/242.
+- Out of plan (after the in-game test, self): JSON name fix (7981805), voice-over + Rhubarb lipsync without a build step
+  (aa503f1), town names in the log (394f143).
 - Verified in game by the user: load, tavern spawn, dialogs, hire, JSON name, voice-over, lipsync.
 - Not verified: dismissed companion roaming, vanilla wanderer count, no-duplicate save→load, existing save without mod.
 - Open questions: nord culture fallback semantics; GOG/Epic writability of the module folder. Details: docs/RUN_REPORT.md.

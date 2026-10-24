@@ -73,6 +73,20 @@ It was played on the user's Windows install the same evening; see "In-game resul
 - `nord` culture fallback semantics (DLC-present check vs. id existence) still open; currently id existence.
 - `hireCost: 0` cannot be hired with 0 gold (vanilla strict `>` check).
 
+### Known gaps → next milestone (`orchestra/SPEC_CORE_GAPS.md`)
+| Gap | Addressed by |
+|---|---|
+| Non-`.ogg` audio skipped silently | T2.1 validation error |
+| `hireCost: 0` not hireable with 0 gold | T2.2 `gold >= hireCost` |
+| `nord` / `cultureFallback` semantics open | T2.3 replaced by `requiredModules` (fallbacks removed) |
+| No schema versioning | T2.4 `schemaVersion` in every JSON file |
+| Warnings/errors only in the log file | T2.5 in-game notifications |
+| `id` duplicated in folder name; long line ids | T3 folder = id, local line ids, scaffold script |
+| Dismissed companion disappears from the map (reported for the next milestone) | T4 return to wanderer + tavern |
+| Only the first line per slot is used | T5 random pick per use |
+| `tr` texts not shown; player prompts hard-coded English | T6 `lang/<code>.json`, player lines in JSON |
+| likes/dislikes/relations, optional slots without effect | out of scope (still open) |
+
 ## GAME_MAP UNCERTAINs
 Resolved by the in-game test: template registration at load (Q5/Q11), hero creation and tavern placement (Q3/Q4),
 Harmony prefixes intercept on the shipped runtime (Q7/Q10), hire flow and conversation option listing (Q6/Q7),

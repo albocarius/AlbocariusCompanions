@@ -30,3 +30,6 @@
 | 23-game-submodule-xml | 1 | PASS | correct ids incl. lowercase Sandbox, Core in Assemblies |
 | 27-game-behavior-spawn | 1 | PASS | correct; re-link scan + culture-preferred town, all handlers guarded |
 | 29-game-dialogs-hire | – | self | done by orchestrator in a worktree at user request |
+| 7981805 fix: JSON name | – | self | out of plan, after the in-game test: Special templates got a random culture name |
+| aa503f1 voice/lipsync | – | self | out of plan: voiced-lines XML rewritten at start + Harmony postfix; Rhubarb lipsync verified in game |
+| 394f143 town names in log | – | self | out of plan, user request |
