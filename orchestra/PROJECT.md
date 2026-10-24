@@ -44,7 +44,8 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
 - No DLC assembly references anywhere.
 
 ## Environment notes
-- dotnet 10.0.113 intermittently aborts with `Internal CLR error (0x80131506)` (~1 in 6 runs, not code-related).
-  check_worker.sh retries once on that message; when running TEST_CMD by hand, just rerun.
+- dotnet 10.0.113 intermittently aborts at CLI startup with `Internal CLR error (0x80131506)` (~10-15% of runs, not
+  code-related; RAM is mostly taken by the local model server). Not fixed by disabling node reuse, a GC heap limit or
+  W^X. check_worker.sh retries up to 3 times on that message; when running TEST_CMD by hand, just rerun.
 - `orchestra/logs/` is gitignored; the rest of `orchestra/` is tracked.
 - Code graph: `graphify-out/` (git-excluded), refresh with `orchestra/graph.sh update`.
