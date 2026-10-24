@@ -12,7 +12,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 
 ## Status
 - Phase 0 bootstrap done (commit 8aa1f47). Baseline: build OK, 0 tests.
-- Plan approved with changes (2026-10-24). Working on M1, task 01.
+- Plan approved with changes (2026-10-24). M1: Q1–Q6 verified, Q7 next. M2: task 15 done, 16–20b staged.
 
 ## Decisions already fixed
 - XML formats: reference `xmlschemas/` (game XSDs, user-provided 2026-10-24). Every XML generated at build time is validated against its schema in tests where one exists.
@@ -53,7 +53,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 - [x] 15-core-models (self) — models for §4 schema, `ValidationIssue` (severity, code, companionId, message),
   Slot definitions (§4.3), line-id rule helper, Newtonsoft package. Design work → self.
   Edit: `src/AlbocariusCompanions.Core/**`, Core csproj. Accept: build + a few unit tests.
-  Done in worktree `../AlbocariusCompanions-core` (branch `orchestra/core`), merged between worker runs. Public API stubs for 16–20b throw NotImplementedException.
+  Done in a temporary worktree, merged into `orchestra/foundation` (cea5c0a), worktree removed. Public API stubs for 16–20b throw NotImplementedException.
 - [ ] 16-core-loader (worker) — scan `<root>/*/`, load companion.json + dialogs.json, collect errors,
   skip broken folder, continue. Accept: valid+broken folder, missing file, malformed JSON.
 - [ ] 17-core-registry (worker) — `CompanionRegistry`: read-only lookup by id, `Ids` set. Accept: lookup, unknown id, ids set, duplicate ctor guard.

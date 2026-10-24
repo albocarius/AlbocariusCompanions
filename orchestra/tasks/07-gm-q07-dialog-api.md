@@ -18,6 +18,8 @@ The question (from orchestra/SPEC.md):
 
 Earlier sections Q1–Q5 of docs/GAME_MAP.md are VERIFIED — read them first and do not repeat them; reference them instead. Game XSD schemas are in `xmlschemas/` (cite as `xmlschemas/<Name>.xsd`).
 
+Also answer (needed by the mod, see Q6 orchestrator notes): when several lines share the same input token (e.g. `hero_main_options`), how is the order/choice decided (priority value, registration order)? How could a mod (a) add its own player line on `hero_main_options` for specific heroes only, and (b) keep the vanilla `main_option_faction_hire` line from showing for those heroes — e.g. a higher-priority line, condition delegates, or something else that exists in decomp (cite it). If only a Harmony patch could suppress it, say so and name the method.
+
 Where to start: Start at `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` (AddDialogLine, AddPlayerLine, priority parameter, condition/consequence delegates) and the ConversationManager / ConversationSentence classes. Explain input/output tokens ('start', 'hero_main_options', 'close_window' etc. — only ones you can see used in decomp).
 
 ## Files
