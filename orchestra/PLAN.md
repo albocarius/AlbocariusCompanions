@@ -58,7 +58,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
   Done in a temporary worktree, merged into `orchestra/foundation` (cea5c0a), worktree removed. Public API stubs for 16–20b throw NotImplementedException.
 - [x] 16-core-loader (worker) — scan `<root>/*/`, load companion.json + dialogs.json, collect errors,
   skip broken folder, continue. Accept: valid+broken folder, missing file, malformed JSON.
-- [ ] 17-core-registry (worker) — `CompanionRegistry`: read-only lookup by id, `Ids` set. Accept: lookup, unknown id, ids set, duplicate ctor guard.
+- [x] 17-core-registry (worker) — `CompanionRegistry`: read-only lookup by id, `Ids` set. Accept: lookup, unknown id, ids set, duplicate ctor guard.
 - [ ] 18-core-validation-companion (worker) — companion.json rules (id format/uniqueness/folder name,
   required fields, ranges per GAME_MAP, cultureFallback≠culture, fallbackTemplateId≠templateId,
   voice ∈ vanilla voice types, likes/dislikes/relations shape). Accept: one failing test per rule + valid companion.

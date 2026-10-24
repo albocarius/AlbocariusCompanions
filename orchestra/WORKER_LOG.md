@@ -17,3 +17,4 @@
 | 13-gm-q13-war-sails | 1 | PASS, verified | correct; NavalDLC id, 3 skills, no cultures/traits, GetObject null |
 | 14-gm-q14-localization | 1 | PASS, verified | correct; M1 complete |
 | 16-core-loader | 1 | PASS | clean; strict Newtonsoft, IO errors mapped to InvalidJson; worker used SDK 10.0.402 |
+| 17-core-registry | 1 | PASS | clean |
