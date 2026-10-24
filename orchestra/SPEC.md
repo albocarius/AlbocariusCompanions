@@ -156,6 +156,7 @@ Done when: solution builds, `dist/AlbocariusCompanions/` has the correct layout,
 }
 ```
 
+- `equipment.battle` / `equipment.civilian` (added 2026-10-24, user decision): optional fixed item sets, `{ "<slot>": "<item id>" }` with slots `Item0`–`Item3`, `Head`, `Body`, `Leg`, `Gloves`, `Cape`, `Horse`, `HorseHarness`. When present, each replaces the corresponding set from `templateId`; items missing at runtime or not fitting their slot are dropped with a warning; if none resolve, the template set is used. Example: `"battle": { "Body": "monk_robe", "Head": "pilgrim_hood", "Item0": "bo_staff" }`.
 - `cultureFallback` / `equipment.fallbackTemplateId`: optional; used when the primary id does not exist at runtime (e.g. DLC culture/items without the DLC). Recommended whenever the primary id comes from optional content.
 - `bodyProperties`: `null` = use a reasonable default per GAME_MAP. Later filled with a real BodyProperties key.
 - Field names for skills/traits/culture/equipment must use the game's own string ids found in Phase 1.

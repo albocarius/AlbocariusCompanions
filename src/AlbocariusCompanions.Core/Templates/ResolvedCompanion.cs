@@ -10,7 +10,8 @@ public sealed class ResolvedCompanion
 {
     public ResolvedCompanion(string id, string name, bool isFemale, string voice, int age, string cultureId,
         IReadOnlyDictionary<string, int> skills, IReadOnlyDictionary<string, int> traits,
-        string battleEquipmentRosterId, string? civilianEquipmentRosterId, string? bodyPropertiesKey)
+        string battleEquipmentRosterId, string? civilianEquipmentRosterId, string? bodyPropertiesKey,
+        IReadOnlyDictionary<string, string>? battleItems = null, IReadOnlyDictionary<string, string>? civilianItems = null)
     {
         Id = id;
         Name = name;
@@ -23,6 +24,8 @@ public sealed class ResolvedCompanion
         BattleEquipmentRosterId = battleEquipmentRosterId;
         CivilianEquipmentRosterId = civilianEquipmentRosterId;
         BodyPropertiesKey = bodyPropertiesKey;
+        BattleItems = battleItems;
+        CivilianItems = civilianItems;
     }
 
     /// <summary>Companion id; becomes the template id (GAME_MAP Q10/Q11: hero.Template.StringId == companion id).</summary>
@@ -39,4 +42,8 @@ public sealed class ResolvedCompanion
     public string BattleEquipmentRosterId { get; }
     public string? CivilianEquipmentRosterId { get; }
     public string? BodyPropertiesKey { get; }
+    /// <summary>Resolved fixed battle items (slot → item id). When set, replaces the battle roster import.</summary>
+    public IReadOnlyDictionary<string, string>? BattleItems { get; }
+    /// <summary>Resolved fixed civilian items (slot → item id). When set, replaces the civilian roster import.</summary>
+    public IReadOnlyDictionary<string, string>? CivilianItems { get; }
 }

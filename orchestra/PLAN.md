@@ -97,7 +97,8 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   Bannerlord.Harmony, SubModule class). Accept: XML parse test checking ids/version/deps.
 - [ ] 24-game-logging (worker) — file logger (path per GAME_MAP), safe-call wrapper that never rethrows;
   TaleWorlds-free logic kept in Core so it is testable.
-- [ ] 25-game-resolver (worker, review self) — single resolver for skills/cultures/traits/equipment/settlements by string id, fallbacks, warnings.
+- [ ] 25-game-resolver (worker, review self) — single resolver for skills/cultures/traits/equipment/settlements by string id, fallbacks, warnings;
+  fixed items: `GetObject<ItemObject>` + `Equipment.IsItemFitsToSlot`, drop misfits with a warning, all dropped → template set (GAME_MAP Q5).
 - [ ] 26-game-hero-creation (self) — at `AfterRegisterSubModuleObjects`: resolve ids (25), generate XML (20c), `MBObjectManager.LoadXml`,
   write debug copy to the log folder; hero via `HeroCreator.CreateSpecialHero` + `SetNewOccupation(Wanderer)`, attributes via `HeroDeveloper` (GAME_MAP Q4/Q5/Q11).
 - [ ] 27-game-behavior-spawn (worker, review self) — campaign behavior: new-game spawn, game-loaded spawn of missing,

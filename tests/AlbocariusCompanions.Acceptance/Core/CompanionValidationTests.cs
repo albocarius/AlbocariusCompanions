@@ -197,6 +197,31 @@ public class CompanionValidationTests
         c["equipment"]!["fallbackTemplateId"] = "npc_wanderer_equipment_template_vlandia";
     }));
 
+    [Fact]
+    public void Fixed_equipment_sets_are_accepted() => Assert.Empty(Validate(c =>
+    {
+        c["equipment"]!["battle"] = new JObject { ["Body"] = "monk_robe", ["Head"] = "pilgrim_hood", ["Item0"] = "bo_staff" };
+        c["equipment"]!["civilian"] = new JObject { ["Body"] = "monk_robe" };
+    }));
+
+    [Theory]
+    [InlineData("battle", "Weapon")]
+    [InlineData("civilian", "body")]
+    public void Unknown_equipment_slot(string set, string slot)
+    {
+        var issues = Validate(c => c["equipment"]![set] = new JObject { [slot] = "monk_robe" });
+        Assert.Contains(slot, SingleError(issues, IssueCodes.UnknownEquipmentSlot).Message);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  ")]
+    public void Empty_equipment_item_id(string item)
+    {
+        var issues = Validate(c => c["equipment"]!["battle"] = new JObject { ["Body"] = item });
+        SingleError(issues, IssueCodes.InvalidEquipmentItem);
+    }
+
     [Theory]
     [InlineData("likes")]
     [InlineData("dislikes")]

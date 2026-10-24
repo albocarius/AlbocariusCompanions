@@ -33,6 +33,10 @@ public sealed class EquipmentDefinition
 {
     [JsonProperty("templateId")] public string? TemplateId { get; set; }
     [JsonProperty("fallbackTemplateId")] public string? FallbackTemplateId { get; set; }
+    /// <summary>Optional fixed battle set: slot (Item0..Item3, Head, Body, Leg, Gloves, Cape, Horse, HorseHarness) → item id.</summary>
+    [JsonProperty("battle")] public Dictionary<string, string>? Battle { get; set; }
+    /// <summary>Optional fixed civilian set, same shape as <see cref="Battle"/>.</summary>
+    [JsonProperty("civilian")] public Dictionary<string, string>? Civilian { get; set; }
 }
 
 public sealed class VoiceProfileDefinition

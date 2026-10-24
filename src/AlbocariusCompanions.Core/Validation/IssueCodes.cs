@@ -21,6 +21,8 @@ public static class IssueCodes
     public const string InvalidReaction = "invalid_reaction";
     public const string InvalidRelation = "invalid_relation";
     public const string UnknownRelationTarget = "unknown_relation_target";
+    public const string UnknownEquipmentSlot = "unknown_equipment_slot";
+    public const string InvalidEquipmentItem = "invalid_equipment_item";
 
     // dialogs.json
     public const string InvalidLineId = "invalid_line_id";
