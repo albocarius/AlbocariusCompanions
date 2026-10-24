@@ -18,6 +18,8 @@ The question (from orchestra/SPEC.md):
 
 Earlier sections Q1–Q5 of docs/GAME_MAP.md are VERIFIED — read them first and do not repeat them; reference them instead. Game XSD schemas are in `xmlschemas/` (cite as `xmlschemas/<Name>.xsd`).
 
+Context from VERIFIED sections: Q1/Q2 show the count is `CompanionsCampaignBehavior._aliveCompanionTemplates` (templates, not heroes), filled via the private `AddToAliveCompanions(Hero, bool)` from `OnHeroCreated`, `OnHeroOccupationChanged` and the load rebuild, and the same set drives `TryKillCompanion` (daily removal of unhired wanderers). Evaluate `AddToAliveCompanions` as the single choke point (prefix that skips mod heroes) against alternatives (patching each caller, postfix on `_desiredTotalCompanionCount`, etc.). Explain how the patch identifies a mod hero (e.g. `hero.Template.StringId` in the mod registry ids) and whether it also keeps mod companions safe from `TryKillCompanion`. Q7 already decided a second patch (prefix on `LordConversationsCampaignBehavior.conversation_hero_hire_on_condition`); list it too with its exact signature.
+
 Where to start: Based on the Q1/Q2 counting code: name the exact method that should be patched (namespace, class, method, signature, private or public) so that mod companions are not counted toward the wanderer target, and say prefix vs postfix and why. If the counting is inline inside a larger method, say so and propose the narrowest patch point; mark it UNCERTAIN if no clean point exists.
 
 ## Files
