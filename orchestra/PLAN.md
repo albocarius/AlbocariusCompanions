@@ -61,7 +61,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 - [x] 16-core-loader (worker) — scan `<root>/*/`, load companion.json + dialogs.json, collect errors,
   skip broken folder, continue. Accept: valid+broken folder, missing file, malformed JSON.
 - [x] 17-core-registry (worker) — `CompanionRegistry`: read-only lookup by id, `Ids` set. Accept: lookup, unknown id, ids set, duplicate ctor guard.
-- [ ] 18-core-validation-companion (worker) — companion.json rules (id format/uniqueness/folder name,
+- [x] 18-core-validation-companion (worker) — companion.json rules (id format/uniqueness/folder name,
   required fields, ranges per GAME_MAP, cultureFallback≠culture, fallbackTemplateId≠templateId,
   voice ∈ vanilla voice types, likes/dislikes/relations shape). Accept: one failing test per rule + valid companion.
 - [ ] 19-core-validation-dialogs (worker) — line-id format + global uniqueness, required slots,
