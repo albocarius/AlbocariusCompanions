@@ -47,6 +47,8 @@ public sealed class SubModule : MBSubModuleBase
             ModRuntime.Registry = catalog.Registry;
         });
 
+        Safe.Run(log, "write voiced lines", () => VoicedLinesFile.Write(ModRuntime.Registry, log));
+
         Safe.Run(log, "apply Harmony patches", () =>
         {
             new Harmony(HarmonyId).PatchAll(Assembly.GetExecutingAssembly());

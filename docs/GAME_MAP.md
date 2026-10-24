@@ -825,6 +825,11 @@ pick: hero -> HeroObject.RandomInt (stable per hero); else party RandomInt / ran
 
 **Orchestrator note (verified).** Checked `DefaultVoiceOverModel` (per-character token `character.StringId + "_"`, persona `GetPersona().StringId`, `$PLATFORM`→`PC`, `.ogg` appended) and `CharacterObject.GetPersona` (default `DefaultTraits.PersonaSoftspoken`). Core's `CompanionRules.VoiceTypes` = `curt, earnest, ironic, softspoken` is confirmed; JSON `voice` maps to the template's `voice` attribute (Q11). Audio is out of scope this run; the voiced-lines XML and `language_data.xml` have no XSD, so a later generator gets structural tests only.
 
+**Orchestrator note 2 (verified 2026-10-24, voice pipeline design).**
+- Timing (`Module.Initialize` in `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs`): `LoadLocalizationXmls()` registers voiced-lines *paths*, then `LoadSubModules()` runs `OnSubModuleLoad`, then `BannerlordConfig.Initialize()` → `TryChangeVoiceLanguage` → `LocalizedVoiceManager.LoadLanguage` *parses* them. So a static `language_data.xml` + a voiced-lines file the mod rewrites in `OnSubModuleLoad` is read fresh — no build step for new companions.
+- `LanguageData.Deserialize` unions `supported_iso` and adds `VoiceFile` paths, so a mod `<LanguageData id="English">` without `supported_iso` merges into vanilla English harmlessly. Stored voice path = `<module>/ModuleData/Languages` + "/" + `path` (`VoiceObject.Deserialize`). A missing file only FailedAsserts; a file without `<VoiceOvers>` throws (NRE) — always write a complete file.
+- Vanilla `Voice path` values use forward slashes (`moduledata_win/SandBox/ModuleData/Languages/VoicedLines/sandbox_voiced_lines_en.xml`), so the backslash regex tiers of `DefaultVoiceOverModel.GetSoundPathForCharacter` never match them; vanilla lands in the last tier (`.+<accent>_.+` + gender token). Tier 1 needs the speaker's `CharacterObject.StringId`, which for a hero created from a template is auto-generated (`CharacterObject.CreateFrom` → `MBObjectManager.CreateObject<CharacterObject>()`). Decision: write `path="../Companions/<folder>/audio/<line id>"` and a Harmony postfix on `DefaultVoiceOverModel.GetSoundPathForCharacter` maps such paths to `<module>/ModuleData/Companions/<folder>/audio/<line id>.ogg` (StoryMode's model delegates to it). Lipsync = same name `.xml` next to the `.ogg`.
+
 ### Evidence
 
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.ComponentInterfaces/VoiceOverModel.cs` — `VoiceOverModel.GetSoundPathForCharacter` — abstract game-model interface (`MBGameModel<VoiceOverModel>`) plus abstract `GetAccentClass`.
@@ -1287,3 +1292,6 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `Hero.SetName` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | keep the JSON name (creation gives Special templates a random one) |
 | `CharacterObject.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` | Q2 | template display name `{=<id>_name}<name>` |
 | `TextObject.CopyTextObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/TextObject.cs` | Q2 | own copy of the template name per hero |
+| `DefaultVoiceOverModel.GetSoundPathForCharacter` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultVoiceOverModel.cs` | Q12 | Harmony postfix: play mod lines from the companion folder |
+| `VoiceObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | postfix parameter |
+| `VoiceObject.VoicePaths` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | find the mod voice path |

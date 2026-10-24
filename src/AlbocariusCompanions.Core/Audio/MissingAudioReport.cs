@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
 using AlbocariusCompanions.Core.Models;
-using AlbocariusCompanions.Core.Rules;
 
 namespace AlbocariusCompanions.Core.Audio;
 
@@ -23,9 +22,7 @@ public static class MissingAudioReport
                 if (line == null || !line.Voiced) continue;
                 if (string.IsNullOrEmpty(line.Id)) continue;
 
-                var relativePath = (string.IsNullOrEmpty(line.Audio)
-                    ? LineIds.DefaultAudioPath(line.Id!)
-                    : line.Audio!).Replace('\\', '/');
+                var relativePath = VoicedLinesXml.AudioRelativePath(line);
                 var fullPath = Path.Combine(package.FolderPath,
                     relativePath.Replace('/', Path.DirectorySeparatorChar));
 
