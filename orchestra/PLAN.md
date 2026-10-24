@@ -11,7 +11,8 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 
 ## Status
 - Foundation done and played in game (see archive + docs/RUN_REPORT.md). Repo clean at 5730899 "phase 4: run report".
-- M5 planned 2026-10-24; T6 questions answered and plan accepted by the user the same day. Strata is up (worker available).
+- M5 done 2026-10-24 (docs/RUN_REPORT_CORE_GAPS.md): Core.Tests 201, Acceptance 319. Not deployed (Windows laptop closed);
+  in-game checklist in the report, incl. renaming the audio files to local ids.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -118,9 +119,9 @@ in game. The user renames the Windows audio files to local ids (`intro_01.ogg`).
   `_shared`. Accept: test scaffolds into a temp dir and the result passes CompanionCatalog validation.
 
 ### T7 — report
-- [ ] 53-run-report-core-gaps (self) — `docs/RUN_REPORT_CORE_GAPS.md`: per task done / UNCERTAIN / BLOCKERS + the 8-item
+- [x] 53-run-report-core-gaps (self) — `docs/RUN_REPORT_CORE_GAPS.md`: per task done / UNCERTAIN / BLOCKERS + the 8-item
   human checklist of SPEC_CORE_GAPS T7 (+ dismissal items from T4, + user renames audio files to local ids).
-- [ ] Milestone end: full TEST_CMD, commit `milestone core-gaps: <summary>`. No push.
+- [x] Milestone end: full TEST_CMD, commit `milestone core-gaps: <summary>`. No push.
 
 ### Decisions (user, 2026-10-24 — answers to the T6 questions)
 1. `schemaVersion` in **every** JSON file, lang files included: `{ "schemaVersion": 1, "lines": { "<localId>": "<text>" } }`.
