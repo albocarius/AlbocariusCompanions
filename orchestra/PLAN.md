@@ -93,14 +93,15 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   (same rule as `ModuleHelper.GetXsdPath`); generated character template → `NPCCharacters.xsd`; language files /
   voiced lines → their schema per GAME_MAP Q12/Q14, or a structural test where no schema exists (state which).
   SubModule.xml has no XSD → structural test (task 23). Fails if `xmlschemas/` is missing.
-- [ ] 23-game-submodule-xml (worker) — `module/SubModule.xml` (id, name, version 0.1.0, deps from GAME_MAP,
+- [ ] 23-game-submodule-xml (worker; tests staged, task ready) — `module/SubModule.xml` (id, name, version 0.1.0, deps from GAME_MAP,
   Bannerlord.Harmony, SubModule class). Accept: XML parse test checking ids/version/deps.
 - [ ] 24-core-logging (worker; tests staged, task ready) — Core `ModLogger` (System.IO, never throws) + `Safe.Run` guard.
   Game glue (path via `PlatformFileType.User`, GAME_MAP Q15) is part of 30.
 - [ ] 25-core-resolver (worker; tests staged, task ready) — SPEC rule 9 logic in Core behind `IGameObjectLookup`; the Game implementation
   (`MBObjectManager.GetObject<T>` + `Equipment.IsItemFitsToSlot`) is part of 26. Original scope:
   fixed items: `GetObject<ItemObject>` + `Equipment.IsItemFitsToSlot`, drop misfits with a warning, all dropped → template set (GAME_MAP Q5).
-- [ ] 26-game-hero-creation (self) — at `AfterRegisterSubModuleObjects`: resolve ids (25), generate XML (20c), `MBObjectManager.LoadXml`,
+- [x] 26-game-hero-creation (self) — code in Game/{GameObjectLookup,CompanionTemplates,CompanionHeroFactory}.cs; builds against the game DLLs;
+  runtime behaviour only verifiable in-game. GAME_MAP "API index" + ApiIndexTests added (SPEC rule 1). Original scope: — at `AfterRegisterSubModuleObjects`: resolve ids (25), generate XML (20c), `MBObjectManager.LoadXml`,
   write debug copy to the log folder; hero via `HeroCreator.CreateSpecialHero` + `SetNewOccupation(Wanderer)`, attributes via `HeroDeveloper` (GAME_MAP Q4/Q5/Q11).
 - [ ] 27-game-behavior-spawn (worker, review self) — campaign behavior: new-game spawn, game-loaded spawn of missing,
   SyncData id→hero mapping, no duplicates, wanderer-style placement; uses 25 + 26.
