@@ -89,7 +89,8 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
 - [ ] 26-game-hero-creation (self) — create hero from registry data per GAME_MAP Q4/Q5/Q11 (voice type from JSON).
 - [ ] 27-game-behavior-spawn (worker, review self) — campaign behavior: new-game spawn, game-loaded spawn of missing,
   SyncData id→hero mapping, no duplicates, wanderer-style placement; uses 25 + 26.
-- [ ] 28-game-harmony-count (self) — patch per GAME_MAP Q10 excluding registry ids.
+- [ ] 28-game-harmony-count (self) — patch per GAME_MAP Q10 excluding registry ids; plus prefix on
+  `LordConversationsCampaignBehavior.conversation_hero_hire_on_condition` returning false for registry heroes (GAME_MAP Q7).
 - [ ] 29-game-dialogs-hire (worker, review self) — generic dialog registration from dialogs.json (`{=<line id>}<en>`),
   intro/backstory/hire offer/accept/decline, vanilla join-clan, limit + hireCost.
 - [ ] 30-game-submodule (self) — SubModule class wiring: load registry, log validation, register behavior, apply Harmony; all entry points wrapped.
