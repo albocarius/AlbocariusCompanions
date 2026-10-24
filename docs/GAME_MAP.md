@@ -1012,3 +1012,23 @@ Post-translation the string goes through the tokenizer (`{SETVAR}` variables, `{
 - **UNCERTAIN**: none of the 25 `language_data.xml` files in the local vanilla copy carries `name`/`supported_iso`/`under_development`/`text_processor` — per the code all their `LanguageData` would be `IsValid=false` and the language dropdown would be empty, which contradicts the shipped game; the metadata must come from module data absent from this copy (most plausibly the Native module's `ModuleData/Languages`, which was not copied) or from exe-side defaults; resolve by dumping `Modules/Native/ModuleData/Languages/**` from a full install.
 - **UNCERTAIN**: the only vanilla voice registration `VoicedLines/sandbox_voiced_lines_en.xml` (from the SandBox root `Languages/language_data.xml`) does not exist in the local copy — only unregistered RHUBarb lipsync XMLs sit under `VoicedLines/EN/PC/`; the vanilla `<VoiceOvers>` payload has therefore never been read here (its shape rests on the `LocalizedVoiceManager` parser + Q12); resolve with a full install.
 - **UNCERTAIN**: what tooling assigns the random 8-char `{=ID}` keys and keeps source/translation pairs in sync is outside the decompiled engine (the ids are fixed literals in the XML/C# sources); resolve via TaleWorlds modding-tool documentation or full-install launcher data.
+
+## Q15 — Logging, writable paths and exception safety
+
+Status: TODO
+
+### Answer
+
+### Evidence
+
+### Uncertain
+
+## Q16 — SubModule.xml and MBSubModuleBase lifecycle
+
+Status: TODO
+
+### Answer
+
+### Evidence
+
+### Uncertain
