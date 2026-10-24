@@ -1237,6 +1237,26 @@ the log file stays the authoritative record.
 ### Uncertain
 None. (ViewModelCollection and Native GauntletUI were decompiled with ilspycmd into `~/bannerlord/decomp` for this section.)
 
+## Q18 — Vanilla wanderer/companion dialog points
+
+Status: TODO
+
+### Answer
+
+### Evidence
+
+### Uncertain
+
+## Q19 — Companion dismissal
+
+Status: TODO
+
+### Answer
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
