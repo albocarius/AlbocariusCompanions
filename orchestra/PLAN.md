@@ -46,7 +46,7 @@ scaffold last because its template must contain the final slot list and lang for
   codes, CompanionResolver, ResolverTests, test_companion, SCHEMA.md); add optional `requiredModules: string[]`
   (non-empty strings, no duplicates). Tests may use `EOE_Armory` as an example of a module that is not loaded. Core `RequiredModules.Missing(package, Func<string,bool> isModuleActive)`.
   Accept: removed fields rejected as unknown by the strict loader, filter tests with a fake predicate.
-- [ ] 36-required-modules-game (self) — at OnSubModuleLoad: `ModuleHelper.IsModuleActive(id)` (GAME_MAP Q13, add API row),
+- [x] 36-required-modules-game (self) — at OnSubModuleLoad: `ModuleHelper.IsModuleActive(id)` (GAME_MAP Q13, add API row),
   skip only that companion with a log line naming the missing module (no template, no spawn, no dialogs). A saved hero of
   a skipped companion: untouched, one warning (spawn pass lists mapped ids that have no template). Example ids in docs:
   `NavalDLC` (GAME_MAP Q13); `EOE_Armory` is only an illustrative example (user).
@@ -59,9 +59,9 @@ scaffold last because its template must contain the final slot list and lang for
   (errors red, warnings yellow), summary once per campaign start/load.
 
 ### T3 — authoring ergonomics
-- [ ] 40-folder-is-id (self; one schema migration together with 41 and 49, so fixtures and test_companion change once) — remove `id` from companion.json; id = folder name, `[a-z0-9_]+` else error; `_shared` is
+- [x] 40-folder-is-id (self; one schema migration together with 41 and 49, so fixtures and test_companion change once) — remove `id` from companion.json; id = folder name, `[a-z0-9_]+` else error; `_shared` is
   reserved and skipped by the loader. Migrate test_companion + fixtures, SCHEMA.md.
-- [ ] 41-local-line-ids (self) — dialogs.json lines use local ids (`intro_01`); loader derives full id
+- [x] 41-local-line-ids (self) — dialogs.json lines use local ids (`intro_01`); loader derives full id
   `<companionId>_<localId>`; local unique per companion, full unique globally (incl. player line ids, T6). Full id used for
   `{=…}`, voice-over id, logs; audio default becomes `audio/<local id>.ogg` (VoicedLinesXml, MissingAudioReport,
   validation of the line-id rule replaced). Migrate test_companion. The user renames the Windows audio files
@@ -85,9 +85,9 @@ scaffold last because its template must contain the final slot list and lang for
   frozen reload rule. Checklist: dismiss → tavern → rehire; reload after dismissal → no duplicate.
 
 ### T5 — slot variation
-- [ ] 46-slot-picker-core (worker) — Core picker: several lines in a slot → one at random per use, behind an injectable
+- [x] 46-slot-picker-core (self, while the worker ran 35) — Core picker: several lines in a slot → one at random per use, behind an injectable
   random source (`IRandomSource`). Accept: deterministic tests with a fake source, single-line slot, empty slot.
-- [ ] 47-slot-variation-game (self) — wire the picker into CompanionDialogs (pick per conversation turn; the chosen
+- [x] 47-slot-variation-game (self) — wire the picker into CompanionDialogs (pick per conversation turn; the chosen
   line's `{=full id}` drives text and voice), Game random source = `MBRandom`.
 
 ### T6 — player lines + per-language files (decisions below)
@@ -97,16 +97,20 @@ and lipsync working in every language; a mid-session language change needs no re
 - [x] 48-gm-q14-language-decision (self) — extend Q14: how to read the active game language at dialog registration
   (API + when it is valid, what happens on a language change mid-session); mapping ISO 639-1 code → game language id
   (`en`→`English`, `tr`→`Türkçe`, …). Voice stays language-independent (decision 5).
-- [ ] 49-lang-files-core (self) — schema: `text` removed from dialogs/player lines; `<folder>/lang/<code>.json` =
+- [x] 49-lang-files-core (self) — schema: `text` removed from dialogs/player lines; `<folder>/lang/<code>.json` =
   `{ "schemaVersion": 1, "lines": { "<localId>": "<text>" } }`; `en.json` required and complete. Validation: missing in en
   → error; missing in another language → warning (falls back to en); id not in dialogs → warning; file name not ISO 639-1
   → error. Player-name token rule for voiced lines applies to the lang files. `_shared/player_lines.json` (`schemaVersion`,
   lines with id/slot) + `_shared/lang/<code>.json`; player slots join the global slot list; player ids as-is, collision
   with companion full ids → error. Core `TextFor(lineId, languageCode)` with en fallback. Migrate test_companion, SCHEMA.md.
-- [ ] 50-player-lines-game (self) — every player-facing string in C# moves to player_lines; dialogs registered with the
+- [x] 50-player-lines-game (self) — every player-facing string in C# moves to player_lines; dialogs registered with the
   active language's text (en fallback) via 48; missing-translation count per language logged at start-up. Acceptance test
   that greps Game sources for hard-coded English dialog text. **No language XML is generated** (decision 2); only the
   voiced-lines XML is still written at start-up.
+
+Done as one self change (commit 9253894): 36, 40, 41, 47, 49, 50 — the schema migration and the runtime dialog rewrite share
+every fixture, so they went in together. Missing translations are logged as one count per language (file only), not shown
+in game. The user renames the Windows audio files to local ids (`intro_01.ogg`).
 
 ### Scaffold (T3.3, after 43 and 49)
 - [ ] 52-scaffold (worker) — `tools/new-companion.sh <id>` + `.bat`, template in `tools/companion-template/` with every
