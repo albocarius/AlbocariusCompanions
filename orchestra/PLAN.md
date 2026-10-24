@@ -12,7 +12,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 
 ## Status
 - Phase 0 bootstrap done (commit 8aa1f47). Baseline: build OK, 0 tests.
-- M1 done (phase 1 committed). M2: 15 done, 16–20b staged, 20c new (tests to write). M3: 22 done. Q11 decision (runtime XML) approved by user.
+- M1 done. M2 done (pending phase-2 commit). Next: Q15, Q16, then M3 (22 done).
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
