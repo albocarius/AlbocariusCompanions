@@ -93,7 +93,7 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   (same rule as `ModuleHelper.GetXsdPath`); generated character template → `NPCCharacters.xsd`; language files /
   voiced lines → their schema per GAME_MAP Q12/Q14, or a structural test where no schema exists (state which).
   SubModule.xml has no XSD → structural test (task 23). Fails if `xmlschemas/` is missing.
-- [ ] 23-game-submodule-xml (worker; tests staged, task ready) — `module/SubModule.xml` (id, name, version 0.1.0, deps from GAME_MAP,
+- [x] 23-game-submodule-xml (worker; tests staged, task ready) — `module/SubModule.xml` (id, name, version 0.1.0, deps from GAME_MAP,
   Bannerlord.Harmony, SubModule class). Accept: XML parse test checking ids/version/deps.
 - [x] 24-core-logging (worker; tests staged, task ready) — Core `ModLogger` (System.IO, never throws) + `Safe.Run` guard.
   Game glue (path via `PlatformFileType.User`, GAME_MAP Q15) is part of 30.
