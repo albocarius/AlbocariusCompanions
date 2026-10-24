@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using AlbocariusCompanions.Core.Logging;
@@ -48,9 +49,21 @@ public sealed class SubModule : MBSubModuleBase
                 .Select(i => i.Folder).Distinct().ToList();
             if (skipped.Count > 0)
                 log.Warning($"Companions skipped because of errors: {string.Join(", ", skipped)}.");
-            log.Info($"{catalog.Registry.Count} companion(s) ready from {root}.");
-            ModRuntime.SkippedAtLoad = skipped.Count;
-            ModRuntime.Registry = catalog.Registry;
+
+            // requiredModules (SPEC_CORE_GAPS T2.3): a companion whose module is not loaded is skipped, the rest stay.
+            var kept = new List<CompanionPackage>();
+            foreach (var package in catalog.Registry.All)
+            {
+                var missing = RequiredModules.Missing(package, ModuleHelper.IsModuleActive);
+                if (missing.Count == 0)
+                    kept.Add(package);
+                else
+                    log.Warning($"Companion '{package.Id}' skipped: required module(s) not loaded: {string.Join(", ", missing)}.");
+            }
+
+            log.Info($"{kept.Count} companion(s) ready from {root}.");
+            ModRuntime.SkippedAtLoad = skipped.Count + (catalog.Registry.Count - kept.Count);
+            ModRuntime.Registry = new CompanionRegistry(kept, catalog.Registry.PlayerLines);
         });
 
         Safe.Run(log, "write voiced lines", () => VoicedLinesFile.Write(ModRuntime.Registry, log));

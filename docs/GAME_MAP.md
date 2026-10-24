@@ -1379,3 +1379,4 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `MBTextManager.ActiveTextLanguage` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | pick the lang file of the active game language |
 | `LocalizedTextManager.GetLocalizationCodeOfISOLanguageCode` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedTextManager.cs` | Q14 | ISO code of a lang file → game language id |
 | `TextObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/TextObject.cs` | Q14 | `{=<full id>}<text>` value of a dialog line variable |
+| `ModuleHelper.IsModuleActive` | `decomp/TaleWorlds.ModuleManager/TaleWorlds.ModuleManager/ModuleHelper.cs` | Q13 | requiredModules: skip a companion whose module is not loaded |

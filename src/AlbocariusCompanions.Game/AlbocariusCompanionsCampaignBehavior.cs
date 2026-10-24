@@ -139,6 +139,11 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
             });
         }
 
+        // A saved companion that is not loaded now (folder removed, a required module missing, errors): its hero is left as
+        // it is and its map entry is kept, so it is found again once the companion loads (SPEC_CORE_GAPS §1.3, T2.3).
+        foreach (var pair in _companionHeroes.Where(p => !ModRuntime.Templates.ContainsKey(p.Key)).OrderBy(p => p.Key, StringComparer.Ordinal))
+            log.Warning($"Companion '{pair.Key}' exists in this save as hero '{pair.Value?.StringId}' but is not loaded now; the hero is left untouched.");
+
         log.Info($"Companion spawn pass ({reason}): {spawned} spawned, {present} already present, {relinked} re-linked, " +
             $"{ModRuntime.Templates.Count} template(s) considered.");
     }
