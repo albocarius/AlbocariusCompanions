@@ -73,7 +73,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 - [ ] 20c-core-npc-xml (worker; tests staged, task file ready) — Core generator: resolved companion data → `NPCCharacters` XML document (template
   `occupation="Special"`, `is_template="true"`, id = companion id, culture/voice/age/is_female, skills, traits, equipment set).
   Acceptance: output validates against `xmlschemas/NPCCharacters.xsd`; field mapping tests. (SPEC rule 8 amendment, GAME_MAP Q11.)
-- [ ] 21-placeholder-companion (self) — `module/ModuleData/Companions/test_companion/` per SPEC §5 with
+- [x] 21-placeholder-companion (self) — `module/ModuleData/Companions/test_companion/` per SPEC §5 with
   ids from GAME_MAP; acceptance test that loads it from disk and validates clean.
 - [ ] Milestone end: full tests; commit `phase 2: core`.
 
