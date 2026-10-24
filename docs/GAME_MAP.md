@@ -984,9 +984,11 @@ Post-translation the string goes through the tokenizer (`{SETVAR}` variables, `{
 **Orchestrator note 2 (verified, core-gaps T6 — no language XML, text picked at runtime).** Active language:
 `MBTextManager.ActiveTextLanguage` is the game language id (`English`, `Türkçe`, …), set by `MBTextManager.ChangeLanguage`.
 `BannerlordConfig.Language` calls it at start-up and again from its setter, so **the player can change the language
-mid-session from the options**. Our ISO 639-1 lang files are mapped through the registration: `LanguageData.GetLanguageData(id)
-.SupportedIsoCodes` lists the ISO codes of a language (vanilla `Türkçe` = `tr,tur,tr-tr`, `English` = `en-GB,en-US,en,…`,
-`Deutsch` = `de,…`); a lang file `<code>.json` applies when its code is in that list (case-insensitive), else `en.json`.
+mid-session from the options**. Our ISO 639-1 lang files are mapped through the registration's `supported_iso` lists (vanilla `Türkçe` = `tr,tur,tr-tr`,
+`English` = `en-GB,en-US,en,…`): `LanguageData` itself is `internal`, but the public
+`LocalizedTextManager.GetLocalizationCodeOfISOLanguageCode(iso)` returns the language id whose list contains the code
+(case-insensitive). A lang file `<code>.json` applies when that id equals the active language, else `en.json`. An unknown
+code makes that method `Debug.FailedAssert` and return `English`, so the mod asks once per code and caches the answer.
 Runtime text + voice pattern (vanilla `LordConversationsCampaignBehavior` uses it: line text `{=!}{VOICED_LINE}`, condition calls
 `MBTextManager.SetTextVariable("VOICED_LINE", textObject)`): the dialog line is registered once as `{=!}{<VAR>}` and its
 condition sets `<VAR>` to `new TextObject("{=<full line id>}" + <text in the active language>)` at the moment the line is
@@ -1040,7 +1042,8 @@ line is shown, a mid-session language change and the random pick of T5 both work
 
 - `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` — `MBTextManager.ActiveTextLanguage` — returns the active text language id; `ChangeLanguage(string)` sets it.
 - `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/BannerlordConfig.cs` — `BannerlordConfig.Language` — setter calls `MBTextManager.ChangeLanguage` (options change at runtime); `Initialize` calls it at start-up.
-- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LanguageData.cs` — `LanguageData.SupportedIsoCodes` — ISO codes of a registered language; `GetLanguageData(string)` looks a language up by id.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LanguageData.cs` — `LanguageData.SupportedIsoCodes` — `internal class LanguageData`: ISO codes of a registered language, not usable from a mod.
+- `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedTextManager.cs` — `LocalizedTextManager.GetLocalizationCodeOfISOLanguageCode` — public: ISO code → language id via `SupportedIsoCodes` (ignore case); unknown → `Debug.FailedAssert` + `"English"`.
 - `~/bannerlord/moduledata_win/Native/ModuleData/Languages/TR/language_data.xml` — `supported_iso` — vanilla `Türkçe` registration with `supported_iso="tr,tur,tr-tr"`.
 - `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` — `ProcessTextForVocalization` — `!` id → follows identifier tokens via `GetRawTextVariable` to the variable's own `{=id}` for the voice lookup.
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/LordConversationsCampaignBehavior.cs` — `VOICED_LINE` — vanilla registers `{=!}{VOICED_LINE}` and sets the variable to a TextObject in the condition.
@@ -1373,3 +1376,6 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `InformationManager.DisplayMessage` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` | Q17 | show queued warnings/errors in the message log |
 | `InformationMessage` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationMessage.cs` | Q17 | message text + color |
 | `Colors` | `decomp/TaleWorlds.Library/TaleWorlds.Library/Colors.cs` | Q17 | red errors, yellow warnings |
+| `MBTextManager.ActiveTextLanguage` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | pick the lang file of the active game language |
+| `LocalizedTextManager.GetLocalizationCodeOfISOLanguageCode` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedTextManager.cs` | Q14 | ISO code of a lang file → game language id |
+| `TextObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/TextObject.cs` | Q14 | `{=<full id>}<text>` value of a dialog line variable |

@@ -15,24 +15,22 @@ public static class CompanionChecks
         if (packages == null)
             return issues;
 
-        // Global context: ids are unique across folders, and relation targets resolve against loaded ids.
-        var idCounts = packages.GroupBy(p => p.Id)
-            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
-        var knownIds = new HashSet<string>(idCounts.Keys, StringComparer.Ordinal);
+        // Global context: relation targets resolve against loaded ids (folder names, unique by construction).
+        var knownIds = new HashSet<string>(packages.Select(p => p.Id), StringComparer.Ordinal);
 
         foreach (var package in packages)
-            ValidatePackage(package, idCounts, knownIds, issues);
+            ValidatePackage(package, knownIds, issues);
 
         return issues;
     }
 
     private static void ValidatePackage(
-        CompanionPackage package, Dictionary<string, int> idCounts, HashSet<string> knownIds, List<ValidationIssue> issues)
+        CompanionPackage package, HashSet<string> knownIds, List<ValidationIssue> issues)
     {
         var folder = package.FolderName;
         var c = package.Companion;
 
-        ValidateId(package, idCounts, issues);
+        ValidateId(package, issues);
 
         RequireString(c.Name, "name", folder, issues);
 
@@ -104,23 +102,13 @@ public static class CompanionChecks
         ValidateRelations(c.Relations, package.Id, folder, knownIds, issues);
     }
 
-    private static void ValidateId(CompanionPackage package, Dictionary<string, int> idCounts, List<ValidationIssue> issues)
+    /// <summary>The folder name is the companion id (SPEC_CORE_GAPS T3.1).</summary>
+    private static void ValidateId(CompanionPackage package, List<ValidationIssue> issues)
     {
         var folder = package.FolderName;
-        var id = package.Companion.Id;
-
-        if (string.IsNullOrWhiteSpace(id))
-            Missing(issues, folder, "id");
-        else if (!CompanionRules.IdPattern.IsMatch(id))
+        if (!CompanionRules.IdPattern.IsMatch(folder))
             issues.Add(ValidationIssue.Error(IssueCodes.InvalidId, folder,
-                $"id '{id}' does not match the pattern {CompanionRules.IdPattern} (lowercase [a-z0-9_]+)."));
-        else if (!string.Equals(id, folder, StringComparison.Ordinal))
-            issues.Add(ValidationIssue.Error(IssueCodes.IdFolderMismatch, folder,
-                $"id '{id}' does not equal the folder name '{folder}'."));
-
-        if (idCounts.TryGetValue(package.Id, out var count) && count > 1)
-            issues.Add(ValidationIssue.Error(IssueCodes.DuplicateId, folder,
-                $"id '{package.Id}' is used by {count} companion folders."));
+                $"Companion folder name '{folder}' is the companion id and must match {CompanionRules.IdPattern} (lowercase letters, digits, '_')."));
     }
 
     private static void ValidateAttributes(Dictionary<string, int>? attributes, string folder, List<ValidationIssue> issues)

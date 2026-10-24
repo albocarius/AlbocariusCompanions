@@ -18,7 +18,7 @@ public class MissingAudioReportTests
 
     private static CompanionPackage Pkg(string id, string folderPath, string dialogsJson) =>
         new CompanionPackage(id, folderPath,
-            new CompanionDefinition { Id = id },
+            new CompanionDefinition(),
             JsonConvert.DeserializeObject<DialogFile>(dialogsJson)!);
 
     [Fact]
@@ -52,13 +52,13 @@ public class MissingAudioReportTests
     public void Existing_file_and_lipsync_xml_only_differ()
     {
         using var tmp = new TempDir();
-        var dialogs = """{ "lines": [ { "id": "a_intro_01", "slot": "intro", "text": { "en": "x" }, "voiced": true } ] }""";
+        var dialogs = """{ "lines": [ { "id": "intro_01", "slot": "intro", "text": { "en": "x" }, "voiced": true } ] }""";
 
         Directory.CreateDirectory(Path.Combine(tmp.Path, "audio"));
-        File.WriteAllText(Path.Combine(tmp.Path, "audio", "a_intro_01.xml"), "");
+        File.WriteAllText(Path.Combine(tmp.Path, "audio", "intro_01.xml"), "");
         Assert.Single(MissingAudioReport.Find(new[] { Pkg("a", tmp.Path, dialogs) })); // .xml alone is not audio
 
-        File.WriteAllText(Path.Combine(tmp.Path, "audio", "a_intro_01.ogg"), "");
+        File.WriteAllText(Path.Combine(tmp.Path, "audio", "intro_01.ogg"), "");
         Assert.Empty(MissingAudioReport.Find(new[] { Pkg("a", tmp.Path, dialogs) }));
     }
 
@@ -67,11 +67,11 @@ public class MissingAudioReportTests
     {
         var root = Path.Combine(Path.GetTempPath(), "albocarius-unit");
         var one = Pkg("z_first", Path.Combine(root, "z_first"), """
-        { "lines": [ { "id": "z_first_intro_01", "slot": "intro", "text": { "en": "x" }, "voiced": true },
-                     { "id": "z_first_intro_02", "slot": "intro", "text": { "en": "x" }, "voiced": true } ] }
+        { "lines": [ { "id": "intro_01", "slot": "intro", "text": { "en": "x" }, "voiced": true },
+                     { "id": "intro_02", "slot": "intro", "text": { "en": "x" }, "voiced": true } ] }
         """);
         var two = Pkg("a_second", Path.Combine(root, "a_second"), """
-        { "lines": [ { "id": "a_second_intro_01", "slot": "intro", "text": { "en": "x" }, "voiced": true } ] }
+        { "lines": [ { "id": "intro_01", "slot": "intro", "text": { "en": "x" }, "voiced": true } ] }
         """);
 
         Assert.Equal(new[] { "z_first_intro_01", "z_first_intro_02", "a_second_intro_01" },

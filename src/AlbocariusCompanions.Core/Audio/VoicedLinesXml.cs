@@ -9,8 +9,8 @@ namespace AlbocariusCompanions.Core.Audio;
 
 /// <summary>
 /// The voiced-lines document the game reads for voice-over (GAME_MAP Q12): one VoiceOver per voiced line whose .ogg
-/// exists, id = line id (the {=id} key of the dialog text). Rewritten at every start from the companion folders, so
-/// adding a companion needs no build step. The game appends ".ogg" itself, so paths carry no extension.
+/// exists, id = full line id (the {=id} key of the dialog text), file audio/&lt;local id&gt;.ogg by default. Rewritten at
+/// every start from the companion folders, so adding a companion needs no build step. The game appends ".ogg" itself, so paths carry no extension.
 /// </summary>
 public static class VoicedLinesXml
 {
@@ -32,7 +32,7 @@ public static class VoicedLinesXml
         {
             foreach (var line in package.Dialogs?.Lines ?? new List<DialogLine>())
             {
-                if (line == null || !line.Voiced || string.IsNullOrEmpty(line.Id))
+                if (line == null || !line.Voiced || string.IsNullOrEmpty(line.Id) || string.IsNullOrEmpty(line.FullId))
                     continue;
 
                 var relative = AudioRelativePath(line);
@@ -42,7 +42,7 @@ public static class VoicedLinesXml
                     continue;
 
                 var withoutExtension = relative.Substring(0, relative.Length - OggExtension.Length);
-                voiceOvers.Add(new XElement("VoiceOver", new XAttribute("id", line.Id),
+                voiceOvers.Add(new XElement("VoiceOver", new XAttribute("id", line.FullId),
                     new XElement("Voice", new XAttribute("path", CompanionsFromLanguages + package.FolderName + "/" + withoutExtension))));
             }
         }

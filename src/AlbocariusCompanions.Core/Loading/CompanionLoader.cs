@@ -10,11 +10,15 @@ using Newtonsoft.Json.Linq;
 
 namespace AlbocariusCompanions.Core.Loading;
 
-/// <summary>Scans &lt;root&gt;/*/ for companion.json + dialogs.json. Never throws for bad data.</summary>
+/// <summary>
+/// Scans &lt;root&gt;/*/ for companion.json + dialogs.json + lang/*.json (the reserved _shared folder is skipped; see
+/// <see cref="LoadShared"/>). Never throws for bad data.
+/// </summary>
 public static class CompanionLoader
 {
     public const string CompanionFileName = "companion.json";
     public const string DialogsFileName = "dialogs.json";
+    public const string LangFolderName = "lang";
 
     /// <summary>Strict parsing: unknown properties are errors (catches typos); type mismatches throw too.</summary>
     private static JsonSerializerSettings StrictSettings { get; } = new JsonSerializerSettings
@@ -54,20 +58,87 @@ public static class CompanionLoader
                 continue;
             if (!TryReadJson<DialogFile>(dialogsPath, DialogsFileName, folder.Name, issues, out var dialogs))
                 continue;
+            if (!TryReadLanguages(folder.Path, folder.Name, issues, out var languages))
+                continue;
 
             dialogs!.Lines ??= new List<DialogLine>(); // "lines" missing -> empty list, not null
-            packages.Add(new CompanionPackage(folder.Name, folder.Path, companion!, dialogs));
+            packages.Add(new CompanionPackage(folder.Name, folder.Path, companion!, dialogs, languages));
         }
 
         return new LoadResult(packages, issues);
     }
 
-    /// <summary>Direct subdirectories of the root (files in the root are ignored), ordered by name (ordinal).</summary>
+    /// <summary>
+    /// Loads the reserved _shared folder (player lines + lang files). Null when the root or the folder is missing (no
+    /// issue: the catalog reports a missing _shared) or when a file is broken (issue added, folder "_shared").
+    /// </summary>
+    public static SharedPackage? LoadShared(string companionsRoot, List<ValidationIssue> issues)
+    {
+        if (string.IsNullOrEmpty(companionsRoot) || !Directory.Exists(companionsRoot))
+            return null;
+
+        var folder = SharedPackage.FolderName;
+        var path = Path.Combine(companionsRoot, folder);
+        var linesPath = Path.Combine(path, SharedPackage.PlayerLinesFileName);
+        if (!File.Exists(linesPath))
+        {
+            issues.Add(ValidationIssue.Error(IssueCodes.MissingSharedFile, folder,
+                $"Missing {folder}/{SharedPackage.PlayerLinesFileName}: the player's dialog lines are part of the mod install."));
+            return null;
+        }
+
+        if (!TryReadJson<PlayerLinesFile>(linesPath, SharedPackage.PlayerLinesFileName, folder, issues, out var playerLines))
+            return null;
+        if (!TryReadLanguages(path, folder, issues, out var languages))
+            return null;
+
+        playerLines!.Lines ??= new List<PlayerLine>();
+        return new SharedPackage(path, playerLines, languages);
+    }
+
+    /// <summary>Direct subdirectories of the root except the reserved _shared folder, ordered by name (ordinal).</summary>
     private static IEnumerable<(string Name, string Path)> EnumerateCompanionFolders(string root) =>
         Directory.GetDirectories(root)
             .Select(p => new DirectoryInfo(p))
+            .Where(d => !string.Equals(d.Name, SharedPackage.FolderName, StringComparison.Ordinal))
             .Select(d => (Name: d.Name, Path: Path.Combine(root, d.Name)))
             .OrderBy(f => f.Name, StringComparer.Ordinal);
+
+    /// <summary>
+    /// lang/*.json of a folder, keyed by file name without extension (validation checks the code). No lang folder → no
+    /// languages. Any broken file fails the whole folder, like a broken dialogs.json.
+    /// </summary>
+    private static bool TryReadLanguages(string folderPath, string folder, List<ValidationIssue> issues,
+        out IReadOnlyDictionary<string, LangFile> languages)
+    {
+        var result = new Dictionary<string, LangFile>(StringComparer.Ordinal);
+        languages = result;
+
+        var langPath = Path.Combine(folderPath, LangFolderName);
+        if (!Directory.Exists(langPath))
+            return true;
+
+        foreach (var file in Directory.GetFiles(langPath, "*.json").OrderBy(f => f, StringComparer.Ordinal))
+        {
+            var fileName = LangFolderName + "/" + Path.GetFileName(file);
+            if (!TryReadJson<LangFile>(file, fileName, folder, issues, out var lang))
+                return false;
+            lang!.Lines ??= new Dictionary<string, string>(StringComparer.Ordinal);
+            result[Path.GetFileNameWithoutExtension(file)] = lang;
+        }
+        return true;
+    }
+
+    /// <summary>Newtonsoft turns numbers and booleans into strings silently; a lang file's texts must be JSON strings.</summary>
+    private static string? NonStringText(JObject document)
+    {
+        if (document["lines"] is not JObject lines)
+            return null;
+        foreach (var property in lines.Properties())
+            if (property.Value.Type != JTokenType.String)
+                return property.Name;
+        return null;
+    }
 
     private static bool TryReadJson<T>(string path, string fileName, string folder, List<ValidationIssue> issues, out T? value)
         where T : class
@@ -91,6 +162,13 @@ public static class CompanionLoader
         if (versionIssue != null && versionIssue.Code != IssueCodes.MissingSchemaVersion)
         {
             issues.Add(versionIssue);
+            return false;
+        }
+
+        if (typeof(T) == typeof(LangFile) && NonStringText(document) is { } badLine)
+        {
+            issues.Add(ValidationIssue.Error(IssueCodes.InvalidJson, folder,
+                $"{folder}/{fileName} is not valid: the text of '{badLine}' must be a JSON string."));
             return false;
         }
 

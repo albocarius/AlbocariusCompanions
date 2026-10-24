@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace AlbocariusCompanions.Core.Rules;
 
-/// <summary>The single global list of dialog slots (SPEC §4.3).</summary>
+/// <summary>Companion dialog slots (SPEC §4.3); with <see cref="PlayerSlots"/> the global slot list.</summary>
 public static class DialogSlots
 {
     public const string Intro = "intro";
@@ -28,4 +28,18 @@ public static class DialogSlots
     public static bool IsKnown(string? slot) => slot != null && All.Contains(slot, StringComparer.Ordinal);
 
     public static bool IsRequired(string? slot) => slot != null && Required.Contains(slot, StringComparer.Ordinal);
+}
+
+/// <summary>Slots of the player's lines (_shared/player_lines.json); every one needs at least one line.</summary>
+public static class PlayerSlots
+{
+    public const string AskAbout = "ask_about";
+    public const string AskHire = "ask_hire";
+    public const string HirePay = "hire_pay";
+    public const string HireFull = "hire_full";
+    public const string HireLater = "hire_later";
+
+    public static readonly IReadOnlyList<string> All = new[] { AskAbout, AskHire, HirePay, HireFull, HireLater };
+
+    public static bool IsKnown(string? slot) => slot != null && All.Contains(slot, StringComparer.Ordinal);
 }

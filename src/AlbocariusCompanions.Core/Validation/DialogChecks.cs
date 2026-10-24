@@ -5,7 +5,7 @@ using AlbocariusCompanions.Core.Rules;
 
 namespace AlbocariusCompanions.Core.Validation;
 
-/// <summary>dialogs.json rules (SPEC §2.5). Returns issues, never throws.</summary>
+/// <summary>dialogs.json + lang file rules (SPEC §2.5, SPEC_CORE_GAPS T3/T6). Returns issues, never throws.</summary>
 public static class DialogChecks
 {
     public static IReadOnlyList<ValidationIssue> Validate(IReadOnlyList<CompanionPackage> packages)
@@ -14,90 +14,62 @@ public static class DialogChecks
         if (packages == null)
             return issues;
 
-        // Line ids are unique globally: within a companion's lines and across all packages.
-        var seenLineIds = new HashSet<string>(StringComparer.Ordinal);
+        // Full ids (<companion>_<local>) are unique globally; a clash is reported on the later folder.
+        var seenFullIds = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var package in packages)
-            ValidatePackage(package, seenLineIds, issues);
+            ValidatePackage(package, seenFullIds, issues);
 
         return issues;
     }
 
-    private static void ValidatePackage(CompanionPackage package, HashSet<string> seenLineIds, List<ValidationIssue> issues)
+    private static void ValidatePackage(CompanionPackage package, HashSet<string> seenFullIds, List<ValidationIssue> issues)
     {
         var folder = package.FolderName;
-        var lines = package.Dialogs?.Lines;
+        var lines = package.Dialogs?.Lines ?? new List<DialogLine>();
         var slotsPresent = new HashSet<string>(StringComparer.Ordinal);
+        var localIds = new HashSet<string>(StringComparer.Ordinal);
+        var textLines = new List<LangChecks.TextLine>();
 
-        if (lines != null)
-            foreach (var line in lines)
-                ValidateLine(package, line, slotsPresent, seenLineIds, issues);
+        foreach (var line in lines)
+        {
+            if (line == null)
+            {
+                issues.Add(ValidationIssue.Error(IssueCodes.UnknownSlot, folder, "dialogs.json contains an empty (null) line."));
+                continue;
+            }
+
+            if (!DialogSlots.IsKnown(line.Slot))
+                issues.Add(ValidationIssue.Error(IssueCodes.UnknownSlot, folder, line.Slot == null
+                    ? LineRef(line) + " is missing 'slot'."
+                    : $"Dialog slot '{line.Slot}' is not a known companion slot (known: {string.Join(", ", DialogSlots.All)})."));
+            else
+                slotsPresent.Add(line.Slot!);
+
+            if (!LineIds.IsValidLocal(line.Id))
+                issues.Add(ValidationIssue.Error(IssueCodes.InvalidLineId, folder, line.Id == null
+                    ? $"A dialog line in slot '{line.Slot}' is missing 'id' (a local id such as 'intro_01')."
+                    : $"Line id '{line.Id}' must match {LineIds.LocalIdPattern} (lowercase letters, digits, '_'; e.g. 'intro_01')."));
+            else if (!localIds.Add(line.Id!))
+                issues.Add(ValidationIssue.Error(IssueCodes.DuplicateLineId, folder,
+                    $"Line id '{line.Id}' is used by more than one dialog line of this companion."));
+            else
+            {
+                if (!seenFullIds.Add(line.FullId!))
+                    issues.Add(ValidationIssue.Error(IssueCodes.DuplicateLineId, folder,
+                        $"Line '{line.Id}' has the full id '{line.FullId}', which another companion's line already uses."));
+                textLines.Add(new LangChecks.TextLine(line.Id!, line.Voiced));
+            }
+
+            ValidateAudio(line, folder, issues);
+        }
 
         foreach (var slot in DialogSlots.Required)
             if (!slotsPresent.Contains(slot))
                 issues.Add(ValidationIssue.Error(IssueCodes.MissingRequiredSlot, folder,
                     $"Required dialog slot '{slot}' has no lines in dialogs.json."));
-    }
 
-    private static void ValidateLine(
-        CompanionPackage package, DialogLine? line, HashSet<string> slotsPresent, HashSet<string> seenLineIds, List<ValidationIssue> issues)
-    {
-        var folder = package.FolderName;
-        var slot = line?.Slot;
-
-        if (!DialogSlots.IsKnown(slot))
-        {
-            issues.Add(ValidationIssue.Error(IssueCodes.UnknownSlot, folder, slot == null
-                ? "A dialog line is missing 'slot'."
-                : $"Dialog slot '{slot}' is not a known slot (known: {string.Join(", ", DialogSlots.All)})."));
-        }
-        else
-        {
-            slotsPresent.Add(slot!);
-            if (line!.Id == null || !LineIds.IsValid(line.Id, package.Id, slot!))
-            {
-                issues.Add(ValidationIssue.Error(IssueCodes.InvalidLineId, folder, line.Id == null
-                    ? $"A dialog line in slot '{slot}' is missing 'id' (expected e.g. '{LineIds.Format(package.Id, slot!, 1)}')."
-                    : $"Line id '{line.Id}' does not follow <companionId>_<slot>_<nn> (expected prefix '{package.Id}_{slot}_' and a two-digit number)."));
-            }
-        }
-
-        if (line?.Id != null && !seenLineIds.Add(line.Id))
-            issues.Add(ValidationIssue.Error(IssueCodes.DuplicateLineId, folder,
-                $"Line id '{line.Id}' is used by more than one dialog line."));
-
-        ValidateText(line, folder, issues);
-        ValidateAudio(line, folder, issues);
-    }
-
-    private static void ValidateText(DialogLine? line, string folder, List<ValidationIssue> issues)
-    {
-        var text = line?.Text;
-        if (text == null)
-        {
-            issues.Add(ValidationIssue.Error(IssueCodes.MissingEnglishText, folder,
-                LineRef(line) + " has no 'text' object (it must contain a non-empty 'en' text)."));
-            return;
-        }
-
-        if (!text.TryGetValue(CompanionRules.EnglishCode, out var english) || string.IsNullOrWhiteSpace(english))
-            issues.Add(ValidationIssue.Error(IssueCodes.MissingEnglishText, folder,
-                LineRef(line) + " is missing a non-empty 'en' text."));
-
-        foreach (var entry in text)
-            if (!CompanionRules.LanguageCodePattern.IsMatch(entry.Key))
-                issues.Add(ValidationIssue.Error(IssueCodes.InvalidLanguageCode, folder,
-                    LineRef(line) + $" has language key '{entry.Key}' which is not a lowercase language code (expected e.g. en, tr, pt-br)."));
-
-        // Voiced lines become recorded audio: they address the player as "Captain", never with name tokens (SPEC §2.5).
-        if (line != null && line.Voiced)
-            foreach (var value in text.Values)
-                if (value != null && CompanionRules.PlayerTokenPattern.IsMatch(value))
-                {
-                    issues.Add(ValidationIssue.Error(IssueCodes.PlayerTokenInVoicedLine, folder,
-                        LineRef(line) + " is voiced but a text contains a player-name token; voiced lines must address the player as \"Captain\"."));
-                    break;
-                }
+        LangChecks.Validate(folder, textLines, package.Languages, issues);
     }
 
     private static void ValidateAudio(DialogLine? line, string folder, List<ValidationIssue> issues)
@@ -141,5 +113,5 @@ public static class DialogChecks
     }
 
     private static string LineRef(DialogLine? line) =>
-        line?.Id != null ? $"Line '{line.Id}'" : "A dialog line";
+        line?.FullId != null ? $"Line '{line.FullId}'" : line?.Id != null ? $"Line '{line.Id}'" : "A dialog line";
 }

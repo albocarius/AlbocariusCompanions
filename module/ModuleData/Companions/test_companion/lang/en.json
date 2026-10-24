@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "lines": {
+    "intro_01": "Greetings, Captain. I am a placeholder companion.",
+    "backstory_01": "There is no story here yet, Captain. This line is only a test.",
+    "hire_offer_01": "I could ride with you, Captain, for a fair price.",
+    "hire_accept_01": "Then it is settled, Captain. Lead the way.",
+    "hire_decline_01": "Another time, then."
+  }
+}

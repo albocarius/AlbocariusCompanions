@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "lines": [
+    {"id": "player_ask_about", "slot": "ask_about"},
+    {"id": "player_ask_hire", "slot": "ask_hire"},
+    {"id": "player_hire_pay", "slot": "hire_pay"},
+    {"id": "player_hire_full", "slot": "hire_full"},
+    {"id": "player_hire_later", "slot": "hire_later"}
+  ]
+}

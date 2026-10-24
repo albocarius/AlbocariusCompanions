@@ -32,18 +32,6 @@ public class CompanionChecksTests
     public void A_valid_companion_produces_no_issues() => Assert.Empty(Issues(Pkg("a", Valid())));
 
     [Fact]
-    public void Duplicate_id_in_three_folders_flags_all_three()
-    {
-        var issues = Issues(
-            Pkg("one", Valid("dup")),
-            Pkg("two", Valid("dup")),
-            Pkg("three", Valid("dup")));
-
-        Assert.Equal(3, issues.Count(i => i.Code == IssueCodes.DuplicateId));
-        Assert.All(issues, i => Assert.True(i.IsError));
-    }
-
-    [Fact]
     public void Unknown_attribute_is_reported_once_and_its_value_is_not_range_checked()
     {
         var json = Valid().Replace("\"social\": 2", "\"social\": 2, \"charisma\": 999");

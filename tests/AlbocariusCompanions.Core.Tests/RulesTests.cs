@@ -31,25 +31,20 @@ public class DialogSlotsTests
 
 public class LineIdsTests
 {
-    [Fact]
-    public void Format_pads_to_two_digits() => Assert.Equal("test_companion_intro_01", LineIds.Format("test_companion", "intro", 1));
-
     [Theory]
-    [InlineData("test_companion_intro_01", true)]
-    [InlineData("test_companion_intro_12", true)]
-    [InlineData("test_companion_intro_1", false)]
-    [InlineData("test_companion_intro_001", false)]
-    [InlineData("test_companion_backstory_01", false)]
-    [InlineData("other_intro_01", false)]
+    [InlineData("intro_01", true)]
+    [InlineData("greeting_when_raining", true)]
+    [InlineData("Intro_01", false)]
+    [InlineData("intro-01", false)]
+    [InlineData("", false)]
     [InlineData(null, false)]
-    public void IsValid(string? id, bool expected) => Assert.Equal(expected, LineIds.IsValid(id, "test_companion", "intro"));
+    public void Local_id_pattern(string? id, bool expected) => Assert.Equal(expected, LineIds.IsValidLocal(id));
 
     [Fact]
-    public void Slot_with_underscore_is_matched_literally() =>
-        Assert.True(LineIds.IsValid("a_hire_offer_03", "a", "hire_offer"));
+    public void Full_id_prefixes_the_companion() => Assert.Equal("test_companion_intro_01", LineIds.Full("test_companion", "intro_01"));
 
     [Fact]
-    public void Default_audio_path() => Assert.Equal("audio/x_intro_01.ogg", LineIds.DefaultAudioPath("x_intro_01"));
+    public void Default_audio_path_uses_the_local_id() => Assert.Equal("audio/intro_01.ogg", LineIds.DefaultAudioPath("intro_01"));
 }
 
 public class CompanionRulesTests
@@ -67,7 +62,8 @@ public class CompanionRulesTests
     [Theory]
     [InlineData("en", true)]
     [InlineData("tr", true)]
-    [InlineData("pt-br", true)]
+    [InlineData("pt-br", false)]
+    [InlineData("tur", false)]
     [InlineData("EN", false)]
     [InlineData("english", false)]
     [InlineData("", false)]
@@ -94,7 +90,7 @@ public class ModelJsonTests
     {
         const string json = """
         {
-          "id": "test_companion", "name": "Test Companion", "isFemale": false, "voice": "earnest", "age": 32,
+          "schemaVersion": 1, "name": "Test Companion", "isFemale": false, "voice": "earnest", "age": 32,
           "culture": "empire", "cultureFallback": null, "bodyProperties": null,
           "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
           "skills": { "OneHanded": 100 }, "traits": { "Valor": 1 },
@@ -104,7 +100,6 @@ public class ModelJsonTests
         }
         """;
         var c = JsonConvert.DeserializeObject<CompanionDefinition>(json)!;
-        Assert.Equal("test_companion", c.Id);
         Assert.Equal(4, c.Attributes!["vigor"]);
         Assert.Equal(100, c.Skills!["OneHanded"]);
         Assert.Equal("x", c.Equipment!.TemplateId);
@@ -116,11 +111,11 @@ public class ModelJsonTests
     public void Spec_example_dialog_line_deserializes()
     {
         const string json = """
-        { "lines": [ { "id": "test_companion_intro_01", "slot": "intro", "text": { "en": "Hi", "tr": "Selam" }, "voiced": true, "audio": "audio/test_companion_intro_01.ogg" } ] }
+        { "schemaVersion": 1, "lines": [ { "id": "intro_01", "slot": "intro", "voiced": true, "audio": "audio/intro_01.ogg" } ] }
         """;
         var line = JsonConvert.DeserializeObject<DialogFile>(json)!.Lines!.Single();
         Assert.Equal("intro", line.Slot);
-        Assert.Equal("Selam", line.Text!["tr"]);
+        Assert.Equal("intro_01", line.Id);
         Assert.True(line.Voiced);
     }
 }

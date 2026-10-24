@@ -27,7 +27,7 @@ public static class MissingAudioReport
                     relativePath.Replace('/', Path.DirectorySeparatorChar));
 
                 if (!File.Exists(fullPath))
-                    entries.Add(new MissingAudioEntry(package.Id, line.Id!, relativePath, fullPath));
+                    entries.Add(new MissingAudioEntry(package.Id, line.FullId ?? line.Id!, relativePath, fullPath));
             }
         }
 

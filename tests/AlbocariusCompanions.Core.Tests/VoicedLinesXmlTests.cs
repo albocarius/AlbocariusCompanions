@@ -10,10 +10,10 @@ public class VoicedLinesXmlTests
 {
     private static CompanionPackage Package(params DialogLine[] lines) => new CompanionPackage(
         "jeremus", "/mods/AlbocariusCompanions/ModuleData/Companions/jeremus",
-        new CompanionDefinition { Id = "jeremus" }, new DialogFile { Lines = lines.ToList() });
+        new CompanionDefinition(), new DialogFile { Lines = lines.ToList() });
 
     private static DialogLine Line(string id, bool voiced = true, string? audio = null) =>
-        new DialogLine { Id = id, Slot = "intro", Voiced = voiced, Audio = audio, Text = new Dictionary<string, string> { ["en"] = "x" } };
+        new DialogLine { Id = id, Slot = "intro", Voiced = voiced, Audio = audio };
 
     private static List<(string? Id, string? Path)> Entries(System.Xml.Linq.XDocument doc) =>
         doc.Root!.Element("VoiceOvers")!.Elements("VoiceOver")
@@ -22,14 +22,14 @@ public class VoicedLinesXmlTests
     [Fact]
     public void Voiced_lines_with_audio_get_an_extensionless_path_relative_to_Languages()
     {
-        var doc = VoicedLinesXml.Build(new[] { Package(Line("jeremus_intro_01")) }, _ => true);
-        Assert.Equal(new List<(string?, string?)> { ("jeremus_intro_01", "../Companions/jeremus/audio/jeremus_intro_01") }, Entries(doc));
+        var doc = VoicedLinesXml.Build(new[] { Package(Line("intro_01")) }, _ => true);
+        Assert.Equal(new List<(string?, string?)> { ("jeremus_intro_01", "../Companions/jeremus/audio/intro_01") }, Entries(doc));
     }
 
     [Fact]
     public void Unvoiced_missing_audio_and_non_ogg_lines_are_left_out()
     {
-        var package = Package(Line("jeremus_intro_01", voiced: false), Line("jeremus_intro_02"), Line("jeremus_intro_03", audio: "voice/a.wav"));
+        var package = Package(Line("intro_01", voiced: false), Line("intro_02"), Line("intro_03", audio: "voice/a.wav"));
         var doc = VoicedLinesXml.Build(new[] { package }, path => !path.Contains("intro_02"));
         Assert.Empty(Entries(doc));
     }
@@ -37,7 +37,7 @@ public class VoicedLinesXmlTests
     [Fact]
     public void Custom_audio_path_uses_forward_slashes()
     {
-        var doc = VoicedLinesXml.Build(new[] { Package(Line("jeremus_intro_01", audio: "voice\\Custom.OGG")) }, _ => true);
+        var doc = VoicedLinesXml.Build(new[] { Package(Line("intro_01", audio: "voice\\Custom.OGG")) }, _ => true);
         Assert.Equal("../Companions/jeremus/voice/Custom", Entries(doc).Single().Path);
     }
 

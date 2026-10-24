@@ -8,8 +8,8 @@ public static class CompanionRules
 {
     public static readonly Regex IdPattern = new Regex("^[a-z0-9_]+$");
 
-    /// <summary>Lowercase language code, optionally with a lowercase region/variant (en, tr, de, pt-br).</summary>
-    public static readonly Regex LanguageCodePattern = new Regex("^[a-z]{2,3}(-[a-z0-9]{2,8})?$");
+    /// <summary>ISO 639-1 language code = lang file name (en, tr, de); mapped to game languages via supported_iso (GAME_MAP Q14).</summary>
+    public static readonly Regex LanguageCodePattern = new Regex("^[a-z]{2}$");
 
     /// <summary>Player-name tokens such as {PLAYER_NAME}, {PLAYER.NAME}, {PLAYER}. Case-insensitive.</summary>
     public static readonly Regex PlayerTokenPattern = new Regex(@"\{\s*PLAYER[^}]*\}", RegexOptions.IgnoreCase);

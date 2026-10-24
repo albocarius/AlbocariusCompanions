@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "lines": [
-    { "id": "test_companion_intro_01", "slot": "intro", "text": { "en": "Greetings, Captain. I am a placeholder companion.", "tr": "Selam, Kaptan. Ben yer tutucu bir yoldaşım." }, "voiced": true },
-    { "id": "test_companion_backstory_01", "slot": "backstory", "text": { "en": "There is no story here yet, Captain. This line is only a test." }, "voiced": true },
-    { "id": "test_companion_hire_offer_01", "slot": "hire_offer", "text": { "en": "I could ride with you, Captain, for a fair price." }, "voiced": true },
-    { "id": "test_companion_hire_accept_01", "slot": "hire_accept", "text": { "en": "Then it is settled, Captain. Lead the way." }, "voiced": true },
-    { "id": "test_companion_hire_decline_01", "slot": "hire_decline", "text": { "en": "Another time, then." }, "voiced": false }
+    {"id": "intro_01", "slot": "intro", "voiced": true},
+    {"id": "backstory_01", "slot": "backstory", "voiced": true},
+    {"id": "hire_offer_01", "slot": "hire_offer", "voiced": true},
+    {"id": "hire_accept_01", "slot": "hire_accept", "voiced": true},
+    {"id": "hire_decline_01", "slot": "hire_decline", "voiced": false}
   ]
 }

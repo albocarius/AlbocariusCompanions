@@ -11,11 +11,10 @@ public static class IssueCodes
     public const string InvalidSchemaVersion = "invalid_schema_version";
     public const string UnsupportedSchemaVersion = "unsupported_schema_version";
     public const string RootNotFound = "root_not_found";
+    public const string MissingSharedFile = "missing_shared_file";
 
     // companion.json
     public const string InvalidId = "invalid_id";
-    public const string DuplicateId = "duplicate_id";
-    public const string IdFolderMismatch = "id_folder_mismatch";
     public const string MissingField = "missing_field";
     public const string OutOfRange = "out_of_range";
     public const string UnknownAttribute = "unknown_attribute";
@@ -27,12 +26,14 @@ public static class IssueCodes
     public const string UnknownEquipmentSlot = "unknown_equipment_slot";
     public const string InvalidEquipmentItem = "invalid_equipment_item";
 
-    // dialogs.json
+    // dialogs.json, player_lines.json, lang files
     public const string InvalidLineId = "invalid_line_id";
     public const string DuplicateLineId = "duplicate_line_id";
     public const string UnknownSlot = "unknown_slot";
     public const string MissingRequiredSlot = "missing_required_slot";
     public const string MissingEnglishText = "missing_en_text";
+    public const string MissingTranslation = "missing_translation";
+    public const string UnknownTranslationId = "unknown_translation_id";
     public const string InvalidLanguageCode = "invalid_language_code";
     public const string PlayerTokenInVoicedLine = "player_token_in_voiced_line";
     public const string InvalidAudioPath = "invalid_audio_path";

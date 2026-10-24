@@ -61,8 +61,7 @@ public class CompanionRegistryTests
 
 file static class PackageTestExtensions
 {
-    /// <summary>Same folder as the original but with a different companion id (to exercise registry keying by id).</summary>
+    /// <summary>A copy of the package under another folder name, i.e. another companion id (registry keys by id).</summary>
     public static CompanionPackage WithId(this CompanionPackage package, string id) =>
-        new(package.FolderName, package.FolderPath,
-            new CompanionDefinition { Id = id, Name = package.Companion.Name }, package.Dialogs);
+        new(id, package.FolderPath, new CompanionDefinition { Name = package.Companion.Name }, package.Dialogs);
 }

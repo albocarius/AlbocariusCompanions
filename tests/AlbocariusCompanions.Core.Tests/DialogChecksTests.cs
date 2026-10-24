@@ -20,11 +20,34 @@ public class DialogChecksTests
     """;
 
     static CompanionDefinition Companion(string id) =>
-        new CompanionDefinition { Id = id, Name = "N" };
+        new CompanionDefinition { Name = "N" };
 
-    static CompanionPackage Pkg(string folder, string dialogsJson, string? id = null) =>
-        new CompanionPackage(folder, Path.Combine(Path.GetTempPath(), "albocarius-unit", folder),
-            Companion(id ?? folder), JsonConvert.DeserializeObject<DialogFile>(dialogsJson)!);
+    /// <summary>
+    /// Builds a package from the compact test form (full ids, per-line "text"): ids lose the "&lt;folder&gt;_" prefix and
+    /// texts move into one lang file per language, as the loader would see them on disk.
+    /// </summary>
+    static CompanionPackage Pkg(string folder, string dialogsJson, string? id = null)
+    {
+        var doc = Newtonsoft.Json.Linq.JObject.Parse(dialogsJson);
+        var langs = new Dictionary<string, LangFile>();
+        foreach (var line in (doc["lines"] as Newtonsoft.Json.Linq.JArray ?? new Newtonsoft.Json.Linq.JArray())
+                     .OfType<Newtonsoft.Json.Linq.JObject>())
+        {
+            var lineId = (string?)line["id"];
+            if (lineId != null && lineId.StartsWith(folder + "_"))
+                line["id"] = lineId = lineId.Substring(folder.Length + 1);
+            if (line["text"] is Newtonsoft.Json.Linq.JObject text && lineId != null)
+                foreach (var entry in text.Properties())
+                {
+                    if (!langs.TryGetValue(entry.Name, out var file))
+                        langs[entry.Name] = file = new LangFile { Lines = new Dictionary<string, string>() };
+                    file.Lines![lineId] = (string?)entry.Value!;
+                }
+            line.Remove("text");
+        }
+        return new CompanionPackage(folder, Path.Combine(Path.GetTempPath(), "albocarius-unit", folder),
+            Companion(id ?? folder), doc.ToObject<DialogFile>()!, langs);
+    }
 
     static List<ValidationIssue> Issues(params CompanionPackage[] packages) =>
         DialogChecks.Validate(packages).ToList();
@@ -53,16 +76,6 @@ public class DialogChecksTests
     }
 
     [Fact]
-    public void Duplicate_line_ids_in_a_second_folder_flag_the_repeats_only()
-    {
-        // Two full valid packages share every id; the second package's lines are all repeats.
-        var issues = Issues(Pkg("one", Valid("shared")), Pkg("two", Valid("shared")));
-
-        Assert.Equal(5, issues.Count(i => i.Code == IssueCodes.DuplicateLineId));
-        Assert.All(issues.Where(i => i.Code == IssueCodes.DuplicateLineId), i => Assert.Equal("two", i.Folder));
-    }
-
-    [Fact]
     public void Unknown_slot_and_duplicate_line_id_are_separate_errors()
     {
         var issues = Issues(Pkg("a",
@@ -71,7 +84,7 @@ public class DialogChecksTests
 
         Assert.Contains(issues, i => i.Code == IssueCodes.UnknownSlot);
         Assert.Equal(2, issues.Count(i => i.Code == IssueCodes.DuplicateLineId || i.Code == IssueCodes.UnknownSlot));
-        Assert.Contains(issues, i => i.Code == IssueCodes.DuplicateLineId && i.Message.Contains("a_intro_01"));
+        Assert.Contains(issues, i => i.Code == IssueCodes.DuplicateLineId && i.Message.Contains("intro_01"));
         Assert.Equal(4, issues.Count(i => i.Code == IssueCodes.MissingRequiredSlot));
     }
 
@@ -98,14 +111,6 @@ public class DialogChecksTests
             "{ \"lines\": [ { \"id\": \"a_intro_01\", \"slot\": \"intro\", \"text\": { \"en\": null, \"tr\": \"Merhaba\" }, \"voiced\": false } ] }"));
         Assert.Single(issues, i => i.Code == IssueCodes.MissingEnglishText);
         Assert.DoesNotContain(issues, i => i.Code == IssueCodes.InvalidLanguageCode);
-    }
-
-    [Fact]
-    public void Line_ids_are_checked_against_the_companion_id_not_the_folder_name()
-    {
-        var package = new CompanionPackage("wrong_folder", Path.Combine(Path.GetTempPath(), "albocarius-unit", "wrong_folder"),
-            Companion("right_id"), JsonConvert.DeserializeObject<DialogFile>(Valid("right_id"))!);
-        Assert.Empty(Issues(package));
     }
 
     [Theory]

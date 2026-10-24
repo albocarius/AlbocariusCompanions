@@ -23,7 +23,7 @@ public class CompanionLoaderTests
         return dir;
     }
 
-    private const string MiniCompanion = """{ "schemaVersion": 1, "id": "a_companion" }""";
+    private const string MiniCompanion = """{ "schemaVersion": 1, "name": "A Companion" }""";
     private const string MiniDialogs = """{ "schemaVersion": 1, "lines": [] }""";
 
     [Fact]
@@ -59,7 +59,7 @@ public class CompanionLoaderTests
     {
         using var tmp = new TempDir();
         WriteFolder(tmp.Path, "c",
-            """{ "id": "c", "equipment": { "templteId": "x" } }""", MiniDialogs);
+            """{ "schemaVersion": 1, "equipment": { "templteId": "x" } }""", MiniDialogs);
 
         var issue = Assert.Single(CompanionLoader.LoadAll(tmp.Path).Issues);
 
@@ -86,13 +86,17 @@ public class CompanionLoaderTests
         using var tmp = new TempDir();
         var dir = WriteFolder(tmp.Path, "c", MiniCompanion, null);
         File.WriteAllText(Path.Combine(dir, "dialogs.json"),
-            """{ "schemaVersion": 1, "lines": [ { "id": "c_intro_01", "slot": "intro", "text": { "tr": "Selam, Kaptan." }, "voiced": false } ] }""",
+            """{ "schemaVersion": 1, "lines": [ { "id": "intro_01", "slot": "intro", "voiced": false } ] }""",
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
+        Directory.CreateDirectory(Path.Combine(dir, "lang"));
+        File.WriteAllText(Path.Combine(dir, "lang", "tr.json"),
+            """{ "schemaVersion": 1, "lines": { "intro_01": "Selam, Kaptan." } }""",
             new UTF8Encoding(encoderShouldEmitUTF8Identifier: true));
 
         var result = CompanionLoader.LoadAll(tmp.Path);
 
         Assert.Empty(result.Issues);
-        Assert.Equal("Selam, Kaptan.", Assert.Single(Assert.Single(result.Packages).Dialogs.Lines!).Text!["tr"]);
+        Assert.Equal("Selam, Kaptan.", Assert.Single(result.Packages).Text("intro_01", "tr"));
     }
 
     [Fact]
@@ -125,7 +129,7 @@ public class CompanionLoaderTests
     public void Missing_version_in_an_otherwise_valid_file_is_a_loader_error_that_skips_the_folder()
     {
         using var tmp = new TempDir();
-        WriteFolder(tmp.Path, "c", """{ "id": "a_companion" }""", MiniDialogs);
+        WriteFolder(tmp.Path, "c", """{ "name": "A Companion" }""", MiniDialogs);
 
         var result = CompanionLoader.LoadAll(tmp.Path);
 
@@ -140,7 +144,7 @@ public class CompanionLoaderTests
     public void Unsupported_version_is_reported_even_when_the_rest_of_the_file_is_broken()
     {
         using var tmp = new TempDir();
-        WriteFolder(tmp.Path, "c", """{ "schemaVersion": 2, "id": "c", "age": "old" }""", MiniDialogs);
+        WriteFolder(tmp.Path, "c", """{ "schemaVersion": 2, "age": "old" }""", MiniDialogs);
 
         var issue = Assert.Single(CompanionLoader.LoadAll(tmp.Path).Issues);
 
@@ -153,7 +157,7 @@ public class CompanionLoaderTests
     public void Missing_version_never_hides_a_json_error()
     {
         using var tmp = new TempDir();
-        WriteFolder(tmp.Path, "c", """{ "id": "c", "age": "old" }""", MiniDialogs);
+        WriteFolder(tmp.Path, "c", """{ "age": "old" }""", MiniDialogs);
 
         var issue = Assert.Single(CompanionLoader.LoadAll(tmp.Path).Issues);
 
