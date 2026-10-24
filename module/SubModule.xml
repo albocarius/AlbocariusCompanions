@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Module>
+  <Name value="Albocarius's Companions" />
+  <Id value="AlbocariusCompanions" />
+  <Version value="v0.1.0" />
+  <DefaultModule value="false" />
+  <ModuleCategory value="Singleplayer" />
+  <ModuleType value="Community" />
+  <DependedModules>
+    <DependedModule Id="Bannerlord.Harmony" />
+    <DependedModule Id="Native" />
+    <DependedModule Id="SandBoxCore" />
+    <DependedModule Id="Sandbox" />
+  </DependedModules>
+  <SubModules>
+    <SubModule>
+      <Name value="AlbocariusCompanions" />
+      <DLLName value="AlbocariusCompanions.Game.dll" />
+      <SubModuleClassType value="AlbocariusCompanions.Game.SubModule" />
+      <Assemblies>
+        <Assembly value="AlbocariusCompanions.Core.dll" />
+      </Assemblies>
+      <Tags />
+    </SubModule>
+  </SubModules>
+  <Xmls />
+</Module>
