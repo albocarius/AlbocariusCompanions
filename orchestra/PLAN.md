@@ -67,7 +67,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 - [x] 19-core-validation-dialogs (worker) — line-id format + global uniqueness, required slots,
   unknown slot, `text` language keys + `en` required, no player-name tokens in voiced lines (all languages),
   `audio` relative & no `..`. Accept: one failing test per rule.
-- [ ] 20-core-missing-audio (worker) — report voiced lines whose audio file is missing (default path
+- [x] 20-core-missing-audio (worker) — report voiced lines whose audio file is missing (default path
   `audio/<line id>.ogg` when `audio` absent). Accept: present/missing/default path cases.
 - [ ] 20b-core-catalog (worker) — `CompanionCatalog.Load`: loader + validator + registry; folders with errors skipped by folder name. Needs 16–19.
 - [ ] 20c-core-npc-xml (worker; tests staged, task file ready) — Core generator: resolved companion data → `NPCCharacters` XML document (template

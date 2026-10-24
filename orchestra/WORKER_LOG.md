@@ -20,3 +20,4 @@
 | 17-core-registry | 1 | PASS | clean |
 | 18-core-validation-companion | 1 | PASS | clean, 61 acceptance tests |
 | 19-core-validation-dialogs | 1 | PASS | clean |
+| 20-core-missing-audio | 1 | PASS | clean |

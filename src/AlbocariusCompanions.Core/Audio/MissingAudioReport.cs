@@ -1,14 +1,41 @@
-using System;
 using System.Collections.Generic;
+using System.IO;
 using AlbocariusCompanions.Core.Models;
+using AlbocariusCompanions.Core.Rules;
 
 namespace AlbocariusCompanions.Core.Audio;
 
 /// <summary>Voiced lines whose audio file does not exist (used later by the voice pipeline).</summary>
 public static class MissingAudioReport
 {
-    public static IReadOnlyList<MissingAudioEntry> Find(IEnumerable<CompanionPackage> packages) =>
-        throw new NotImplementedException("task 20-core-missing-audio");
+    /// <summary>Walks packages in order, then lines in order; one entry per voiced line with no audio file on disk.</summary>
+    public static IReadOnlyList<MissingAudioEntry> Find(IEnumerable<CompanionPackage> packages)
+    {
+        var entries = new List<MissingAudioEntry>();
+
+        foreach (var package in packages)
+        {
+            var lines = package.Dialogs.Lines;
+            if (lines == null) continue;
+
+            foreach (var line in lines)
+            {
+                if (line == null || !line.Voiced) continue;
+                if (string.IsNullOrEmpty(line.Id)) continue;
+
+                var relativePath = (string.IsNullOrEmpty(line.Audio)
+                    ? LineIds.DefaultAudioPath(line.Id!)
+                    : line.Audio!).Replace('\\', '/');
+                var fullPath = Path.Combine(package.FolderPath,
+                    relativePath.Replace('/', Path.DirectorySeparatorChar));
+
+                if (!File.Exists(fullPath))
+                    entries.Add(new MissingAudioEntry(package.Id, line.Id!, relativePath, fullPath));
+            }
+        }
+
+        return entries;
+    }
 }
 
 public sealed class MissingAudioEntry
