@@ -14,3 +14,4 @@
 | 10-gm-q10-harmony-target | 1 | PASS, verified | excellent: prefix on AddToAliveCompanions (single Add site) also blocks TryKillCompanion |
 | 11-gm-q11-generation-decision | 1 | PASS, verified | strong: recommends runtime in-memory NPCCharacters XML (B) + Special-occupation template; worker set Status VERIFIED itself (should be DRAFT) |
 | 12-gm-q12-voice-over | 1 | PASS, verified | correct and detailed; no XSD for voiced lines / language_data |
+| 13-gm-q13-war-sails | 1 | PASS, verified | correct; NavalDLC id, 3 skills, no cultures/traits, GetObject null |
