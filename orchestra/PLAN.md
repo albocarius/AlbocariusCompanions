@@ -12,9 +12,11 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 
 ## Status
 - Phase 0 bootstrap done (commit 8aa1f47). Baseline: build OK, 0 tests.
-- Plan approved with changes (2026-10-24). M1: Q1–Q6 verified, Q7 next. M2: task 15 done, 16–20b staged.
+- M1 done (phase 1 committed). M2: 15 done, 16–20b staged, 20c new (tests to write). M3: 22 done. Q11 decision (runtime XML) approved by user.
 
 ## Decisions already fixed
+- Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
+- Toolchain: Microsoft .NET SDK 10.0.402 in `~/.dotnet-ms` (distro SDK crashes).
 - XML formats: reference `xmlschemas/` (game XSDs, user-provided 2026-10-24). Every XML generated at build time is validated against its schema in tests where one exists.
 - JSON: `Newtonsoft.Json.dll` 13.0.1 exists in `~/bannerlord/dlls/bin` → Game references that file
   (Private=false); Core/tests use NuGet `Newtonsoft.Json` 13.0.1.
@@ -44,7 +46,7 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [ ] 20-gm-q12-voice-over (worker → verify) — also vanilla voice type ids
 - [ ] 21-gm-q13-war-sails (worker → verify)
 - [ ] 22-gm-q14-localization (worker → verify)
-- [ ] Milestone end: all sections VERIFIED or UNCERTAIN with resolution; commit `phase 1: game map`.
+- [x] Milestone end: all sections VERIFIED or UNCERTAIN with resolution; commit `phase 1: game map`.
 
 ## M2 — Core (SPEC Phase 2)
 Acceptance tests for 16–20b are written and staged in `orchestra/staged-tests/` (they fail with NotImplementedException);
@@ -66,6 +68,9 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 - [ ] 20-core-missing-audio (worker) — report voiced lines whose audio file is missing (default path
   `audio/<line id>.ogg` when `audio` absent). Accept: present/missing/default path cases.
 - [ ] 20b-core-catalog (worker) — `CompanionCatalog.Load`: loader + validator + registry; folders with errors skipped by folder name. Needs 16–19.
+- [ ] 20c-core-npc-xml (worker) — Core generator: resolved companion data → `NPCCharacters` XML document (template
+  `occupation="Special"`, `is_template="true"`, id = companion id, culture/voice/age/is_female, skills, traits, equipment set).
+  Acceptance: output validates against `xmlschemas/NPCCharacters.xsd`; field mapping tests. (SPEC rule 8 amendment, GAME_MAP Q11.)
 - [ ] 21-placeholder-companion (self) — `module/ModuleData/Companions/test_companion/` per SPEC §5 with
   ids from GAME_MAP; acceptance test that loads it from disk and validates clean.
 - [ ] Milestone end: full tests; commit `phase 2: core`.
@@ -79,7 +84,9 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   Done: `GameDlls` property (default `$(HOME)/bannerlord/dlls`, build errors if missing), Lib.Harmony 2.4.2 compile-only (latest, works with game 1.4.8 per user),
   Core's Newtonsoft `PrivateAssets=all`, `AssembleDist` target copies only Game+Core DLLs and mirrors `module/`.
   Tests: `DistLayoutTests` (layout, only mod DLLs, module mirror, Core has no TaleWorlds refs, no NavalDLC refs, Newtonsoft 13.0.0.0).
-- [ ] 22b-xml-schema-tests (self) — acceptance tests validating every XML in `dist/` against the game XSDs:
+- [~] 22b-xml-schema-tests (self) — superseded: NPCCharacters XSD tests live in 20c (generated in memory, not in dist);
+  SubModule.xml has no XSD (structural test in 23); no language/voiced-line files this run.
+  Original text: — acceptance tests validating every XML in `dist/` against the game XSDs:
   for each `Xmls/XmlNode` in dist SubModule.xml, validate its file against `xmlschemas/<id>.xsd` when that schema exists
   (same rule as `ModuleHelper.GetXsdPath`); generated character template → `NPCCharacters.xsd`; language files /
   voiced lines → their schema per GAME_MAP Q12/Q14, or a structural test where no schema exists (state which).
@@ -89,7 +96,8 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
 - [ ] 24-game-logging (worker) — file logger (path per GAME_MAP), safe-call wrapper that never rethrows;
   TaleWorlds-free logic kept in Core so it is testable.
 - [ ] 25-game-resolver (worker, review self) — single resolver for skills/cultures/traits/equipment/settlements by string id, fallbacks, warnings.
-- [ ] 26-game-hero-creation (self) — create hero from registry data per GAME_MAP Q4/Q5/Q11 (voice type from JSON).
+- [ ] 26-game-hero-creation (self) — at `AfterRegisterSubModuleObjects`: resolve ids (25), generate XML (20c), `MBObjectManager.LoadXml`,
+  write debug copy to the log folder; hero via `HeroCreator.CreateSpecialHero` + `SetNewOccupation(Wanderer)`, attributes via `HeroDeveloper` (GAME_MAP Q4/Q5/Q11).
 - [ ] 27-game-behavior-spawn (worker, review self) — campaign behavior: new-game spawn, game-loaded spawn of missing,
   SyncData id→hero mapping, no duplicates, wanderer-style placement; uses 25 + 26.
 - [ ] 28-game-harmony-count (self) — patch per GAME_MAP Q10 excluding registry ids; plus prefix on
