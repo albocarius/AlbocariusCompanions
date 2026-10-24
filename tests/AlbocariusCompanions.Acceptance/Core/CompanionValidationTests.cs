@@ -118,9 +118,8 @@ public class CompanionValidationTests
     {
         var issues = Validate(c =>
         {
-            foreach (var f in new[] { "cultureFallback", "bodyProperties", "traits", "voiceProfile", "likes", "dislikes", "relations" })
+            foreach (var f in new[] { "bodyProperties", "traits", "voiceProfile", "likes", "dislikes", "relations", "requiredModules" })
                 c.Remove(f);
-            ((JObject)c["equipment"]!).Remove("fallbackTemplateId");
         });
         Assert.Empty(issues);
     }
@@ -175,27 +174,6 @@ public class CompanionValidationTests
     [InlineData("ironic")]
     [InlineData("softspoken")]
     public void Vanilla_voice_types_are_accepted(string voice) => Assert.Empty(Validate(c => c["voice"] = voice));
-
-    [Fact]
-    public void Culture_fallback_must_differ_from_culture()
-    {
-        var issues = Validate(c => c["cultureFallback"] = "empire");
-        Assert.Contains("cultureFallback", SingleError(issues, IssueCodes.SameAsFallback).Message);
-    }
-
-    [Fact]
-    public void Equipment_fallback_must_differ_from_template()
-    {
-        var issues = Validate(c => c["equipment"]!["fallbackTemplateId"] = "npc_wanderer_equipment_template_empire");
-        Assert.Contains("fallbackTemplateId", SingleError(issues, IssueCodes.SameAsFallback).Message);
-    }
-
-    [Fact]
-    public void Different_fallbacks_are_fine() => Assert.Empty(Validate(c =>
-    {
-        c["cultureFallback"] = "vlandia";
-        c["equipment"]!["fallbackTemplateId"] = "npc_wanderer_equipment_template_vlandia";
-    }));
 
     [Fact]
     public void Fixed_equipment_sets_are_accepted() => Assert.Empty(Validate(c =>

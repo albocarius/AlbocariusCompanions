@@ -85,16 +85,7 @@ public class ResolverTests
     }
 
     [Fact]
-    public void Missing_culture_uses_fallback_with_warning()
-    {
-        var r = Resolve(c => { c["culture"] = "nord_dlc_only"; c["cultureFallback"] = "vlandia"; });
-
-        Assert.Equal("vlandia", r.Companion!.CultureId);
-        Assert.Contains("nord_dlc_only", Single(r, IssueCodes.CultureFallbackUsed, IssueSeverity.Warning).Message);
-    }
-
-    [Fact]
-    public void Missing_culture_without_fallback_skips_the_companion()
+    public void Missing_culture_skips_the_companion()
     {
         var r = Resolve(c => c["culture"] = "nord_dlc_only");
         Assert.Null(r.Companion);
@@ -102,31 +93,7 @@ public class ResolverTests
     }
 
     [Fact]
-    public void Missing_culture_and_missing_fallback_skip_the_companion()
-    {
-        var r = Resolve(c => { c["culture"] = "nord_dlc_only"; c["cultureFallback"] = "also_missing"; });
-        Assert.Null(r.Companion);
-        Single(r, IssueCodes.CultureMissing, IssueSeverity.Error);
-    }
-
-    [Fact]
-    public void Missing_roster_uses_fallback_with_warning_and_its_civilian_twin()
-    {
-        var game = new FakeGame();
-        game.Rosters.Add("npc_wanderer_equipment_template_vlandia_civilian");
-        var r = Resolve(c =>
-        {
-            c["equipment"]!["templateId"] = "dlc_roster";
-            c["equipment"]!["fallbackTemplateId"] = "npc_wanderer_equipment_template_vlandia";
-        }, game);
-
-        Assert.Equal("npc_wanderer_equipment_template_vlandia", r.Companion!.BattleEquipmentRosterId);
-        Assert.Equal("npc_wanderer_equipment_template_vlandia_civilian", r.Companion.CivilianEquipmentRosterId);
-        Single(r, IssueCodes.EquipmentFallbackUsed, IssueSeverity.Warning);
-    }
-
-    [Fact]
-    public void Missing_roster_without_fallback_skips_the_companion()
+    public void Missing_roster_skips_the_companion()
     {
         var r = Resolve(c => c["equipment"]!["templateId"] = "dlc_roster");
         Assert.Null(r.Companion);

@@ -12,10 +12,10 @@ public static class Fixtures
     {
       "schemaVersion": 1,
       "id": "{{id}}", "name": "Test Companion", "isFemale": false, "voice": "earnest", "age": 32,
-      "culture": "empire", "cultureFallback": null, "bodyProperties": null,
+      "culture": "empire", "bodyProperties": null,
       "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
       "skills": { "OneHanded": 100, "Athletics": 60 }, "traits": { "Valor": 1 },
-      "equipment": { "templateId": "npc_wanderer_equipment_template_empire", "fallbackTemplateId": null },
+      "equipment": { "templateId": "npc_wanderer_equipment_template_empire" },
       "hireCost": 500, "voiceProfile": { "reference": null, "style": null },
       "likes": [], "dislikes": [], "relations": []
     }
