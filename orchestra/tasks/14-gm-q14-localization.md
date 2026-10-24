@@ -16,10 +16,12 @@ The question (from orchestra/SPEC.md):
 
 14. **Localization:** how module language files are structured and loaded (folder layout, file format, how a language is registered), how a text of the form `{=ID}Fallback text` is resolved, what is shown when a translation for the active language is missing, and how localization interacts with voiced lines (is the voice lookup per language, what plays when the UI language has no voice files).
 
+Earlier sections Q1–Q5 of docs/GAME_MAP.md are VERIFIED — read them first and do not repeat them; reference them instead. Game XSD schemas are in `xmlschemas/` (cite as `xmlschemas/<Name>.xsd`). Check `xmlschemas/GameText.xsd` and whether module language files (`ModuleData/Languages/*.xml`, `language_data.xml`) are validated against a schema; if a language file has no schema, say so explicitly.
+
 Where to start: Start at `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedTextManager.cs` and `LanguageData.cs`. Look at `~/bannerlord/moduledata/SandBox/Languages` for the folder layout and language_data.xml format. Explain `{=ID}Fallback` resolution (search MBTextManager / TextObject in decomp/TaleWorlds.Localization) and the missing-translation behaviour. Relate to Q12: is voice lookup per language?
 
 ## Files
-- Read: `decomp/**` (read-only), `~/bannerlord/moduledata/**` (read-only), `~/bannerlord/dlls/**` (read-only), `docs/GAME_MAP.md` (earlier sections may help).
+- Read: `decomp/**` (read-only), `xmlschemas/**` (read-only), `~/bannerlord/moduledata/**` (read-only), `~/bannerlord/dlls/**` (read-only), `docs/GAME_MAP.md` (earlier sections may help).
 - Edit: `docs/GAME_MAP.md` — ONLY the `## Q14` section (between its header and the next `## Q` header). Do not touch other sections.
 - Search with grep/rg on the decomp folder, e.g. `grep -rn "IsWanderer" decomp/TaleWorlds.CampaignSystem | head -50`. Read files in parts.
 
@@ -41,7 +43,7 @@ Status: DRAFT
 Rules for the section:
 - Every fact in the Answer must be backed by at least one Evidence bullet. Use the exact bullet format:
   dash, space, backticked path, space, em dash (—), space, backticked symbol, space, em dash, space, text.
-- The path must be a real file (relative to repo root, starting with `decomp/`; or `~/bannerlord/...` for XML/DLL facts).
+- The path must be a real file (relative to repo root, starting with `decomp/` or `xmlschemas/`; or `~/bannerlord/...` for XML/DLL facts).
 - The LAST identifier in the backticked symbol (e.g. `CreateSpecialHero` in `HeroCreator.CreateSpecialHero(...)`) must literally appear in that file. The test checks this.
 - Never guess. If you cannot find something, write it under Uncertain as **UNCERTAIN** with what would resolve it.
 - Signatures are fine; do not copy method bodies. Code blocks max 6 lines.

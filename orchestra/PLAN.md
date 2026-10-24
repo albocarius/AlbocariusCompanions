@@ -15,6 +15,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - Plan approved with changes (2026-10-24). Working on M1, task 01.
 
 ## Decisions already fixed
+- XML formats: reference `xmlschemas/` (game XSDs, user-provided 2026-10-24). Every XML generated at build time is validated against its schema in tests where one exists.
 - JSON: `Newtonsoft.Json.dll` 13.0.1 exists in `~/bannerlord/dlls/bin` → Game references that file
   (Private=false); Core/tests use NuGet `Newtonsoft.Json` 13.0.1.
 - Harmony: NuGet `Lib.Harmony` compile-only (ExcludeAssets=runtime); runtime dependency on
@@ -33,7 +34,7 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [x] 02-gm-q02-wanderer-count (worker → verify)
 - [x] 03-gm-q03-tavern-placement (worker → verify)
 - [x] 04-gm-q04-hero-creation (worker → verify) — also value ranges for validation
-- [ ] 05-gm-q05-char-templates (worker → verify) — also culture/equipment ids for placeholder
+- [x] 05-gm-q05-char-templates (worker → verify) — also culture/equipment ids for placeholder
 - [ ] 06-gm-q06-hiring (worker → verify)
 - [ ] 15-gm-q07-dialog-api (worker → verify)
 - [ ] 16-gm-q08-lifecycle (worker → verify)
@@ -70,6 +71,11 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
   Newtonsoft from game bin (Private=false), Lib.Harmony compile-only; post-build target assembling
   `dist/AlbocariusCompanions/` (SubModule.xml, bin/Win64_Shipping_Client/{Game,Core}.dll, ModuleData/Companions/**).
   **Core's Newtonsoft copy must not go to dist** (user decision). Accept: acceptance test on dist layout incl. no Newtonsoft.Json.dll in dist.
+- [ ] 22b-xml-schema-tests (self) — acceptance tests validating every XML in `dist/` against the game XSDs:
+  for each `Xmls/XmlNode` in dist SubModule.xml, validate its file against `xmlschemas/<id>.xsd` when that schema exists
+  (same rule as `ModuleHelper.GetXsdPath`); generated character template → `NPCCharacters.xsd`; language files /
+  voiced lines → their schema per GAME_MAP Q12/Q14, or a structural test where no schema exists (state which).
+  SubModule.xml has no XSD → structural test (task 23). Fails if `xmlschemas/` is missing.
 - [ ] 23-game-submodule-xml (worker) — `module/SubModule.xml` (id, name, version 0.1.0, deps from GAME_MAP,
   Bannerlord.Harmony, SubModule class). Accept: XML parse test checking ids/version/deps.
 - [ ] 24-game-logging (worker) — file logger (path per GAME_MAP), safe-call wrapper that never rethrows;

@@ -9,7 +9,7 @@ public class GameMapTests
     // One entry per question handed out so far; extended as M1 tasks are assigned.
     public static TheoryData<int> Questions => new() { 1, 2, 3, 4, 5 };
 
-    static readonly Regex EvidenceLine = new(@"^- `(?<path>(decomp|~/bannerlord)/[^`]+)` — `(?<symbol>[^`]+)` — \S", RegexOptions.Compiled);
+    static readonly Regex EvidenceLine = new(@"^- `(?<path>(decomp|xmlschemas|~/bannerlord)/[^`]+)` — `(?<symbol>[^`]+)` — \S", RegexOptions.Compiled);
 
     [Theory]
     [MemberData(nameof(Questions))]

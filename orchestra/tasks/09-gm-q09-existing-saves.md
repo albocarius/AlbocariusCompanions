@@ -16,10 +16,12 @@ The question (from orchestra/SPEC.md):
 
 9. **Existing saves:** what happens if the mod is enabled on an existing campaign — which hook to use to spawn missing companions.
 
+Earlier sections Q1–Q5 of docs/GAME_MAP.md are VERIFIED — read them first and do not repeat them; reference them instead. Game XSD schemas are in `xmlschemas/` (cite as `xmlschemas/<Name>.xsd`).
+
 Where to start: Using the Q8 events: which of them fire when a save created without the mod is loaded with the mod enabled (OnGameLoaded / OnSessionLaunched / OnAfterSessionLaunched). Check what SyncData returns for a key missing from the save (look at IDataStore implementations in decomp/TaleWorlds.CampaignSystem and decomp/TaleWorlds.SaveSystem).
 
 ## Files
-- Read: `decomp/**` (read-only), `~/bannerlord/moduledata/**` (read-only), `~/bannerlord/dlls/**` (read-only), `docs/GAME_MAP.md` (earlier sections may help).
+- Read: `decomp/**` (read-only), `xmlschemas/**` (read-only), `~/bannerlord/moduledata/**` (read-only), `~/bannerlord/dlls/**` (read-only), `docs/GAME_MAP.md` (earlier sections may help).
 - Edit: `docs/GAME_MAP.md` — ONLY the `## Q9` section (between its header and the next `## Q` header). Do not touch other sections.
 - Search with grep/rg on the decomp folder, e.g. `grep -rn "IsWanderer" decomp/TaleWorlds.CampaignSystem | head -50`. Read files in parts.
 
@@ -41,7 +43,7 @@ Status: DRAFT
 Rules for the section:
 - Every fact in the Answer must be backed by at least one Evidence bullet. Use the exact bullet format:
   dash, space, backticked path, space, em dash (—), space, backticked symbol, space, em dash, space, text.
-- The path must be a real file (relative to repo root, starting with `decomp/`; or `~/bannerlord/...` for XML/DLL facts).
+- The path must be a real file (relative to repo root, starting with `decomp/` or `xmlschemas/`; or `~/bannerlord/...` for XML/DLL facts).
 - The LAST identifier in the backticked symbol (e.g. `CreateSpecialHero` in `HeroCreator.CreateSpecialHero(...)`) must literally appear in that file. The test checks this.
 - Never guess. If you cannot find something, write it under Uncertain as **UNCERTAIN** with what would resolve it.
 - Signatures are fine; do not copy method bodies. Code blocks max 6 lines.

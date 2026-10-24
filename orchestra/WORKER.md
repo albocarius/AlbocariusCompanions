@@ -35,3 +35,8 @@ Final message format:
 - Core (netstandard2.0) must not reference TaleWorlds.
 - JSON is the single source of truth; generated XML only in dist/, never committed.
 - Done = `dotnet build AlbocariusCompanions.sln && dotnet test AlbocariusCompanions.sln --no-build` passes.
+
+# Reference data (read-only)
+- `decomp/` — decompiled game source.
+- `xmlschemas/` — the game's XSD schemas (e.g. `NPCCharacters.xsd`, `GameText.xsd`). For any XML format question, cite the schema; for any XML the mod generates, it must validate against its schema when one exists.
+- `~/bannerlord/moduledata/` — vanilla ModuleData XML samples.
