@@ -28,3 +28,5 @@
 | 24-core-logging | 1 | PASS | clean, lock-guarded, never throws |
 | 25-core-resolver | 1 | PASS | clean, rule 9 exactly |
 | 23-game-submodule-xml | 1 | PASS | correct ids incl. lowercase Sandbox, Core in Assemblies |
+| 27-game-behavior-spawn | 1 | PASS | correct; re-link scan + culture-preferred town, all handlers guarded |
+| 29-game-dialogs-hire | – | self | done by orchestrator in a worktree at user request |

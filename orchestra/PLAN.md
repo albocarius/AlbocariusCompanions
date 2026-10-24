@@ -12,7 +12,11 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 
 ## Status
 - Phase 0 bootstrap done (commit 8aa1f47). Baseline: build OK, 0 tests.
-- M1 done. M2 done (pending phase-2 commit). Next: Q15, Q16, then M3 (22 done).
+- M1 done (Q1–Q16 verified). M2 done ("phase 2: core"). M3 done ("phase 3: game layer"): 23/27 worker, 29 self (user asked, ran in
+  parallel with 27), 24/25/26/28/30 earlier. dist/ = Core+Game DLL, SubModule.xml, test_companion JSON.
+- Next: ask the user before copying dist/ to the Windows game Modules folder; then M4 (31-run-report).
+- Helpers live in the session scratchpad only (next_core.sh, winrun.sh = PowerShell over ssh via -EncodedCommand, xsdcheck);
+  they are convenience, nothing depends on them.
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
@@ -103,11 +107,11 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
 - [x] 26-game-hero-creation (self) — code in Game/{GameObjectLookup,CompanionTemplates,CompanionHeroFactory}.cs; builds against the game DLLs;
   runtime behaviour only verifiable in-game. GAME_MAP "API index" + ApiIndexTests added (SPEC rule 1). Original scope: — at `AfterRegisterSubModuleObjects`: resolve ids (25), generate XML (20c), `MBObjectManager.LoadXml`,
   write debug copy to the log folder; hero via `HeroCreator.CreateSpecialHero` + `SetNewOccupation(Wanderer)`, attributes via `HeroDeveloper` (GAME_MAP Q4/Q5/Q11).
-- [ ] 27-game-behavior-spawn (worker, review self; task ready, skeleton class in place) — campaign behavior: new-game spawn, game-loaded spawn of missing,
+- [x] 27-game-behavior-spawn (worker, review self; task ready, skeleton class in place) — campaign behavior: new-game spawn, game-loaded spawn of missing,
   SyncData id→hero mapping, no duplicates, wanderer-style placement; uses 25 + 26.
 - [x] 28-game-harmony-count (self) — Game/HarmonyPatches.cs (two prefixes, try/catch → vanilla on failure) — patch per GAME_MAP Q10 excluding registry ids; plus prefix on
   `LordConversationsCampaignBehavior.conversation_hero_hire_on_condition` returning false for registry heroes (GAME_MAP Q7).
-- [ ] 29-game-dialogs-hire (worker, review self; task ready, skeleton class in place) — generic dialog registration from dialogs.json (`{=<line id>}<en>`),
+- [x] 29-game-dialogs-hire (worker, review self; task ready, skeleton class in place) — generic dialog registration from dialogs.json (`{=<line id>}<en>`),
   intro/backstory/hire offer/accept/decline, vanilla join-clan, limit + hireCost.
 - [x] 30-game-submodule (self) — Game/SubModule.cs + ModRuntime.cs; GameAssemblyTests check the class/patch types via metadata — SubModule class wiring: load registry, log validation, register behavior, apply Harmony; all entry points wrapped.
 - [ ] Milestone end: build + tests, dist layout check, every API traced to GAME_MAP; commit `phase 3: game layer`.
