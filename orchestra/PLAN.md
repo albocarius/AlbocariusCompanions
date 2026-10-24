@@ -7,6 +7,8 @@ commit `phase N: <summary>` (SPEC rule 3). Stop condition (SPEC rule 5) applies 
 
 Owner legend: `self` = orchestrator, `worker` = local model via orchestra/worker.sh.
 Acceptance tests for worker tasks live in `tests/AlbocariusCompanions.Acceptance/` (orchestrator-owned).
+Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text of `orchestra/HARD_RULES.md`
+(also appended to WORKER.md) — user requirement.
 
 ## Status
 - Phase 0 bootstrap done (commit 8aa1f47). Baseline: build OK, 0 tests.
