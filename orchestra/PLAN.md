@@ -68,7 +68,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 - [ ] 20-core-missing-audio (worker) — report voiced lines whose audio file is missing (default path
   `audio/<line id>.ogg` when `audio` absent). Accept: present/missing/default path cases.
 - [ ] 20b-core-catalog (worker) — `CompanionCatalog.Load`: loader + validator + registry; folders with errors skipped by folder name. Needs 16–19.
-- [ ] 20c-core-npc-xml (worker) — Core generator: resolved companion data → `NPCCharacters` XML document (template
+- [ ] 20c-core-npc-xml (worker; tests staged, task file ready) — Core generator: resolved companion data → `NPCCharacters` XML document (template
   `occupation="Special"`, `is_template="true"`, id = companion id, culture/voice/age/is_female, skills, traits, equipment set).
   Acceptance: output validates against `xmlschemas/NPCCharacters.xsd`; field mapping tests. (SPEC rule 8 amendment, GAME_MAP Q11.)
 - [ ] 21-placeholder-companion (self) — `module/ModuleData/Companions/test_companion/` per SPEC §5 with
