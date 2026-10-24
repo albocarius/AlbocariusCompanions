@@ -2,6 +2,8 @@ using System;
 using AlbocariusCompanions.Core.Audio;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
+using TaleWorlds.CampaignSystem.Actions;
+using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.Localization;
@@ -81,6 +83,50 @@ internal static class PlayModVoiceLinesFromCompanionFolder
         catch (Exception ex)
         {
             ModRuntime.Log.Error("voice-over postfix failed; keeping the vanilla result", ex);
+        }
+    }
+}
+
+/// <summary>
+/// Player dismissal of a mod companion ("I no longer have need of your services."): vanilla fires the companion and then
+/// removes the hero from the game (KillCharacterAction.ApplyByRemove), which is why it vanished from the map. For mod
+/// companions the fire step runs, the removal is skipped and the hero goes back to a tavern as an unhired wanderer
+/// (GAME_MAP Q19). This dialog consequence is the only player-dismissal path; deaths, captivity, quests and clan moves
+/// use other RemoveCompanionAction entry points and are not touched.
+/// </summary>
+[HarmonyPatch(typeof(CompanionRolesCampaignBehavior), "companion_fire_on_consequence")]
+internal static class ReturnDismissedModCompanionToTavern
+{
+    // Original: private void companion_fire_on_consequence()
+    private static bool Prefix()
+    {
+        var isModHero = false;
+        try
+        {
+            var hero = Hero.OneToOneConversationHero;
+            isModHero = ModRuntime.IsModHero(hero);
+            if (!isModHero)
+                return true;
+
+            RemoveCompanionAction.ApplyByFire(hero.CompanionOf, hero);
+            ModRuntime.Log.Info($"Companion '{hero.Template.StringId}' (hero {hero.StringId}) dismissed by the player.");
+
+            var settlement = CompanionPlacement.ReturnToTavern(hero);
+            if (settlement != null)
+                ModRuntime.Log.Info($"Companion '{hero.Template.StringId}' returns to the tavern of {settlement.Name} ('{settlement.StringId}').");
+            else
+                ModRuntime.Log.Warning($"Companion '{hero.Template.StringId}' was dismissed but no town is available; it stays a fugitive.");
+
+            // Same ending as the vanilla consequence.
+            if (PlayerEncounter.Current != null)
+                PlayerEncounter.LeaveEncounter = true;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // Vanilla would remove a mod companion for good: for mod heroes never fall back to it.
+            ModRuntime.Log.Error("dismissal prefix failed" + (isModHero ? "; vanilla removal skipped for the mod companion" : ""), ex);
+            return !isModHero;
         }
     }
 }

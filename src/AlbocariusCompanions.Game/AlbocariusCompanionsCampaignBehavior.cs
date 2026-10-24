@@ -120,7 +120,7 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
                     return;
                 }
 
-                var town = PickSpawnTown(template);
+                var town = CompanionPlacement.PickTown(template);
                 if (town == null)
                 {
                     log.Error($"No town available to spawn companion '{id}' (template culture '{template.Culture?.StringId}'); skipped.");
@@ -156,27 +156,5 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
     {
         var alive = Hero.AllAliveHeroes.FirstOrDefault(hero => hero.Template?.StringId == id);
         return alive ?? Hero.DeadOrDisabledHeroes.FirstOrDefault(hero => hero.Template?.StringId == id);
-    }
-
-    /// <summary>
-    /// Town choice like vanilla (GAME_MAP Q1/Q3): every town except the one the player is standing in, preferring a town
-    /// of the template's culture, then any candidate; one of the pool at random. Null when no town is available.
-    /// </summary>
-    private static Town? PickSpawnTown(CharacterObject template)
-    {
-        var playerSettlement = Hero.MainHero?.CurrentSettlement;
-        var candidates = Town.AllTowns
-            .Where(town => town.Settlement != null && town.Settlement != playerSettlement)
-            .ToList();
-
-        var cultureMatched = template.Culture == null
-            ? new List<Town>()
-            : candidates.Where(town => town.Culture == template.Culture).ToList();
-
-        var pool = cultureMatched.Count > 0 ? cultureMatched : candidates;
-        if (pool.Count == 0)
-            return null;
-
-        return pool[MBRandom.RandomInt(pool.Count)];
     }
 }
