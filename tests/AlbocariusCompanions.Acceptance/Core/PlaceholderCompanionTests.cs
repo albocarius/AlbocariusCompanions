@@ -36,6 +36,16 @@ public class PlaceholderCompanionTests
     }
 
     [Fact]
+    public void Placeholder_exercises_fixed_equipment_with_vanilla_items()
+    {
+        // Vanilla SandBoxCore items: monk_robe (BodyArmor), pilgrim_hood (HeadArmor), bo_staff (Polearm).
+        var eq = CompanionLoader.LoadAll(CompanionsRoot).Packages.Single(p => p.Id == "test_companion").Companion.Equipment!;
+
+        Assert.Equal(new Dictionary<string, string> { ["Body"] = "monk_robe", ["Head"] = "pilgrim_hood", ["Item0"] = "bo_staff" }, eq.Battle);
+        Assert.Equal(new Dictionary<string, string> { ["Body"] = "monk_robe", ["Head"] = "pilgrim_hood" }, eq.Civilian);
+    }
+
+    [Fact]
     public void Placeholder_dialogs_cover_required_slots_and_one_translation()
     {
         var lines = CompanionLoader.LoadAll(CompanionsRoot).Packages.Single(p => p.Id == "test_companion").Dialogs.Lines!;
