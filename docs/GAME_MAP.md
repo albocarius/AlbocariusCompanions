@@ -1295,3 +1295,4 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `DefaultVoiceOverModel.GetSoundPathForCharacter` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultVoiceOverModel.cs` | Q12 | Harmony postfix: play mod lines from the companion folder |
 | `VoiceObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | postfix parameter |
 | `VoiceObject.VoicePaths` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | find the mod voice path |
+| `Settlement.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | readable town name in the log |

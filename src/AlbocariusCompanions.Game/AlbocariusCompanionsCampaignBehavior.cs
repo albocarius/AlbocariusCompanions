@@ -92,7 +92,8 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
                     // Alive or dead: the companion exists, so never respawn and never duplicate (Q9).
                     present++;
                     CompanionHeroFactory.ApplyName(mapped, template);
-                    log.Info($"Companion '{id}' already present as hero '{mapped.StringId}' (template '{mapped.Template?.StringId}').");
+                    log.Info($"Companion '{id}' already present as hero '{mapped.StringId}' (template '{mapped.Template?.StringId}'), " +
+                        $"now in {mapped.CurrentSettlement?.Name?.ToString() ?? "no settlement"}.");
                     return;
                 }
 
@@ -127,7 +128,7 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
 
                 _companionHeroes[id] = hero;
                 spawned++;
-                log.Info($"Companion spawned: '{id}' → hero '{hero.StringId}' (template '{template.StringId}') in settlement '{settlement.StringId}'.");
+                log.Info($"Companion spawned: '{id}' → hero '{hero.StringId}' (template '{template.StringId}') in {settlement.Name} ('{settlement.StringId}').");
             });
         }
 
