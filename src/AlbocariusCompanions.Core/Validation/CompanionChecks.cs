@@ -80,6 +80,12 @@ public static class CompanionChecks
                 $"'equipment.fallbackTemplateId' equals 'templateId' ('{c.Equipment.TemplateId}'); a fallback must differ from the primary id."));
         }
 
+        if (c.Equipment != null)
+        {
+            ValidateEquipmentSet(c.Equipment.Battle, "equipment.battle", folder, issues);
+            ValidateEquipmentSet(c.Equipment.Civilian, "equipment.civilian", folder, issues);
+        }
+
         if (c.HireCost == null)
             Missing(issues, folder, "hireCost");
         else if (c.HireCost < 0)
@@ -136,6 +142,22 @@ public static class CompanionChecks
                     $"Unknown attribute '{attribute.Key}' in 'attributes' (known: {string.Join(", ", CompanionRules.AttributeNames)})."));
             else if (attribute.Value < CompanionRules.AttributeMin || attribute.Value > CompanionRules.AttributeMax)
                 OutOfRange(issues, folder, $"attributes['{attribute.Key}']", attribute.Value, CompanionRules.AttributeMin, CompanionRules.AttributeMax);
+        }
+    }
+
+    private static void ValidateEquipmentSet(Dictionary<string, string>? set, string field, string folder, List<ValidationIssue> issues)
+    {
+        if (set == null)
+            return;
+
+        foreach (var entry in set)
+        {
+            if (!Contains(CompanionRules.EquipmentSlots, entry.Key))
+                issues.Add(ValidationIssue.Error(IssueCodes.UnknownEquipmentSlot, folder,
+                    $"{field} has unknown slot '{entry.Key}' (known: {string.Join(", ", CompanionRules.EquipmentSlots)})."));
+            else if (string.IsNullOrWhiteSpace(entry.Value))
+                issues.Add(ValidationIssue.Error(IssueCodes.InvalidEquipmentItem, folder,
+                    $"{field}.{entry.Key} has an empty item id."));
         }
     }
 

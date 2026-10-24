@@ -133,6 +133,53 @@ public class NpcCharacterXmlTests
         Assert.Single(sets);
     }
 
+    static ResolvedCompanion WithItems(IReadOnlyDictionary<string, string>? battle, IReadOnlyDictionary<string, string>? civilian) =>
+        new("jeremus", "Jeremus", false, "softspoken", 50, "empire",
+            new Dictionary<string, int>(), new Dictionary<string, int>(),
+            "npc_wanderer_equipment_template_empire", "npc_wanderer_equipment_template_empire_civilian", null,
+            battle, civilian);
+
+    [Fact]
+    public void Fixed_items_validate_against_the_game_schema() =>
+        AssertValidAgainstXsd(NpcCharacterXml.Build(new[]
+        {
+            WithItems(new Dictionary<string, string> { ["Item0"] = "bo_staff", ["Body"] = "monk_robe", ["Head"] = "pilgrim_hood" },
+                      new Dictionary<string, string> { ["Body"] = "monk_robe" }),
+        }));
+
+    [Fact]
+    public void Fixed_battle_items_replace_the_battle_roster_import()
+    {
+        var eq = Single(NpcCharacterXml.Build(new[]
+        {
+            WithItems(new Dictionary<string, string> { ["Body"] = "monk_robe", ["Item0"] = "bo_staff", ["Head"] = "pilgrim_hood" }, null),
+        })).Element("Equipments")!;
+
+        var roster = Assert.Single(eq.Elements("EquipmentRoster"));
+        Assert.Null(roster.Attribute("civilian"));
+        // Slot order follows CompanionRules.EquipmentSlots; ids use the "Item." reference prefix (GAME_MAP Q5).
+        Assert.Equal(new[] { ("Item0", "Item.bo_staff"), ("Head", "Item.pilgrim_hood"), ("Body", "Item.monk_robe") },
+            roster.Elements("equipment").Select(e => ((string?)e.Attribute("slot"), (string?)e.Attribute("id"))));
+        // Civilian still comes from the roster import.
+        var set = Assert.Single(eq.Elements("EquipmentSet"));
+        Assert.Equal("Civilian", (string?)set.Attribute("equipmentType"));
+    }
+
+    [Fact]
+    public void Fixed_civilian_items_replace_the_civilian_roster_import()
+    {
+        var eq = Single(NpcCharacterXml.Build(new[]
+        {
+            WithItems(null, new Dictionary<string, string> { ["Body"] = "monk_robe" }),
+        })).Element("Equipments")!;
+
+        var set = Assert.Single(eq.Elements("EquipmentSet"));
+        Assert.Null(set.Attribute("equipmentType"));             // battle import kept
+        var roster = Assert.Single(eq.Elements("EquipmentRoster"));
+        Assert.Equal("true", (string?)roster.Attribute("civilian"));
+        Assert.Equal("Item.monk_robe", (string?)roster.Element("equipment")!.Attribute("id"));
+    }
+
     [Fact]
     public void Body_properties_key_goes_into_face()
     {

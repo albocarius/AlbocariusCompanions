@@ -33,4 +33,8 @@ public static class CompanionRules
     public static readonly IReadOnlyList<string> VoiceTypes = new[] { "curt", "earnest", "ironic", "softspoken" };
 
     public static readonly IReadOnlyList<string> RelationAttitudes = new[] { "friend", "rival" };
+
+    /// <summary>Equipment slot names as written in vanilla XML (GAME_MAP Q5, Equipment.GetEquipmentIndexFromOldEquipmentIndexName), in slot order.</summary>
+    public static readonly IReadOnlyList<string> EquipmentSlots = new[]
+        { "Item0", "Item1", "Item2", "Item3", "Head", "Body", "Leg", "Gloves", "Cape", "Horse", "HorseHarness" };
 }

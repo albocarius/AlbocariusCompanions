@@ -23,6 +23,9 @@ Implement `NpcCharacterXml.Build(IEnumerable<ResolvedCompanion>)` in `src/Alboca
 - `<skills><skill id value/></skills>` and `<Traits><Trait id value/></Traits>`, sorted by id (ordinal); omit the element when empty.
 - `<Equipments>`: `<EquipmentSet id="<battle roster>"/>` (no equipmentType attribute), then, if CivilianEquipmentRosterId is not null,
   `<EquipmentSet id="<civilian roster>" equipmentType="Civilian"/>`.
+- Fixed items: if BattleItems is not null, write `<EquipmentRoster>` with one `<equipment slot="<slot>" id="Item.<item id>"/>` per entry
+  (slots ordered as in `CompanionRules.EquipmentSlots`) INSTEAD of the battle `<EquipmentSet>`. If CivilianItems is not null, write
+  `<EquipmentRoster civilian="true">` the same way INSTEAD of the civilian `<EquipmentSet>`. Inside `<Equipments>`: battle first, then civilian.
 - Element order inside NPCCharacter: face, skills, Traits, Equipments. The document must validate against `xmlschemas/NPCCharacters.xsd`.
 Files allowed to edit: `src/AlbocariusCompanions.Core/Templates/NpcCharacterXml.cs`, `tests/AlbocariusCompanions.Core.Tests/**`.
 
