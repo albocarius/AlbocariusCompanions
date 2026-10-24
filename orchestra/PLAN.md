@@ -11,8 +11,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 
 ## Status
 - Foundation done and played in game (see archive + docs/RUN_REPORT.md). Repo clean at 5730899 "phase 4: run report".
-- M5 planned 2026-10-24, waiting for plan approval (PLAN_GATE=1). The worker needs Strata running (stopped by the user
-  for ComfyUI); while it is down, worker tasks wait or are done by self.
+- M5 planned 2026-10-24; T6 questions answered and plan accepted by the user the same day. Strata is up (worker available).
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -37,7 +36,7 @@ scaffold last because its template must contain the final slot list and lang for
 
 ### T2 — small fixes
 - [ ] 32-schema-version (worker) — Core: one `SchemaVersions` check point used by the loader; `schemaVersion` (int,
-  required, current 1) at the top of companion.json and dialogs.json (player_lines.json joins in 49). Missing / not int /
+  required, current 1) at the top of companion.json and dialogs.json (player_lines.json and lang files join in 49). Missing / not int /
   greater than supported → validation error with a clear message. Accept: one test per case; test_companion updated.
 - [ ] 33-ogg-validation (worker) — `audio` with an extension other than `.ogg` → validation **error** (today a silent skip
   in VoicedLinesXml). Accept: `.wav`, no extension, `.OGG` ok.
@@ -45,13 +44,12 @@ scaffold last because its template must contain the final slot list and lang for
   Our own condition (not vanilla), no new API.
 - [ ] 35-required-modules-core (worker) — remove `cultureFallback` and `equipment.fallbackTemplateId` (models, validation
   codes, CompanionResolver, ResolverTests, test_companion, SCHEMA.md); add optional `requiredModules: string[]`
-  (non-empty strings, no duplicates). Core `RequiredModules.Missing(package, Func<string,bool> isModuleActive)`.
+  (non-empty strings, no duplicates). Tests may use `EOE_Armory` as an example of a module that is not loaded. Core `RequiredModules.Missing(package, Func<string,bool> isModuleActive)`.
   Accept: removed fields rejected as unknown by the strict loader, filter tests with a fake predicate.
 - [ ] 36-required-modules-game (self) — at OnSubModuleLoad: `ModuleHelper.IsModuleActive(id)` (GAME_MAP Q13, add API row),
   skip only that companion with a log line naming the missing module (no template, no spawn, no dialogs). A saved hero of
-  a skipped companion: untouched, one warning (spawn pass lists mapped ids that have no template). Example ids in docs only
-  from GAME_MAP (`NavalDLC`); other ids (e.g. `EOE_Armory`) only after checking the module's SubModule.xml on the
-  Windows install.
+  a skipped companion: untouched, one warning (spawn pass lists mapped ids that have no template). Example ids in docs:
+  `NavalDLC` (GAME_MAP Q13); `EOE_Armory` is only an illustrative example (user).
 - [ ] 37-gm-notifications (self) — GAME_MAP entry: `InformationManager.DisplayMessage` + `InformationMessage(text, Color)`,
   when the UI can show it (campaign started/loaded). Verify in decomp.
 - [ ] 38-notifications-core (worker) — Core `NotificationQueue`: collects warnings/errors from ModLogger (info stays
@@ -66,7 +64,7 @@ scaffold last because its template must contain the final slot list and lang for
 - [ ] 41-local-line-ids (self) — dialogs.json lines use local ids (`intro_01`); loader derives full id
   `<companionId>_<localId>`; local unique per companion, full unique globally (incl. player line ids, T6). Full id used for
   `{=…}`, voice-over id, logs; audio default becomes `audio/<local id>.ogg` (VoicedLinesXml, MissingAudioReport,
-  validation of the line-id rule replaced). Migrate test_companion. **User's Windows audio files must be renamed by the user**
+  validation of the line-id rule replaced). Migrate test_companion. The user renames the Windows audio files
   (`test_companion_intro_01.ogg` → `intro_01.ogg`); listed in the checklist, never done by us.
 
 ### T4.0 — vanilla dialog points as slots
@@ -92,19 +90,20 @@ scaffold last because its template must contain the final slot list and lang for
 - [ ] 47-slot-variation-game (self) — wire the picker into CompanionDialogs (pick per conversation turn; the chosen
   line's `{=full id}` drives text and voice), Game random source = `MBRandom`.
 
-### T6 — player lines + per-language files (**ask the user the open questions below before starting**)
-- [ ] 48-gm-q14-language-decision (self) — extend Q14: our language codes → game language ids (`en`→`English`,
-  `tr`→`Türkçe`, …), runtime-pick vs generated language XML, what voiced lines do when the UI language is not English.
-- [ ] 49-lang-files-core (self) — schema: `text` removed; `<folder>/lang/<code>.json` flat map localId → text; `en.json`
-  required and complete. Validation: missing in en → error; missing in other language → warning (falls back to en);
-  id not in dialogs → warning. Player-name token rule for voiced lines moves to the lang files. `_shared/player_lines.json`
-  (`schemaVersion`, lines with id/slot) + `_shared/lang/<code>.json`; player slots join the global slot list; player ids
-  as-is, collision with companion full ids → error. Migrate test_companion, SCHEMA.md.
-- [ ] 50-player-lines-game (self) — every player-facing string in C# moves to player_lines; acceptance test that greps
-  Game sources for hard-coded English dialog text.
-- [ ] 51-language-output (self/worker per 48) — produce what 48 decides (generated language XML or runtime selection);
-  missing-translation count per language logged; XSD test if a schema exists (Q14: none for language_data/std files →
-  structural test, state it).
+### T6 — player lines + per-language files (decisions below)
+- [ ] 48-gm-q14-language-decision (self) — extend Q14: how to read the active game language at dialog registration
+  (API + when it is valid, what happens on a language change mid-session); mapping ISO 639-1 code → game language id
+  (`en`→`English`, `tr`→`Türkçe`, …). Voice stays language-independent (decision 5).
+- [ ] 49-lang-files-core (self) — schema: `text` removed from dialogs/player lines; `<folder>/lang/<code>.json` =
+  `{ "schemaVersion": 1, "lines": { "<localId>": "<text>" } }`; `en.json` required and complete. Validation: missing in en
+  → error; missing in another language → warning (falls back to en); id not in dialogs → warning; file name not ISO 639-1
+  → error. Player-name token rule for voiced lines applies to the lang files. `_shared/player_lines.json` (`schemaVersion`,
+  lines with id/slot) + `_shared/lang/<code>.json`; player slots join the global slot list; player ids as-is, collision
+  with companion full ids → error. Core `TextFor(lineId, languageCode)` with en fallback. Migrate test_companion, SCHEMA.md.
+- [ ] 50-player-lines-game (self) — every player-facing string in C# moves to player_lines; dialogs registered with the
+  active language's text (en fallback) via 48; missing-translation count per language logged at start-up. Acceptance test
+  that greps Game sources for hard-coded English dialog text. **No language XML is generated** (decision 2); only the
+  voiced-lines XML is still written at start-up.
 
 ### Scaffold (T3.3, after 43 and 49)
 - [ ] 52-scaffold (worker) — `tools/new-companion.sh <id>` + `.bat`, template in `tools/companion-template/` with every
@@ -116,15 +115,15 @@ scaffold last because its template must contain the final slot list and lang for
   human checklist of SPEC_CORE_GAPS T7 (+ dismissal items from T4, + user renames audio files to local ids).
 - [ ] Milestone end: full TEST_CMD, commit `milestone core-gaps: <summary>`. No push.
 
-### Open questions (ask before T6; answers go into this section)
-1. `lang/<code>.json` is a flat map — does it carry `schemaVersion` (as a reserved key), or only the three JSON files of T2.4?
-2. T6.2 says "generate at build time, output only to dist/", the T6 change says Q14 decides, and the user rejected build-time
-   XML for voice. Proposal: write the language XML at runtime in OnSubModuleLoad (same pattern as voiced lines), so adding a
-   companion or a translation needs no build step.
-3. Language codes: ISO 639-1 (`en`, `tr`, `de`, …) mapped to game ids in GAME_MAP — OK?
-4. T4.0 "empty or untouched slot → vanilla behavior" vs the addition "template uses our own ids, no vanilla ids": does
-   "untouched" mean anything beyond "slot absent/empty"? Proposal: only an absent/empty slot falls back to vanilla.
-5. Voiced lines with a non-English UI: play the English audio under every language, or stay silent? (Q14 research first.)
+### Decisions (user, 2026-10-24 — answers to the T6 questions)
+1. `schemaVersion` in **every** JSON file, lang files included: `{ "schemaVersion": 1, "lines": { "<localId>": "<text>" } }`.
+2. **No build step and no text XML.** When dialogs are registered, the text comes from `lang/<code>.json` of the active game
+   language, else from `en.json`. At start-up only the voiced-lines XML keeps being written.
+3. Lang file names are ISO 639-1 (`en.json`, `tr.json`); the code ↔ game language id mapping is fixed after the GAME_MAP work (48).
+4. Only an absent or empty slot falls back to vanilla.
+5. Voice has no language support: `audio/<id>.ogg` plays whatever the game language is.
+- `EOE_Armory` was only an example; it may be used as a "module not loaded" case in tests.
+- The user renames the audio files on Windows after 41.
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
