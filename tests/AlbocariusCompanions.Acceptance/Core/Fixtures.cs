@@ -10,6 +10,7 @@ public static class Fixtures
 {
     public static JObject Companion(string id) => JObject.Parse($$"""
     {
+      "schemaVersion": 1,
       "id": "{{id}}", "name": "Test Companion", "isFemale": false, "voice": "earnest", "age": 32,
       "culture": "empire", "cultureFallback": null, "bodyProperties": null,
       "attributes": { "vigor": 4, "control": 3, "endurance": 4, "cunning": 2, "social": 2, "intelligence": 2 },
@@ -22,6 +23,7 @@ public static class Fixtures
 
     public static JObject Dialogs(string id) => JObject.Parse($$"""
     {
+      "schemaVersion": 1,
       "lines": [
         { "id": "{{id}}_intro_01", "slot": "intro", "text": { "en": "Greetings, Captain.", "tr": "Selam, Kaptan." }, "voiced": true },
         { "id": "{{id}}_backstory_01", "slot": "backstory", "text": { "en": "A placeholder past." }, "voiced": true },

@@ -35,10 +35,10 @@ scaffold last because its template must contain the final slot list and lang for
   field: type, required, example) so later tasks only update them.
 
 ### T2 — small fixes
-- [ ] 32-schema-version (worker) — Core: one `SchemaVersions` check point used by the loader; `schemaVersion` (int,
+- [ ] 32-schema-version-ogg (worker; merged with 33) — schemaVersion: — Core: one `SchemaVersions` check point used by the loader; `schemaVersion` (int,
   required, current 1) at the top of companion.json and dialogs.json (player_lines.json and lang files join in 49). Missing / not int /
   greater than supported → validation error with a clear message. Accept: one test per case; test_companion updated.
-- [ ] 33-ogg-validation (worker) — `audio` with an extension other than `.ogg` → validation **error** (today a silent skip
+  OGG part (was 33): `audio` with an extension other than `.ogg` → validation **error** (today a silent skip
   in VoicedLinesXml). Accept: `.wav`, no extension, `.OGG` ok.
 - [ ] 34-hire-cost-gte (self) — CompanionDialogs hire_pay condition `Gold >= hireCost`; hireCost 0 hireable with 0 gold.
   Our own condition (not vanilla), no new API.
