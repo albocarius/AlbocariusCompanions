@@ -7,3 +7,4 @@
 | 03-gm-q03-tavern-placement | 1 | PASS, verified | correct (tavern rule, swap halves, StayingInSettlement); relabeled self-written "orchestrator note" |
 | 04-gm-q04-hero-creation | 1 | PASS, verified | missed DefaultTraits.cs (trait ids/bounds in code) -> fixed; added wanderer age-override note + adopted validation ranges |
 | 05-gm-q05-char-templates | 1 | PASS, verified | correct (IsTemplate private set, LoadXml/CreateObjectFromXmlNode, Xmls/XmlNode loading); used xmlschemas on its own |
+| 06-gm-q06-hiring | 1 | PASS, verified | correct; replaced 3-line copied method body with prose; added mod hire notes |
