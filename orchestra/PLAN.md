@@ -29,7 +29,7 @@ Acceptance: `GameMapTests` (format, cited paths exist, cited symbol occurs in ci
 the `Questions` list is extended by one entry per assigned task.
 Verification (self): open every cited location, fix wrong claims, set `Status: VERIFIED`, commit `docs(gm-qNN): verified`.
 Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompiled into `~/bannerlord/decomp` (= `decomp/`).
-- [ ] 01-gm-q01-wanderer-spawn (worker → verify)
+- [x] 01-gm-q01-wanderer-spawn (worker → verify)
 - [ ] 02-gm-q02-wanderer-count (worker → verify)
 - [ ] 03-gm-q03-tavern-placement (worker → verify)
 - [ ] 04-gm-q04-hero-creation (worker → verify) — also value ranges for validation
