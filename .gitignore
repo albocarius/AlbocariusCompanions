@@ -4,3 +4,6 @@ dist/
 *.user
 .vs/
 decomp/
+orchestra/
+.claude/
+decomp
