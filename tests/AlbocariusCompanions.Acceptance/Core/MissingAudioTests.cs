@@ -3,7 +3,7 @@ using AlbocariusCompanions.Core.Loading;
 
 namespace AlbocariusCompanions.Acceptance.Core;
 
-// Task 20-core-missing-audio
+// Task 20-core-missing-audio; 41: default audio file is audio/<local id>.ogg, reports carry the full id.
 public class MissingAudioTests
 {
     const string Id = "test_companion";
@@ -33,15 +33,15 @@ public class MissingAudioTests
             report.Select(e => e.LineId));
         var first = report[0];
         Assert.Equal(Id, first.CompanionId);
-        Assert.Equal("audio/" + Id + "_intro_01.ogg", first.RelativePath);
-        Assert.Equal(Path.Combine(tmp.Path, Id, "audio", Id + "_intro_01.ogg"), first.FullPath);
+        Assert.Equal("audio/intro_01.ogg", first.RelativePath);
+        Assert.Equal(Path.Combine(tmp.Path, Id, "audio", "intro_01.ogg"), first.FullPath);
     }
 
     [Fact]
     public void Existing_default_files_are_not_reported()
     {
         using var tmp = new TempDir();
-        var report = Run(tmp, null, "audio/" + Id + "_intro_01.ogg", "audio/" + Id + "_backstory_01.ogg");
+        var report = Run(tmp, null, "audio/intro_01.ogg", "audio/backstory_01.ogg");
 
         Assert.DoesNotContain(report, e => e.LineId == Id + "_intro_01");
         Assert.DoesNotContain(report, e => e.LineId == Id + "_backstory_01");
@@ -80,7 +80,7 @@ public class MissingAudioTests
     public void Lipsync_xml_alone_does_not_count_as_audio()
     {
         using var tmp = new TempDir();
-        var report = Run(tmp, null, "audio/" + Id + "_intro_01.xml");
+        var report = Run(tmp, null, "audio/intro_01.xml");
 
         Assert.Contains(report, e => e.LineId == Id + "_intro_01");
     }

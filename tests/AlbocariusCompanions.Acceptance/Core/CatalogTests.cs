@@ -12,6 +12,7 @@ public class CatalogTests
         using var tmp = new TempDir();
         Fixtures.WriteValid(tmp.Path, "a_comp");
         Fixtures.WriteValid(tmp.Path, "b_comp");
+        Fixtures.WriteShared(tmp.Path);
 
         var result = CompanionCatalog.Load(tmp.Path);
 
@@ -46,21 +47,6 @@ public class CatalogTests
 
         Assert.Equal(new[] { "good" }, result.Registry.Ids);
         Assert.Contains(result.Issues, i => i.Code == IssueCodes.InvalidVoice && i.Folder == "bad");
-    }
-
-    [Fact]
-    public void Folder_with_mismatched_id_does_not_take_down_the_real_owner()
-    {
-        using var tmp = new TempDir();
-        Fixtures.WriteValid(tmp.Path, "real");
-        Fixtures.Write(tmp.Path, "impostor", Fixtures.Companion("real"), Fixtures.Dialogs("real"));
-
-        var result = CompanionCatalog.Load(tmp.Path);
-
-        // Both folders claim id "real": duplicate ids skip every folder involved, the mismatch is also reported.
-        Assert.Empty(result.Registry.Ids);
-        Assert.Contains(result.Issues, i => i.Code == IssueCodes.IdFolderMismatch && i.Folder == "impostor");
-        Assert.Contains(result.Issues, i => i.Code == IssueCodes.DuplicateId && i.Folder == "real");
     }
 
     [Fact]

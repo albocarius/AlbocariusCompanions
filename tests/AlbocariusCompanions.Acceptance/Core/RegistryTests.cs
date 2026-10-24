@@ -16,7 +16,7 @@ public class RegistryTests
         Assert.Equal(2, reg.Count);
         Assert.True(reg.Contains("a_two"));
         Assert.True(reg.TryGet("b_one", out var pkg));
-        Assert.Equal("b_one", pkg!.Companion.Id);
+        Assert.Equal("b_one", pkg!.Id);
     }
 
     [Fact]

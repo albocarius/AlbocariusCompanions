@@ -20,8 +20,18 @@ public class PlaceholderCompanionTests
     {
         var load = CompanionLoader.LoadAll(CompanionsRoot);
         Assert.Empty(load.Issues);
-        Assert.Empty(CompanionValidator.Validate(load.Packages));
+        // tr is partial on purpose: only missing-translation warnings are allowed.
+        Assert.All(CompanionValidator.Validate(load.Packages), i => Assert.Equal(IssueCodes.MissingTranslation, i.Code));
         Assert.Contains(load.Packages, p => p.Id == "test_companion");
+        Assert.DoesNotContain(load.Packages, p => p.FolderName == "_shared");
+    }
+
+    [Fact]
+    public void Shared_player_lines_load_and_validate_cleanly()
+    {
+        var catalog = AlbocariusCompanions.Core.Registry.CompanionCatalog.Load(CompanionsRoot);
+        Assert.Empty(catalog.Issues.Where(i => i.Folder == "_shared"));
+        Assert.Equal(PlayerSlots.All.Count, catalog.Registry.PlayerLines!.Lines.Select(l => l.Slot).Distinct().Count());
     }
 
     [Fact]
@@ -48,11 +58,13 @@ public class PlaceholderCompanionTests
     [Fact]
     public void Placeholder_dialogs_cover_required_slots_and_one_translation()
     {
-        var lines = CompanionLoader.LoadAll(CompanionsRoot).Packages.Single(p => p.Id == "test_companion").Dialogs.Lines!;
+        var package = CompanionLoader.LoadAll(CompanionsRoot).Packages.Single(p => p.Id == "test_companion");
+        var lines = package.Dialogs.Lines!;
 
         Assert.All(DialogSlots.Required, slot => Assert.Contains(lines, l => l.Slot == slot));
-        Assert.Single(lines, l => l.Text!.ContainsKey("tr"));
-        Assert.All(lines.Where(l => l.Voiced), l => Assert.Contains("Captain", l.Text!["en"]));
-        Assert.All(lines, l => Assert.Null(l.Audio)); // no audio this run
+        Assert.All(lines, l => Assert.Equal("test_companion_" + l.Id, l.FullId));
+        Assert.Single(package.Languages["tr"].Lines!);
+        Assert.All(lines.Where(l => l.Voiced), l => Assert.Contains("Captain", package.Text(l.Id!, "en")));
+        Assert.All(lines, l => Assert.Null(l.Audio)); // default audio/<local id>.ogg
     }
 }

@@ -18,9 +18,11 @@ public class LoaderTests
         var pkg = Assert.Single(result.Packages);
         Assert.Equal("test_companion", pkg.FolderName);
         Assert.Equal(Path.Combine(tmp.Path, "test_companion"), pkg.FolderPath);
-        Assert.Equal("test_companion", pkg.Companion.Id);
+        Assert.Equal("test_companion", pkg.Id);
         Assert.Equal(5, pkg.Dialogs.Lines!.Count);
-        Assert.Equal("Selam, Kaptan.", pkg.Dialogs.Lines[0].Text!["tr"]);
+        Assert.Equal("intro_01", pkg.Dialogs.Lines[0].Id);
+        Assert.Equal("test_companion_intro_01", pkg.Dialogs.Lines[0].FullId);
+        Assert.Equal("Greetings, Captain.", pkg.Text("intro_01", "en"));
     }
 
     [Fact]

@@ -38,33 +38,22 @@ public class CompanionValidationTests
     [InlineData("Test_Companion")]
     [InlineData("test-companion")]
     [InlineData("test companion")]
-    public void Id_must_be_lowercase_snake(string badId)
+    public void Folder_name_is_the_id_and_must_be_lowercase_snake(string folder)
     {
-        var issues = Validate(c => c["id"] = badId, folder: badId);
-        Assert.Equal(badId, SingleError(issues, IssueCodes.InvalidId).Folder);
+        var issues = CompanionChecks.Validate(new[] { Fixtures.Package(folder, Fixtures.Companion(folder), Fixtures.Dialogs(folder)) });
+        var error = Assert.Single(issues.Errors());
+        Assert.Equal(IssueCodes.InvalidId, error.Code);
+        Assert.Equal(folder, error.Folder);
     }
 
     [Fact]
-    public void Id_must_equal_folder_name()
-    {
-        var issues = Validate(_ => { }, folder: "other_folder");
-        Assert.Equal("other_folder", SingleError(issues, IssueCodes.IdFolderMismatch).Folder);
-    }
+    public void Id_field_is_gone_from_companion_json() =>
+        Assert.Null(typeof(CompanionDefinition).GetProperty("Id"));
 
     [Fact]
-    public void Duplicate_ids_across_folders_flag_every_folder()
-    {
-        var first = Fixtures.Package(Id);
-        var second = Fixtures.Package("copy_folder", Fixtures.Companion(Id), Fixtures.Dialogs(Id));
-
-        var issues = CompanionChecks.Validate(new[] { first, second });
-
-        var dupFolders = issues.Where(i => i.Code == IssueCodes.DuplicateId).Select(i => i.Folder).OrderBy(f => f);
-        Assert.Equal(new[] { "copy_folder", Id }, dupFolders);
-    }
+    public void Package_id_is_the_folder_name() => Assert.Equal("some_folder", Fixtures.Package("some_folder").Id);
 
     [Theory]
-    [InlineData("id")]
     [InlineData("name")]
     [InlineData("isFemale")]
     [InlineData("voice")]
@@ -81,7 +70,6 @@ public class CompanionValidationTests
     }
 
     [Theory]
-    [InlineData("id")]
     [InlineData("name")]
     [InlineData("culture")]
     public void Required_string_blank(string field)
