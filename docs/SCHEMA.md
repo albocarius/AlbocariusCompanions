@@ -60,11 +60,26 @@ The companion id is the folder name; there is no `id` field.
 | `schemaVersion` | int | yes | `1` |
 | `lines` | array | yes | |
 | `lines[].id` | string | yes | local id `[a-z0-9_]+`, unique within the companion. The full id `<companionId>_<id>` (e.g. `jeremus_intro_01`) is the localization key, voice-over id and log name, and must be unique across all companions and player lines |
-| `lines[].slot` | string | yes | required slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; optional (no effect yet): `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is picked at random each time |
+| `lines[].slot` | string | yes | required slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; optional vanilla dialog points (see below); reserved, no effect yet: `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is picked at random each time |
 | `lines[].voiced` | bool | no | default `false` |
 | `lines[].audio` | string | no | relative to the companion folder, no `..`, must end in `.ogg` (any case) — anything else is an error; default `audio/<local id>.ogg` |
 
 Audio plays whatever the game language is; there is no per-language audio.
+
+### Vanilla dialog point slots
+
+Every vanilla point where a wanderer/companion speaks (GAME_MAP Q18) is an optional slot. A companion with lines in such a
+slot says one of them instead of the vanilla text; the vanilla condition, consequence and tokens (`{SALUTATION}`, `{TITLE}`,
+`{SETTLEMENT_NAME}`, …) still apply. An absent or empty slot keeps the vanilla line (vanilla translations included). The full
+list with the vanilla English text is `src/AlbocariusCompanions.Core/Rules/VanillaDialogPoints.cs`; the companion template
+(`tools/companion-template/`) has one line per slot, pre-filled with that text:
+greetings and hub (`greet_recent`, `greet`, `main_hub`, `anything_else`, `farewell`, `job_status`), roles and missions
+(`role_*`, `mission_offer`, `mission_ask`, `forage_ask`, `rejoin_ok`), dismissal (`fire_reaction`, `fire_farewell`,
+`fire_cancel_reply`), becoming a lord (`lord_*`), grievances (`grievance_*`), rescue and prison break (`rescue_*`,
+`prison_break_*`) and following in a settlement (`follow_ok`, `gather_ok`, `follow_stop_ok`).
+
+New companion: `tools/new-companion.sh <id>` (Windows: `tools\new-companion.bat <id>`) copies the template; it refuses an
+existing folder, an invalid id and `_shared`.
 
 ## `lang/<code>.json`
 

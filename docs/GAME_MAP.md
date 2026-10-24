@@ -1690,3 +1690,7 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `Hero.CharacterStates` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q19 | Active state |
 | `PlayerEncounter.Current` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Encounters/PlayerEncounter.cs` | Q19 | end the encounter like vanilla |
 | `PlayerEncounter.LeaveEncounter` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Encounters/PlayerEncounter.cs` | Q19 | end the encounter like vanilla |
+| `ConversationManager.UpdateCurrentSentenceText` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` | Q18 | Harmony postfix: companion text for vanilla NPC sentences |
+| `ConversationManager.OneToOneConversationHero` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` | Q18 | the hero being talked to |
+| `ConversationSentence.Id` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationSentence.cs` | Q18 | vanilla sentence id → slot |
+| `ConversationSentence.IsPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationSentence.cs` | Q18 | only NPC sentences are replaced |

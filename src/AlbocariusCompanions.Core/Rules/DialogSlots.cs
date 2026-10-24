@@ -21,7 +21,12 @@ public static class DialogSlots
     /// <summary>Slots every companion must have at least one line for in this run.</summary>
     public static readonly IReadOnlyList<string> Required = new[] { Intro, Backstory, HireOffer, HireAccept, HireDecline };
 
-    public static readonly IReadOnlyList<string> Optional = new[] { LeaveThreat, RelationComplaint, LikeReaction, DislikeReaction, Idle };
+    /// <summary>
+    /// Optional slots: reserved ones without effect yet, then every vanilla dialog point (<see cref="VanillaDialogPoints"/>,
+    /// GAME_MAP Q18) — a point with lines replaces the vanilla text for this companion, an empty one keeps vanilla.
+    /// </summary>
+    public static readonly IReadOnlyList<string> Optional =
+        new[] { LeaveThreat, RelationComplaint, LikeReaction, DislikeReaction, Idle }.Concat(VanillaDialogPoints.Slots).ToArray();
 
     public static readonly IReadOnlyList<string> All = Required.Concat(Optional).ToArray();
 

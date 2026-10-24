@@ -64,6 +64,23 @@ public class ScaffoldTests
     }
 
     [Fact]
+    public void Template_contains_every_vanilla_dialog_point_with_its_vanilla_english_text()
+    {
+        // SPEC_CORE_GAPS T4.0: the template is a working starting point and a reference of every dialog point.
+        var template = Path.Combine(RepoPaths.Root, "tools", "companion-template");
+        var dialogs = Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(Path.Combine(template, "dialogs.json")));
+        var en = (Newtonsoft.Json.Linq.JObject)Newtonsoft.Json.Linq.JObject.Parse(File.ReadAllText(Path.Combine(template, "lang", "en.json")))["lines"]!;
+        var slots = dialogs["lines"]!.Select(l => ((string)l["slot"]!, (string)l["id"]!)).ToList();
+
+        Assert.All(AlbocariusCompanions.Core.Rules.DialogSlots.Required, s => Assert.Contains(slots, x => x.Item1 == s));
+        foreach (var point in AlbocariusCompanions.Core.Rules.VanillaDialogPoints.All)
+        {
+            var (_, id) = Assert.Single(slots, x => x.Item1 == point.Slot);
+            Assert.Equal(point.EnglishText, (string?)en[id]);
+        }
+    }
+
+    [Fact]
     public void Batch_script_exists_next_to_the_shell_script() =>
         Assert.True(File.Exists(Path.Combine(RepoPaths.Root, "tools", "new-companion.bat")));
 }

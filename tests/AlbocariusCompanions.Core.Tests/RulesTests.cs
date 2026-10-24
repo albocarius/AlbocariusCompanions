@@ -15,7 +15,7 @@ public class DialogSlotsTests
     [Fact]
     public void All_contains_required_and_optional_without_duplicates()
     {
-        Assert.Equal(10, DialogSlots.All.Count);
+        Assert.Equal(10 + VanillaDialogPoints.All.Count, DialogSlots.All.Count);
         Assert.Equal(DialogSlots.All.Count, DialogSlots.All.Distinct().Count());
         Assert.All(DialogSlots.Optional, s => Assert.False(DialogSlots.IsRequired(s)));
     }
@@ -118,5 +118,44 @@ public class ModelJsonTests
         Assert.Equal("intro", line.Slot);
         Assert.Equal("intro_01", line.Id);
         Assert.True(line.Voiced);
+    }
+}
+
+public class VanillaDialogPointsTests
+{
+    [Fact]
+    public void Slots_and_sentence_ids_are_unique()
+    {
+        Assert.Equal(VanillaDialogPoints.All.Count, VanillaDialogPoints.Slots.Distinct().Count());
+        var ids = VanillaDialogPoints.All.SelectMany(p => p.SentenceIds).ToList();
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+    }
+
+    [Fact]
+    public void Vanilla_slots_are_optional_companion_slots_and_not_player_slots()
+    {
+        Assert.All(VanillaDialogPoints.Slots, s => Assert.True(DialogSlots.IsKnown(s) && !DialogSlots.IsRequired(s)));
+        Assert.All(VanillaDialogPoints.Slots, s => Assert.False(PlayerSlots.IsKnown(s)));
+    }
+
+    [Fact]
+    public void Every_point_has_english_text_without_a_localization_id()
+    {
+        Assert.All(VanillaDialogPoints.All, p => Assert.False(string.IsNullOrWhiteSpace(p.EnglishText)));
+        Assert.All(VanillaDialogPoints.All, p => Assert.DoesNotContain("{=", p.EnglishText));
+    }
+
+    [Theory]
+    [InlineData("companion_fire", "fire_reaction")]
+    [InlineData("companion_role_unassign_response", "role_ok")]
+    [InlineData("prison_break_start_2", "prison_break_thanks")]
+    public void Sentence_ids_map_to_their_slot(string sentenceId, string slot) =>
+        Assert.Equal(slot, VanillaDialogPoints.ForSentence(sentenceId)!.Slot);
+
+    [Fact]
+    public void Unknown_sentence_has_no_point()
+    {
+        Assert.Null(VanillaDialogPoints.ForSentence("albocarius_test_companion_intro"));
+        Assert.Null(VanillaDialogPoints.ForSentence(null));
     }
 }

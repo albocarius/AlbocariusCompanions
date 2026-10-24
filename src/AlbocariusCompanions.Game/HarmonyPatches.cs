@@ -1,10 +1,13 @@
 using System;
+using System.Collections.Generic;
 using AlbocariusCompanions.Core.Audio;
+using AlbocariusCompanions.Core.Rules;
 using HarmonyLib;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Actions;
 using TaleWorlds.CampaignSystem.Encounters;
 using TaleWorlds.CampaignSystem.CampaignBehaviors;
+using TaleWorlds.CampaignSystem.Conversation;
 using TaleWorlds.CampaignSystem.GameComponents;
 using TaleWorlds.Localization;
 
@@ -127,6 +130,44 @@ internal static class ReturnDismissedModCompanionToTavern
             // Vanilla would remove a mod companion for good: for mod heroes never fall back to it.
             ModRuntime.Log.Error("dismissal prefix failed" + (isModHero ? "; vanilla removal skipped for the mod companion" : ""), ex);
             return !isModHero;
+        }
+    }
+}
+
+/// <summary>
+/// Vanilla dialog points as companion slots (SPEC_CORE_GAPS T4.0, GAME_MAP Q18 note): when a mod companion speaks a vanilla
+/// NPC sentence whose slot it has lines for, the text shown and voiced is one of its own lines. The vanilla condition already
+/// ran (its variables are set) and the consequence and tokens are unchanged; an empty slot keeps the vanilla text.
+/// </summary>
+[HarmonyPatch(typeof(ConversationManager), nameof(ConversationManager.UpdateCurrentSentenceText))]
+internal static class ReplaceVanillaTextForModCompanions
+{
+    private static void Postfix(ConversationManager __instance, List<ConversationSentence> ____sentences, int ____currentSentence,
+        ref TextObject ____currentSentenceText)
+    {
+        try
+        {
+            if (____sentences == null || ____currentSentence < 0 || ____currentSentence >= ____sentences.Count)
+                return;
+            var sentence = ____sentences[____currentSentence];
+            if (sentence == null || sentence.IsPlayer)
+                return;
+
+            var point = VanillaDialogPoints.ForSentence(sentence.Id);
+            if (point == null)
+                return;
+
+            var hero = __instance.OneToOneConversationHero;
+            if (!ModRuntime.IsModHero(hero) || !ModRuntime.Registry.TryGet(hero.Template.StringId, out var package) || package == null)
+                return;
+
+            var text = DialogText.PickNpcText(package, point.Slot);
+            if (text != null)
+                ____currentSentenceText = text;
+        }
+        catch (Exception ex)
+        {
+            ModRuntime.Log.Error("vanilla text replacement failed; showing the vanilla text", ex);
         }
     }
 }

@@ -29,8 +29,6 @@ internal static class CompanionDialogs
     // Beats vanilla start_wanderer_unmet (110): NPC lines are first-passing-match by priority (Q7).
     private const int IntroPriority = 120;
 
-    private static readonly IRandomSource Random = new MBRandomSource();
-
     public static void Register(CampaignGameStarter starter)
     {
         var playerLines = ModRuntime.Registry.PlayerLines;
@@ -55,9 +53,8 @@ internal static class CompanionDialogs
             return;
         }
 
-        var bySlot = LinesBySlot(package);
         foreach (var slot in DialogSlots.Required)
-            if (!bySlot.ContainsKey(slot))
+            if (DialogText.LinesOf(package, slot).Count == 0)
             {
                 ModRuntime.Log.Error($"Dialogs: '{id}' has no usable '{slot}' line; no dialogs registered for it.");
                 return;
@@ -90,21 +87,20 @@ internal static class CompanionDialogs
         // NPC line text: a random line of the slot in the active language, keyed by its full id for voice-over.
         bool SetNpcText(string variable, string slot)
         {
-            var line = LinePicker.Pick(bySlot[slot], Random)!;
-            var text = package.Text(line.Id!, LanguageCode(package.Languages.Keys));
-            MBTextManager.SetTextVariable(variable, new TextObject("{=" + line.FullId + "}" + text));
+            var text = DialogText.PickNpcText(package, slot);
+            if (text == null)
+                return false;
+            MBTextManager.SetTextVariable(variable, text);
             return true;
         }
 
         // Player line text: same pick from _shared; the player is never voiced.
         bool SetPlayerText(string variable, string slot)
         {
-            var lines = playerLines.Lines.Where(l => l.Slot == slot).ToList();
-            var line = LinePicker.Pick(lines, Random);
-            if (line == null)
+            var text = DialogText.PickPlayerText(playerLines, slot);
+            if (text == null)
                 return false;
-            var text = playerLines.Text(line.Id!, LanguageCode(playerLines.Languages.Keys));
-            MBTextManager.SetTextVariable(variable, new TextObject("{=" + line.Id + "}" + text));
+            MBTextManager.SetTextVariable(variable, text);
             return true;
         }
 
@@ -167,23 +163,6 @@ internal static class CompanionDialogs
             $"languages {string.Join(", ", package.Languages.Keys.OrderBy(k => k, StringComparer.Ordinal))}).");
     }
 
-    /// <summary>The lang file code for the game's active language (Q14 note 2), else "en".</summary>
-    private static string LanguageCode(IEnumerable<string> available) =>
-        LanguagePick.Choose(available, MBTextManager.ActiveTextLanguage, GameLanguageOf);
-
-    /// <summary>ISO code → game language id, cached: the game asserts on unknown codes, so each is asked once per session.</summary>
-    private static string? GameLanguageOf(string isoCode)
-    {
-        if (!GameLanguageByIso.TryGetValue(isoCode, out var language))
-        {
-            language = LocalizedTextManager.GetLocalizationCodeOfISOLanguageCode(isoCode);
-            GameLanguageByIso[isoCode] = language;
-        }
-        return language;
-    }
-
-    private static readonly Dictionary<string, string?> GameLanguageByIso = new Dictionary<string, string?>(StringComparer.Ordinal);
-
     /// <summary>Vanilla limit check (Q6): the hire option is refused once the clan is at its companion limit.</summary>
     private static bool TooManyCompanions() =>
         Clan.PlayerClan.Companions.Count >= Clan.PlayerClan.CompanionLimit;
@@ -196,18 +175,5 @@ internal static class CompanionDialogs
         AddCompanionAction.Apply(Clan.PlayerClan, hero);
         AddHeroToPartyAction.Apply(hero, MobileParty.MainParty);
         ModRuntime.Log.Info($"Hired '{id}' (hero {hero.StringId}) for {hireCost} denars.");
-    }
-
-    /// <summary>Slot → the slot's lines that have a full id and an English text (validation guarantees both).</summary>
-    private static Dictionary<string, List<DialogLine>> LinesBySlot(CompanionPackage package) =>
-        (package.Dialogs?.Lines ?? new List<DialogLine>())
-            .Where(l => l?.Slot != null && l.FullId != null && package.Text(l.Id!, CompanionRules.EnglishCode) != null)
-            .GroupBy(l => l.Slot!, StringComparer.Ordinal)
-            .ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
-
-    /// <summary>Slot variation through the game's random generator (GAME_MAP Q1 MBRandom).</summary>
-    private sealed class MBRandomSource : IRandomSource
-    {
-        public int Next(int maxExclusive) => MBRandom.RandomInt(maxExclusive);
     }
 }
