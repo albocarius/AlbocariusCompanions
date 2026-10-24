@@ -28,6 +28,12 @@ fi
 echo "== Tests: $TEST_CMD"
 bash -c "$TEST_CMD" > "$LOG.test" 2>&1
 tc=$?
+# dotnet 10.0.113 (distro build) intermittently aborts with "Internal CLR error"; retry once on that only.
+if [[ $tc -ne 0 ]] && grep -q "Internal CLR error" "$LOG.test"; then
+  echo "== CLR crash (infra), retrying once"
+  bash -c "$TEST_CMD" > "$LOG.test" 2>&1
+  tc=$?
+fi
 tail -n 25 "$LOG.test"
 [[ $tc -ne 0 ]] && fail=1
 
