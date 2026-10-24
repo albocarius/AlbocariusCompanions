@@ -1316,6 +1316,8 @@ and repeating the vanilla spawn steps makes it an unhired wanderer in a tavern a
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionsCampaignBehavior.cs` — `CreateCompanionAndAddToSettlement` — `CreateSpecialHero`, `ChangeState(Hero.CharacterStates.Active)`, `EnterSettlementAction.ApplyForCharacterOnly`.
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.ChangeState` — public `ChangeState(CharacterStates newState)`.
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Encounters/PlayerEncounter.cs` — `PlayerEncounter.LeaveEncounter` — public static settable flag.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapNotificationTypes/DeathNotificationItemVM.cs` — `KillCharacterActionDetail` — the only `RemoveCompanionAction`/`KillCharacterAction` reference in the campaign UI assembly (decompiled for this section): the clan screen has no dismissal path.
+- `decomp/SandBox/SandBox.CampaignBehaviors/CompanionDismissCampaignBehavior.cs` — `OnCompanionRemoved` — scene cleanup only (removes the agent from the location / accompanying characters), no dismissal of its own.
 
 ### Uncertain
 - **UNCERTAIN**: no in-game test yet of a dismissal while the companion is a prisoner (`EndCaptivityAction.ApplyByEscape` path) — resolve by dismissing a captive mod companion in game.
