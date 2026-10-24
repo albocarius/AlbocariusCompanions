@@ -71,16 +71,16 @@ scaffold last because its template must contain the final slot list and lang for
 - [ ] 42-gm-vanilla-dialog-points (worker discovery → self verify) — new GAME_MAP section: every vanilla dialog point
   where a wanderer/companion speaks or is spoken to (meeting, hiring, dismissal, others): token flow, conditions, vanilla
   English text and its `{=id}`, decomp path + method for each.
-- [ ] 43-slots-from-vanilla (self) — add each point as a slot in the Core slot list (required vs optional). Empty slot →
+- [x] 43-slots-from-vanilla (self) — add each point as a slot in the Core slot list (required vs optional). Empty slot →
   vanilla behavior (our line not registered, vanilla line stays visible for mod companions; review the Q7 hire-option
   Harmony prefix against this). Template content is written in 49/50 (plain English in `lang/en.json`, our id system, no
   vanilla string ids / textRef / vanilla voice).
 
 ### T4 — dismissal bug
-- [ ] 44-gm-dismissal (worker discovery → self verify) — GAME_MAP section: which action/event handles player dismissal and
+- [x] 44-gm-dismissal (self: researched while the worker ran Q18) — GAME_MAP section: which action/event handles player dismissal and
   what happens to the hero; how to tell player dismissal from death, capture, other mods, kingdom events; how vanilla
   turns a hero back into an unhired wanderer and places it in a tavern.
-- [ ] 45-dismissal-fix (self) — mod companions only, player dismissal only: back to wanderer state + placement like
+- [x] 45-dismissal-fix (self) — mod companions only, player dismissal only: back to wanderer state + placement like
   initial spawn (PickSpawnTown); log dismissal and re-placement. Other removal reasons → nothing. Must not break the
   frozen reload rule. Checklist: dismiss → tavern → rehire; reload after dismissal → no duplicate.
 
@@ -113,7 +113,7 @@ every fixture, so they went in together. Missing translations are logged as one 
 in game. The user renames the Windows audio files to local ids (`intro_01.ogg`).
 
 ### Scaffold (T3.3, after 43 and 49)
-- [ ] 52-scaffold (worker) — `tools/new-companion.sh <id>` + `.bat`, template in `tools/companion-template/` with every
+- [x] 52-scaffold (self) — `tools/new-companion.sh <id>` + `.bat`, template in `tools/companion-template/` with every
   slot pre-filled (vanilla English text from 42 in `lang/en.json`, our ids). Refuses an existing folder, an invalid id and
   `_shared`. Accept: test scaffolds into a temp dir and the result passes CompanionCatalog validation.
 
