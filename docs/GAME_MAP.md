@@ -1538,13 +1538,53 @@ vanilla NPC sentence (`ConversationSentence.Id`, `IsPlayer == false`) after the 
 
 ## Q19 — Companion dismissal
 
-Status: TODO
+Status: VERIFIED
 
 ### Answer
+**(a) What dismissal does.** The player dismisses a companion only through the conversation option
+`companion_talk_fire` ("I no longer have need of your services.", token `companion_role` → `companion_fire`), whose
+consequence `CompanionRolesCampaignBehavior.companion_fire_on_consequence` calls, in order:
+1. `RemoveCompanionAction.ApplyByFire(hero.CompanionOf, hero)` → `ApplyInternal(..., Fire)`: `CompanionOf = null`; the hero
+   leaves its mobile party (a led party is held and disbanded/destroyed); for `Fire` a prisoner escapes
+   (`EndCaptivityAction.ApplyByEscape`), otherwise `MakeHeroFugitiveAction.Apply` (leaves party and settlement,
+   `ChangeState(Fugitive)`); a wanderer's equipment is reset to its template; a governor post is removed; finally
+   `CampaignEvents.CompanionRemoved(hero, Fire)` fires.
+2. `KillCharacterAction.ApplyByRemove(hero)` — detail `Lost`, forced: **the hero is removed from the game**. That is why
+   a dismissed mod companion vanished from the map. Vanilla never brings a dismissed companion back.
+3. `PlayerEncounter.LeaveEncounter = true` when an encounter is open.
+
+**(b) Telling player dismissal apart.** `RemoveCompanionDetail` has `Fire`, `Death`, `AfterQuest`, `ByTurningToLord`;
+death, quests and becoming a lord use their own `Apply…` methods. `ApplyByFire` has exactly three callers: the dialog
+consequence above, `AddCompanionAction.Apply` (a companion that already belongs to another clan is "fired" from it just
+before joining the new one — not a player dismissal) and a cheat. So the `CompanionRemoved` event with `Fire` is ambiguous,
+but the dialog consequence is not: a Harmony prefix on `companion_fire_on_consequence` sees player dismissals only.
+Captivity, release and kingdom events do not go through `RemoveCompanionAction` at all.
+
+**(c) Back to an unhired wanderer.** Vanilla spawns a wanderer with `HeroCreator.CreateSpecialHero`, then
+`hero.ChangeState(Hero.CharacterStates.Active)` and `EnterSettlementAction.ApplyForCharacterOnly(hero, settlement)`
+(Q3: the only writer of `StayingInSettlement`), in `CompanionsCampaignBehavior.CreateCompanionAndAddToSettlement`. After
+`ApplyByFire` a mod hero is a partyless fugitive with `CompanionOf == null` and still `Occupation.Wanderer`; skipping step 2
+and repeating the vanilla spawn steps makes it an unhired wanderer in a tavern again (our hire option checks
+`!IsPlayerCompanion && PartyBelongedTo == null`). The mod's prefix does exactly that for mod heroes only and returns
+`false` (original skipped); every other hero runs vanilla code.
 
 ### Evidence
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` — `companion_fire_on_consequence` — `ApplyByFire`, then `KillCharacterAction.ApplyByRemove`, then `PlayerEncounter.LeaveEncounter = true`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` — `companion_talk_fire` — player line `companion_role` → `companion_fire`, "{=pRsCnGoo}I no longer have need of your services.".
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/RemoveCompanionAction.cs` — `RemoveCompanionAction.ApplyInternal` — CompanionOf = null, leaves party, Fire → escape or fugitive, wanderer ResetEquipments, governor removed, `OnCompanionRemoved(companion, detail)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/RemoveCompanionAction.cs` — `RemoveCompanionDetail` — `Fire`, `Death`, `AfterQuest`, `ByTurningToLord`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/MakeHeroFugitiveAction.cs` — `MakeHeroFugitiveAction.ApplyInternal` — leaves party and settlement, `ChangeState(Hero.CharacterStates.Fugitive)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/KillCharacterAction.cs` — `KillCharacterAction.ApplyByRemove` — `ApplyInternal(victim, null, KillCharacterActionDetail.Lost, …, isForced)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddCompanionAction.cs` — `AddCompanionAction.Apply` — calls `RemoveCompanionAction.ApplyByFire` when the hero already has a `CompanionOf` clan.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` — `CompanionRemoved` — `IMbEvent<Hero, RemoveCompanionAction.RemoveCompanionDetail>`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionsCampaignBehavior.cs` — `CreateCompanionAndAddToSettlement` — `CreateSpecialHero`, `ChangeState(Hero.CharacterStates.Active)`, `EnterSettlementAction.ApplyForCharacterOnly`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.ChangeState` — public `ChangeState(CharacterStates newState)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Encounters/PlayerEncounter.cs` — `PlayerEncounter.LeaveEncounter` — public static settable flag.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapNotificationTypes/DeathNotificationItemVM.cs` — `KillCharacterActionDetail` — the only `RemoveCompanionAction`/`KillCharacterAction` reference in the campaign UI assembly (decompiled for this section): the clan screen has no dismissal path.
+- `decomp/SandBox/SandBox.CampaignBehaviors/CompanionDismissCampaignBehavior.cs` — `OnCompanionRemoved` — scene cleanup only (removes the agent from the location / accompanying characters), no dismissal of its own.
 
 ### Uncertain
+- **UNCERTAIN**: no in-game test yet of a dismissal while the companion is a prisoner (`EndCaptivityAction.ApplyByEscape` path) — resolve by dismissing a captive mod companion in game.
 
 ## API index
 
@@ -1644,3 +1684,9 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `LocalizedTextManager.GetLocalizationCodeOfISOLanguageCode` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/LocalizedTextManager.cs` | Q14 | ISO code of a lang file → game language id |
 | `TextObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/TextObject.cs` | Q14 | `{=<full id>}<text>` value of a dialog line variable |
 | `ModuleHelper.IsModuleActive` | `decomp/TaleWorlds.ModuleManager/TaleWorlds.ModuleManager/ModuleHelper.cs` | Q13 | requiredModules: skip a companion whose module is not loaded |
+| `CompanionRolesCampaignBehavior` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` | Q19 | Harmony target: companion_fire_on_consequence (player dismissal) |
+| `RemoveCompanionAction.ApplyByFire` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/RemoveCompanionAction.cs` | Q19 | vanilla fire step of a dismissal |
+| `Hero.ChangeState` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q19 | fugitive → active before the tavern |
+| `Hero.CharacterStates` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q19 | Active state |
+| `PlayerEncounter.Current` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Encounters/PlayerEncounter.cs` | Q19 | end the encounter like vanilla |
+| `PlayerEncounter.LeaveEncounter` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Encounters/PlayerEncounter.cs` | Q19 | end the encounter like vanilla |
