@@ -18,6 +18,7 @@ internal static class CompanionHeroFactory
     {
         var hero = HeroCreator.CreateSpecialHero(template, bornSettlement, null, null, definition.Age ?? -1);
         hero.SetNewOccupation(Occupation.Wanderer);
+        ApplyName(hero, template);
 
         // Creation adds random noise to template skills and auto-distributes attribute points (Q4): pin JSON values.
         if (definition.Skills != null)
@@ -43,5 +44,15 @@ internal static class CompanionHeroFactory
 
         hero.ChangeState(Hero.CharacterStates.Active);
         return hero;
+    }
+
+    /// <summary>
+    /// Sets the hero's name to the template name from JSON. Creation only uses the template name for heroes that are
+    /// already wanderers; ours start as Special and get a random culture name (GAME_MAP Q2). Also re-applied on load so
+    /// existing heroes follow name changes in companion.json.
+    /// </summary>
+    public static void ApplyName(Hero hero, CharacterObject template)
+    {
+        hero.SetName(template.Name.CopyTextObject(), template.Name.CopyTextObject());
     }
 }

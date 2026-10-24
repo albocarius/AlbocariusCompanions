@@ -91,6 +91,7 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
                 {
                     // Alive or dead: the companion exists, so never respawn and never duplicate (Q9).
                     present++;
+                    CompanionHeroFactory.ApplyName(mapped, template);
                     log.Info($"Companion '{id}' already present as hero '{mapped.StringId}' (template '{mapped.Template?.StringId}').");
                     return;
                 }
@@ -100,6 +101,7 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
                 {
                     _companionHeroes[id] = existing;
                     relinked++;
+                    CompanionHeroFactory.ApplyName(existing, template);
                     log.Info($"Companion '{id}' re-linked to existing hero '{existing.StringId}' (template '{existing.Template?.StringId}').");
                     return;
                 }

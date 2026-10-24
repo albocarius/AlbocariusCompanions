@@ -138,6 +138,7 @@ Status: VERIFIED
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation.Tags/WandererTag.cs` — `WandererTag.IsApplicableTo` — the dialog layer also classifies wanderers with the same `IsWanderer` property; no separate "hireable" flag exists there either.
 - `decomp/SandBox/SandBox.Issues/NotableWantsDaughterFoundIssueBehavior.cs` — `HeroCreator.CreateSpecialHero` — a quest NPC built from a wanderer template with no occupation override: she is `IsWanderer` and takes a counted slot exactly like a real companion.
 - `decomp/StoryMode/StoryMode.GameComponents.CampaignBehaviors/TutorialPhaseCampaignBehavior.cs` — `DisableHeroAction.Apply` — the only callers of the `Disabled` state in the decompiled sources are StoryMode scripted-hero cleanups, so in sandbox death and occupation change are the practical exits from the count.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/HeroCreator.cs` — `InitializeHeroFromSettings` — `CreateSpecialHero` asks `HeroCreationModel.GenerateFirstAndFullName`, which ends in `NameGenerator.GenerateHeroFullName`: only when `hero.IsWanderer` is the full name the template's `Name`; otherwise a random first name from the culture pool. A Special-occupation template therefore gets a random name (observed in game 2026-10-24: "Orachos"). Fix: after `SetNewOccupation(Wanderer)` call `Hero.SetName(fullName, firstName)` (`decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs`) with copies of the template `Name` (orchestrator note).
 - `~/bannerlord/moduledata/SandBoxCore/spnpccharactertemplates.xml` — `is_template` — vanilla character XML really does carry `is_template="true"` and `occupation="…"` per character element (none of the locally present ones say `Wanderer`).
 
 ### Uncertain
@@ -1283,3 +1284,6 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `AddHeroToPartyAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddHeroToPartyAction.cs` | Q6 | join main party |
 | `MobileParty.MainParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q6 | player party |
 | `MBTextManager.SetTextVariable` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | hire cost in player line |
+| `Hero.SetName` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | keep the JSON name (creation gives Special templates a random one) |
+| `CharacterObject.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` | Q2 | template display name `{=<id>_name}<name>` |
+| `TextObject.CopyTextObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/TextObject.cs` | Q2 | own copy of the template name per hero |
