@@ -14,7 +14,10 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - Phase 0 bootstrap done (commit 8aa1f47). Baseline: build OK, 0 tests.
 - M1 done (Q1–Q16 verified). M2 done ("phase 2: core"). M3 done ("phase 3: game layer"): 23/27 worker, 29 self (user asked, ran in
   parallel with 27), 24/25/26/28/30 earlier. dist/ = Core+Game DLL, SubModule.xml, test_companion JSON.
-- Next: ask the user before copying dist/ to the Windows game Modules folder; then M4 (31-run-report).
+- Deployed to the user's Windows install and played 2026-10-24 (spawn, dialogs, hire, voice, lipsync OK). Extra work after
+  the test: JSON name fix, voice-over without build step, town names in the log. M4 done ("phase 4: run report").
+- Next (new milestone, not started): translations + player prompts from JSON, `.ogg` validation, likes/dislikes/relations,
+  optional slots, dismissed-companion check. See docs/RUN_REPORT.md "Not verified / known gaps".
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh = PowerShell over ssh via -EncodedCommand, xsdcheck);
   they are convenience, nothing depends on them.
 
@@ -117,8 +120,14 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
 - [ ] Milestone end: build + tests, dist layout check, every API traced to GAME_MAP; commit `phase 3: game layer`.
 
 ## M4 — Report
-- [ ] 30-run-report (self) — `docs/RUN_REPORT.md` per SPEC §6 (completed work, UNCERTAINs, BLOCKERS, morning checklist).
-- [ ] Final: full tests, "Report" section below, final commit. No push.
+- [x] 30-run-report (self) — `docs/RUN_REPORT.md` per SPEC §6 (completed work, UNCERTAINs, BLOCKERS, morning checklist).
+- [x] Final: full tests, "Report" section below, final commit. No push.
 
 ## Report
-(filled at the end)
+- Built: GAME_MAP Q1–Q16 verified + API index; Core (models, loader, catalog, validation, resolver, NPCCharacters and
+  voiced-lines XML builders, logging); Game layer (SubModule.xml, runtime templates, spawn/persist/re-link behavior,
+  generic dialogs + hire, Harmony guards, voice-over postfix); placeholder `test_companion`.
+- Tests: Core.Tests 140/140, Acceptance 242/242.
+- Verified in game by the user: load, tavern spawn, dialogs, hire, JSON name, voice-over, lipsync.
+- Not verified: dismissed companion roaming, vanilla wanderer count, no-duplicate save→load, existing save without mod.
+- Open questions: nord culture fallback semantics; GOG/Epic writability of the module folder. Details: docs/RUN_REPORT.md.
