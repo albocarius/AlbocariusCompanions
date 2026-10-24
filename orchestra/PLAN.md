@@ -72,10 +72,13 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
 
 ## M3 — Game layer (SPEC Phase 3)
 Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP entry; self reviews worker diffs against GAME_MAP.
-- [ ] 22-game-build (self) — Game csproj: HintPath refs into `~/bannerlord/dlls` (Private=false),
+- [x] 22-game-build (self) — Game csproj: HintPath refs into `~/bannerlord/dlls` (Private=false),
   Newtonsoft from game bin (Private=false), Lib.Harmony compile-only; post-build target assembling
   `dist/AlbocariusCompanions/` (SubModule.xml, bin/Win64_Shipping_Client/{Game,Core}.dll, ModuleData/Companions/**).
   **Core's Newtonsoft copy must not go to dist** (user decision). Accept: acceptance test on dist layout incl. no Newtonsoft.Json.dll in dist.
+  Done: `GameDlls` property (default `$(HOME)/bannerlord/dlls`, build errors if missing), Lib.Harmony 2.2.2 compile-only,
+  Core's Newtonsoft `PrivateAssets=all`, `AssembleDist` target copies only Game+Core DLLs and mirrors `module/`.
+  Tests: `DistLayoutTests` (layout, only mod DLLs, module mirror, Core has no TaleWorlds refs, no NavalDLC refs, Newtonsoft 13.0.0.0).
 - [ ] 22b-xml-schema-tests (self) — acceptance tests validating every XML in `dist/` against the game XSDs:
   for each `Xmls/XmlNode` in dist SubModule.xml, validate its file against `xmlschemas/<id>.xsd` when that schema exists
   (same rule as `ModuleHelper.GetXsdPath`); generated character template → `NPCCharacters.xsd`; language files /

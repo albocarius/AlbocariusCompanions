@@ -1,13 +1,24 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net472</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
+    <!-- Copied game DLLs (read-only, never committed). Override with -p:GameDlls=... -->
+    <GameDlls Condition="'$(GameDlls)' == ''">$(HOME)/bannerlord/dlls</GameDlls>
+    <ModuleId>AlbocariusCompanions</ModuleId>
+    <RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)../../'))</RepoRoot>
+    <ModuleSourceDir>$(RepoRoot)module/</ModuleSourceDir>
+    <DistModuleDir>$(RepoRoot)dist/$(ModuleId)/</DistModuleDir>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <!-- Compile-only; at runtime the Bannerlord.Harmony module provides Harmony (SubModule.xml dependency). -->
+    <PackageReference Include="Lib.Harmony" Version="2.2.2">
+      <ExcludeAssets>runtime</ExcludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
@@ -15,5 +26,38 @@
   <ItemGroup>
     <ProjectReference Include="..\AlbocariusCompanions.Core\AlbocariusCompanions.Core.csproj" />
   </ItemGroup>
+
+  <!-- Game assemblies: HintPath into GAME_DLLS, never copied. Base game only — no DLC (NavalDLC) assemblies. -->
+  <ItemGroup>
+    <Reference Include="TaleWorlds.Library"><HintPath>$(GameDlls)/bin/TaleWorlds.Library.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TaleWorlds.Core"><HintPath>$(GameDlls)/bin/TaleWorlds.Core.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TaleWorlds.CampaignSystem"><HintPath>$(GameDlls)/bin/TaleWorlds.CampaignSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TaleWorlds.ObjectSystem"><HintPath>$(GameDlls)/bin/TaleWorlds.ObjectSystem.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TaleWorlds.Localization"><HintPath>$(GameDlls)/bin/TaleWorlds.Localization.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TaleWorlds.MountAndBlade"><HintPath>$(GameDlls)/bin/TaleWorlds.MountAndBlade.dll</HintPath><Private>false</Private></Reference>
+    <Reference Include="TaleWorlds.ModuleManager"><HintPath>$(GameDlls)/bin/TaleWorlds.ModuleManager.dll</HintPath><Private>false</Private></Reference>
+    <!-- Same Newtonsoft.Json the game ships (13.0.1); Core's NuGet copy does not flow here (PrivateAssets=all in Core). -->
+    <Reference Include="Newtonsoft.Json"><HintPath>$(GameDlls)/bin/Newtonsoft.Json.dll</HintPath><Private>false</Private></Reference>
+  </ItemGroup>
+
+  <Target Name="CheckGameDlls" BeforeTargets="ResolveAssemblyReferences">
+    <Error Condition="!Exists('$(GameDlls)/bin/TaleWorlds.CampaignSystem.dll')"
+           Text="Game DLLs not found under '$(GameDlls)'. Copy them there or pass -p:GameDlls=&lt;path&gt;." />
+  </Target>
+
+  <!--
+    Assemble dist/AlbocariusCompanions/ in Bannerlord module layout:
+      SubModule.xml, bin/Win64_Shipping_Client/{Game,Core}.dll, ModuleData/** (mirrors module/).
+    Only the two mod assemblies are copied: no game, Harmony or Newtonsoft DLLs ever reach dist.
+  -->
+  <Target Name="AssembleDist" AfterTargets="Build">
+    <ItemGroup>
+      <_ModuleFiles Include="$(ModuleSourceDir)**/*" Exclude="$(ModuleSourceDir)**/.gitkeep" />
+      <_ModAssemblies Include="$(TargetPath);$(OutDir)AlbocariusCompanions.Core.dll" />
+    </ItemGroup>
+    <RemoveDir Directories="$(DistModuleDir)" />
+    <Copy SourceFiles="@(_ModuleFiles)" DestinationFiles="@(_ModuleFiles->'$(DistModuleDir)%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(_ModAssemblies)" DestinationFolder="$(DistModuleDir)bin/Win64_Shipping_Client/" />
+  </Target>
 
 </Project>
