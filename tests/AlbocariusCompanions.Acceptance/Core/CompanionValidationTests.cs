@@ -244,6 +244,13 @@ public class CompanionValidationTests
     }
 
     [Fact]
+    public void Relation_to_itself_is_invalid()
+    {
+        var issues = Validate(c => c["relations"] = new JArray(new JObject { ["companion"] = Id, ["attitude"] = "friend" }));
+        SingleError(issues, IssueCodes.InvalidRelation);
+    }
+
+    [Fact]
     public void Relation_to_unknown_companion_is_only_a_warning()
     {
         var issues = Validate(c => c["relations"] = new JArray(new JObject { ["companion"] = "not_loaded", ["attitude"] = "rival" }));

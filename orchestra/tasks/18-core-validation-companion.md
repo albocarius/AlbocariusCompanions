@@ -24,7 +24,7 @@ Implement `CompanionChecks.Validate(IReadOnlyList<CompanionPackage>)` in `src/Al
 - voice must be in `CompanionRules.VoiceTypes` (case-sensitive) else `InvalidVoice` (a missing voice is only `MissingField`).
 - cultureFallback equal to culture → `SameAsFallback` (message contains `cultureFallback`); equipment.fallbackTemplateId equal to templateId → `SameAsFallback` (message contains `fallbackTemplateId`). null fallbacks are fine.
 - likes/dislikes entries: event non-blank, reaction present, slot known (`DialogSlots.IsKnown`) — otherwise one `InvalidReaction` per bad entry.
-- relations entries: companion non-blank and attitude in `CompanionRules.RelationAttitudes` else `InvalidRelation`; a valid entry whose companion id is not among the packages' ids → `UnknownRelationTarget` warning.
+- relations entries: companion non-blank, not the companion itself (user decision), and attitude in `CompanionRules.RelationAttitudes` else `InvalidRelation`; a valid entry whose companion id is not among the packages' ids → `UnknownRelationTarget` warning.
 - Optional fields (cultureFallback, bodyProperties, traits, voiceProfile, likes, dislikes, relations, fallbackTemplateId) may be absent/null.
 - Exactly one error per broken rule: a test that breaks one rule expects exactly one error.
 Files allowed to edit: `src/AlbocariusCompanions.Core/Validation/CompanionChecks.cs`, `tests/AlbocariusCompanions.Core.Tests/**`.

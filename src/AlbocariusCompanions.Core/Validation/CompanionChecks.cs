@@ -95,7 +95,7 @@ public static class CompanionChecks
 
         ValidateReactions(c.Likes, "likes", folder, issues);
         ValidateReactions(c.Dislikes, "dislikes", folder, issues);
-        ValidateRelations(c.Relations, folder, knownIds, issues);
+        ValidateRelations(c.Relations, package.Id, folder, knownIds, issues);
     }
 
     private static void ValidateId(CompanionPackage package, Dictionary<string, int> idCounts, List<ValidationIssue> issues)
@@ -165,7 +165,8 @@ public static class CompanionChecks
         }
     }
 
-    private static void ValidateRelations(List<RelationDefinition>? relations, string folder, HashSet<string> knownIds, List<ValidationIssue> issues)
+    private static void ValidateRelations(
+        List<RelationDefinition>? relations, string ownId, string folder, HashSet<string> knownIds, List<ValidationIssue> issues)
     {
         if (relations == null)
             return;
@@ -189,6 +190,13 @@ public static class CompanionChecks
             {
                 issues.Add(ValidationIssue.Error(IssueCodes.InvalidRelation, folder,
                     $"relations entry for '{target}' has attitude {(relation.Attitude == null ? "missing" : $"'{relation.Attitude}'")}; expected one of: {string.Join(", ", CompanionRules.RelationAttitudes)}."));
+                continue;
+            }
+
+            if (string.Equals(target, ownId, StringComparison.Ordinal))
+            {
+                issues.Add(ValidationIssue.Error(IssueCodes.InvalidRelation, folder,
+                    $"relations entry targets the companion itself ('{target}')."));
                 continue;
             }
 
