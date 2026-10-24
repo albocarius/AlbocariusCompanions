@@ -24,3 +24,4 @@
 | 20b-core-catalog | 1 | PASS | clean |
 | 20c-core-npc-xml | 1 | PASS | good; caught XSD sequence rule (inline EquipmentRoster before EquipmentSet) |
 | 15-gm-q15-logging-paths | 1 | PASS, verified | good; 3 UNCERTAINs resolved on the live Windows install |
+| 16-gm-q16-submodule-lifecycle | 1 | PASS, verified | excellent; Sandbox id lowercase b confirmed on live files |
