@@ -1,25 +1,130 @@
-# PLAN — AlbocariusCompanions foundation run
+# PLAN — AlbocariusCompanions
 
-Source of truth: `orchestra/SPEC.md`. Milestones M1–M4 = SPEC phases 1–3 + end-of-run report.
-Commit policy: per-task commits as in ORCHESTRATOR.md; at the end of every SPEC phase an extra
-commit `phase N: <summary>` (SPEC rule 3). Stop condition (SPEC rule 5) applies to every task:
-3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
+Active milestone: **M5 core gaps** — source of truth `orchestra/SPEC_CORE_GAPS.md` (follow-up to `orchestra/SPEC.md`;
+SPEC §1 rules and `orchestra/HARD_RULES.md` still apply). The foundation run (M1–M4) is archived at the end of this file.
+Commit policy: per task `feat(NN-slug): ...`; at the end `milestone core-gaps: <summary>` (SPEC_CORE_GAPS §1.4).
+Stop condition (SPEC rule 5): 3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
 
 Owner legend: `self` = orchestrator, `worker` = local model via orchestra/worker.sh.
 Acceptance tests for worker tasks live in `tests/AlbocariusCompanions.Acceptance/` (orchestrator-owned).
-Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text of `orchestra/HARD_RULES.md`
-(also appended to WORKER.md) — user requirement.
+Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text of `orchestra/HARD_RULES.md` — user requirement.
 
 ## Status
-- Phase 0 bootstrap done (commit 8aa1f47). Baseline: build OK, 0 tests.
-- M1 done (Q1–Q16 verified). M2 done ("phase 2: core"). M3 done ("phase 3: game layer"): 23/27 worker, 29 self (user asked, ran in
-  parallel with 27), 24/25/26/28/30 earlier. dist/ = Core+Game DLL, SubModule.xml, test_companion JSON.
-- Deployed to the user's Windows install and played 2026-10-24 (spawn, dialogs, hire, voice, lipsync OK). Extra work after
-  the test: JSON name fix, voice-over without build step, town names in the log. M4 done ("phase 4: run report").
-- Next (new milestone, not started): translations + player prompts from JSON, `.ogg` validation, likes/dislikes/relations,
-  optional slots, dismissed-companion check. See docs/RUN_REPORT.md "Not verified / known gaps".
-- Helpers live in the session scratchpad only (next_core.sh, winrun.sh = PowerShell over ssh via -EncodedCommand, xsdcheck);
-  they are convenience, nothing depends on them.
+- Foundation done and played in game (see archive + docs/RUN_REPORT.md). Repo clean at 5730899 "phase 4: run report".
+- M5 planned 2026-10-24, waiting for plan approval (PLAN_GATE=1). The worker needs Strata running (stopped by the user
+  for ComfyUI); while it is down, worker tasks wait or are done by self.
+- Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
+
+## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
+- **No new features.** Out of scope: likes/dislikes/relations behavior, flags/conditions/priority/triggers, author dialog
+  branches, companion-initiated talks, loading companions from other modules. Ideas go to `docs/IDEAS.md`.
+- Every schema change updates models + loader + validation + repo companions (test_companion, test fixtures) +
+  `docs/SCHEMA.md` in the same task.
+- Every new game API goes into `docs/GAME_MAP.md` (section + API index row) before code uses it (ApiIndexTests).
+- **Reload behavior is frozen:** a companion hero that exists in the save in any state is never respawned or re-activated
+  on load (today: only the JSON name is re-applied — existing behavior, keep it).
+- Never overwrite the user's audio on Windows. Deploys to the Windows game folder only with the user's approval.
+
+## M5 — Core gaps (SPEC_CORE_GAPS §2)
+Order follows dependencies: schema changes first (T2/T3 ids), then the slot list (T4.0) and language files (T6), the
+scaffold last because its template must contain the final slot list and lang format.
+
+### T1 — close the foundation round
+- [ ] 31-close-foundation (self) — RUN_REPORT "known gaps" aligned with this spec's list; WORKER_LOG rows for the
+  out-of-plan work (7981805 name fix, aa503f1 voice/lipsync, 394f143 town names in log); fix stale boxes in the archive
+  (M1 15–22, M2/M3 milestone ends were done). Also create `docs/IDEAS.md` and `docs/SCHEMA.md` (current schema, every
+  field: type, required, example) so later tasks only update them.
+
+### T2 — small fixes
+- [ ] 32-schema-version (worker) — Core: one `SchemaVersions` check point used by the loader; `schemaVersion` (int,
+  required, current 1) at the top of companion.json and dialogs.json (player_lines.json joins in 49). Missing / not int /
+  greater than supported → validation error with a clear message. Accept: one test per case; test_companion updated.
+- [ ] 33-ogg-validation (worker) — `audio` with an extension other than `.ogg` → validation **error** (today a silent skip
+  in VoicedLinesXml). Accept: `.wav`, no extension, `.OGG` ok.
+- [ ] 34-hire-cost-gte (self) — CompanionDialogs hire_pay condition `Gold >= hireCost`; hireCost 0 hireable with 0 gold.
+  Our own condition (not vanilla), no new API.
+- [ ] 35-required-modules-core (worker) — remove `cultureFallback` and `equipment.fallbackTemplateId` (models, validation
+  codes, CompanionResolver, ResolverTests, test_companion, SCHEMA.md); add optional `requiredModules: string[]`
+  (non-empty strings, no duplicates). Core `RequiredModules.Missing(package, Func<string,bool> isModuleActive)`.
+  Accept: removed fields rejected as unknown by the strict loader, filter tests with a fake predicate.
+- [ ] 36-required-modules-game (self) — at OnSubModuleLoad: `ModuleHelper.IsModuleActive(id)` (GAME_MAP Q13, add API row),
+  skip only that companion with a log line naming the missing module (no template, no spawn, no dialogs). A saved hero of
+  a skipped companion: untouched, one warning (spawn pass lists mapped ids that have no template). Example ids in docs only
+  from GAME_MAP (`NavalDLC`); other ids (e.g. `EOE_Armory`) only after checking the module's SubModule.xml on the
+  Windows install.
+- [ ] 37-gm-notifications (self) — GAME_MAP entry: `InformationManager.DisplayMessage` + `InformationMessage(text, Color)`,
+  when the UI can show it (campaign started/loaded). Verify in decomp.
+- [ ] 38-notifications-core (worker) — Core `NotificationQueue`: collects warnings/errors from ModLogger (info stays
+  file-only), dedupes by text per session, drains once; summary line builder "N companions loaded, M skipped — see log".
+  Accept: dedupe, order, severity, summary with/without skips.
+- [ ] 39-notifications-game (self) — hook queue into ModLogger, flush on OnSessionLaunched / OnGameLoadFinished
+  (errors red, warnings yellow), summary once per campaign start/load.
+
+### T3 — authoring ergonomics
+- [ ] 40-folder-is-id (worker) — remove `id` from companion.json; id = folder name, `[a-z0-9_]+` else error; `_shared` is
+  reserved and skipped by the loader. Migrate test_companion + fixtures, SCHEMA.md.
+- [ ] 41-local-line-ids (self) — dialogs.json lines use local ids (`intro_01`); loader derives full id
+  `<companionId>_<localId>`; local unique per companion, full unique globally (incl. player line ids, T6). Full id used for
+  `{=…}`, voice-over id, logs; audio default becomes `audio/<local id>.ogg` (VoicedLinesXml, MissingAudioReport,
+  validation of the line-id rule replaced). Migrate test_companion. **User's Windows audio files must be renamed by the user**
+  (`test_companion_intro_01.ogg` → `intro_01.ogg`); listed in the checklist, never done by us.
+
+### T4.0 — vanilla dialog points as slots
+- [ ] 42-gm-vanilla-dialog-points (worker discovery → self verify) — new GAME_MAP section: every vanilla dialog point
+  where a wanderer/companion speaks or is spoken to (meeting, hiring, dismissal, others): token flow, conditions, vanilla
+  English text and its `{=id}`, decomp path + method for each.
+- [ ] 43-slots-from-vanilla (self) — add each point as a slot in the Core slot list (required vs optional). Empty slot →
+  vanilla behavior (our line not registered, vanilla line stays visible for mod companions; review the Q7 hire-option
+  Harmony prefix against this). Template content is written in 49/50 (plain English in `lang/en.json`, our id system, no
+  vanilla string ids / textRef / vanilla voice).
+
+### T4 — dismissal bug
+- [ ] 44-gm-dismissal (worker discovery → self verify) — GAME_MAP section: which action/event handles player dismissal and
+  what happens to the hero; how to tell player dismissal from death, capture, other mods, kingdom events; how vanilla
+  turns a hero back into an unhired wanderer and places it in a tavern.
+- [ ] 45-dismissal-fix (self) — mod companions only, player dismissal only: back to wanderer state + placement like
+  initial spawn (PickSpawnTown); log dismissal and re-placement. Other removal reasons → nothing. Must not break the
+  frozen reload rule. Checklist: dismiss → tavern → rehire; reload after dismissal → no duplicate.
+
+### T5 — slot variation
+- [ ] 46-slot-picker-core (worker) — Core picker: several lines in a slot → one at random per use, behind an injectable
+  random source (`IRandomSource`). Accept: deterministic tests with a fake source, single-line slot, empty slot.
+- [ ] 47-slot-variation-game (self) — wire the picker into CompanionDialogs (pick per conversation turn; the chosen
+  line's `{=full id}` drives text and voice), Game random source = `MBRandom`.
+
+### T6 — player lines + per-language files (**ask the user the open questions below before starting**)
+- [ ] 48-gm-q14-language-decision (self) — extend Q14: our language codes → game language ids (`en`→`English`,
+  `tr`→`Türkçe`, …), runtime-pick vs generated language XML, what voiced lines do when the UI language is not English.
+- [ ] 49-lang-files-core (self) — schema: `text` removed; `<folder>/lang/<code>.json` flat map localId → text; `en.json`
+  required and complete. Validation: missing in en → error; missing in other language → warning (falls back to en);
+  id not in dialogs → warning. Player-name token rule for voiced lines moves to the lang files. `_shared/player_lines.json`
+  (`schemaVersion`, lines with id/slot) + `_shared/lang/<code>.json`; player slots join the global slot list; player ids
+  as-is, collision with companion full ids → error. Migrate test_companion, SCHEMA.md.
+- [ ] 50-player-lines-game (self) — every player-facing string in C# moves to player_lines; acceptance test that greps
+  Game sources for hard-coded English dialog text.
+- [ ] 51-language-output (self/worker per 48) — produce what 48 decides (generated language XML or runtime selection);
+  missing-translation count per language logged; XSD test if a schema exists (Q14: none for language_data/std files →
+  structural test, state it).
+
+### Scaffold (T3.3, after 43 and 49)
+- [ ] 52-scaffold (worker) — `tools/new-companion.sh <id>` + `.bat`, template in `tools/companion-template/` with every
+  slot pre-filled (vanilla English text from 42 in `lang/en.json`, our ids). Refuses an existing folder, an invalid id and
+  `_shared`. Accept: test scaffolds into a temp dir and the result passes CompanionCatalog validation.
+
+### T7 — report
+- [ ] 53-run-report-core-gaps (self) — `docs/RUN_REPORT_CORE_GAPS.md`: per task done / UNCERTAIN / BLOCKERS + the 8-item
+  human checklist of SPEC_CORE_GAPS T7 (+ dismissal items from T4, + user renames audio files to local ids).
+- [ ] Milestone end: full TEST_CMD, commit `milestone core-gaps: <summary>`. No push.
+
+### Open questions (ask before T6; answers go into this section)
+1. `lang/<code>.json` is a flat map — does it carry `schemaVersion` (as a reserved key), or only the three JSON files of T2.4?
+2. T6.2 says "generate at build time, output only to dist/", the T6 change says Q14 decides, and the user rejected build-time
+   XML for voice. Proposal: write the language XML at runtime in OnSubModuleLoad (same pattern as voiced lines), so adding a
+   companion or a translation needs no build step.
+3. Language codes: ISO 639-1 (`en`, `tr`, `de`, …) mapped to game ids in GAME_MAP — OK?
+4. T4.0 "empty or untouched slot → vanilla behavior" vs the addition "template uses our own ids, no vanilla ids": does
+   "untouched" mean anything beyond "slot absent/empty"? Proposal: only an absent/empty slot falls back to vanilla.
+5. Voiced lines with a non-English UI: play the English audio under every language, or stay silent? (Q14 research first.)
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
@@ -32,7 +137,9 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - Decompiled sources lack TaleWorlds.Library / Localization / Engine / ModuleManager; when needed,
   decompile with `ilspycmd` into the session scratchpad (outside the repo, never committed).
 
-## M1 — Game map (SPEC Phase 1) → `docs/GAME_MAP.md`
+## Archive — foundation run (orchestra/SPEC.md)
+
+### M1 — Game map (SPEC Phase 1) → `docs/GAME_MAP.md`
 Discovery = worker (one task per question), verification = self (user decision 2026-10-24).
 Task files: `orchestra/tasks/NN-gm-qNN-*.md`. Worker edits only its `## QN` section, Status DRAFT.
 Acceptance: `GameMapTests` (format, cited paths exist, cited symbol occurs in cited file, no long code blocks);
@@ -57,7 +164,7 @@ Missing DLLs (Library, Localization, ModuleManager, Engine, SaveSystem) decompil
 - [x] 15-gm-q15-logging-paths (worker → verify) — added for M3 tasks 24/26 (writable folder, logging, exception safety)
 - [x] 16-gm-q16-submodule-lifecycle (worker → verify) — added for M3 tasks 23/30 (SubModule.xml format, module ids, override order)
 
-## M2 — Core (SPEC Phase 2)
+### M2 — Core (SPEC Phase 2)
 Acceptance tests for 16–20b are written and staged in `orchestra/staged-tests/` (they fail with NotImplementedException);
 each file is moved into `tests/AlbocariusCompanions.Acceptance/Core/` only when its task is assigned, so TEST_CMD stays green for other workers.
 Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixtures.cs` is already in the acceptance project.
@@ -84,7 +191,7 @@ Task files `orchestra/tasks/16..20b-*.md` are ready. Shared helper `Core/Fixture
   ids from GAME_MAP; acceptance test that loads it from disk and validates clean.
 - [ ] Milestone end: full tests; commit `phase 2: core`.
 
-## M3 — Game layer (SPEC Phase 3)
+### M3 — Game layer (SPEC Phase 3)
 Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP entry; self reviews worker diffs against GAME_MAP.
 - [x] 22-game-build (self) — Game csproj: HintPath refs into `~/bannerlord/dlls` (Private=false),
   Newtonsoft from game bin (Private=false), Lib.Harmony compile-only; post-build target assembling
@@ -119,11 +226,11 @@ Untestable without the game. Rule: every API call traces to a VERIFIED GAME_MAP 
 - [x] 30-game-submodule (self) — Game/SubModule.cs + ModRuntime.cs; GameAssemblyTests check the class/patch types via metadata — SubModule class wiring: load registry, log validation, register behavior, apply Harmony; all entry points wrapped.
 - [ ] Milestone end: build + tests, dist layout check, every API traced to GAME_MAP; commit `phase 3: game layer`.
 
-## M4 — Report
+### M4 — Report
 - [x] 30-run-report (self) — `docs/RUN_REPORT.md` per SPEC §6 (completed work, UNCERTAINs, BLOCKERS, morning checklist).
 - [x] Final: full tests, "Report" section below, final commit. No push.
 
-## Report
+### Report
 - Built: GAME_MAP Q1–Q16 verified + API index; Core (models, loader, catalog, validation, resolver, NPCCharacters and
   voiced-lines XML builders, logging); Game layer (SubModule.xml, runtime templates, spawn/persist/re-link behavior,
   generic dialogs + hire, Harmony guards, voice-over postfix); placeholder `test_companion`.
