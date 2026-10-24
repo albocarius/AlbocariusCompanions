@@ -9,3 +9,4 @@
 | 05-gm-q05-char-templates | 1 | PASS, verified | correct (IsTemplate private set, LoadXml/CreateObjectFromXmlNode, Xmls/XmlNode loading); used xmlschemas on its own |
 | 06-gm-q06-hiring | 1 | PASS, verified | correct; replaced 3-line copied method body with prose; added mod hire notes |
 | 07-gm-q07-dialog-api | 1 | PASS, verified | correct; key finding: vanilla hire option needs Harmony prefix to hide. check hit CLR crash twice in a row (retry also crashed), manual rerun passed |
+| 08-gm-q08-lifecycle | 1 | PASS, verified | correct; replaced copied SyncData body with prose. Check failed 3x on CLR crash -> retry raised to 3 |
