@@ -475,5 +475,7 @@ public class VariableTests
         public int PlayerGold => 0;
         public bool ClanIsFull => false;
         public int? GetVariable(string reference) => _store.Get(_companion, reference);
+        public int? GoldOf(string actor) => actor == "player" ? 0 : null;
+        public int PlayerItemCount(string itemId) => 0;
     }
 }

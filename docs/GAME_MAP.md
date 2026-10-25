@@ -1960,6 +1960,8 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `AddCompanionAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddCompanionAction.cs` | Q6 | join player clan |
 | `AddHeroToPartyAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddHeroToPartyAction.cs` | Q6 | join main party |
 | `MobileParty.MainParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q6 | player party |
+| `MobileParty.ItemRoster` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q29 | player party inventory |
+| `ItemRoster.GetItemNumber` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` | Q29 | item count for hasItem / implied transfer check |
 | `ChangeRelationAction.ApplyPlayerRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeRelationAction.cs` | Q20 | conversation relation effect |
 | `Hero.GetRelationWithPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q20 | conversation relation condition |
 | `MBTextManager.SetTextVariable` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | hire cost in player line |

@@ -20,6 +20,13 @@ public interface IConversationContext
     /// companion is not loaded (or the variable is unknown).
     /// </summary>
     int? GetVariable(string reference);
+    /// <summary>
+    /// Gold of a transfer actor: "player", "self" (the companion talked to) or another companion's id; null when that
+    /// companion is not loaded or has no hero ("world" is never asked).
+    /// </summary>
+    int? GoldOf(string actor);
+    /// <summary>How many of an item (by string id) the player's party inventory holds; 0 for an unknown id.</summary>
+    int PlayerItemCount(string itemId);
 }
 
 /// <summary>Condition checks of conversations (M6). Pure: no game types, tested with a fake context.</summary>

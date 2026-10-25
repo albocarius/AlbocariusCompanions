@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Logging;
@@ -28,6 +29,9 @@ internal static class ModRuntime
 
     /// <summary>Conversation variables of the running campaign (M7); replaced and restored like <see cref="Flags"/>.</summary>
     public static VariableStore Variables { get; set; } = new VariableStore();
+
+    /// <summary>Companion id → its hero in the running campaign (null when it has none); set by the campaign behavior.</summary>
+    public static Func<string, Hero?> HeroOf { get; set; } = _ => null;
 
     /// <summary>Companion id → registered template for the current campaign (AfterRegisterSubModuleObjects).</summary>
     public static IReadOnlyDictionary<string, CharacterObject> Templates { get; set; } = new Dictionary<string, CharacterObject>();
