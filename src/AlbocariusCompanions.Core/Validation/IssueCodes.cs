@@ -50,6 +50,8 @@ public static class IssueCodes
     public const string ConversationNoExit = "conversation_no_exit";
     /// <summary>Warning: a non-"once" conversation path can reward the player every time (I5).</summary>
     public const string RepeatableReward = "repeatable_reward";
+    /// <summary>Warning: a transfer whose source is not "world" and no condition on its path checks that source for (I5).</summary>
+    public const string TransferNotChecked = "transfer_not_checked";
 
     // dialogs.json variables (M7)
     public const string InvalidVariable = "invalid_variable";
@@ -58,6 +60,8 @@ public static class IssueCodes
     public const string VariableTypeMismatch = "variable_type_mismatch";
     /// <summary>Warning: a reference to a variable of a companion that is not loaded (the condition is false, the write skipped).</summary>
     public const string MissingCompanionReference = "missing_companion_reference";
+    /// <summary>Warning: a declared variable nothing writes and whose default is the type default, so it never changes (I5).</summary>
+    public const string VariableNeverChanges = "variable_never_changes";
 
     // Runtime resolution (SPEC rule 9)
     public const string CultureMissing = "culture_missing";

@@ -167,6 +167,11 @@ to the player from anyone else — along a path whose own writes never make one 
 count are the conversation's `when` and the `when` of the nodes from the start to the reward (top level and nested `all`);
 e.g. `notFlags: ["got_coin"]` with `setFlags: ["got_coin"]` on that path. A write after the reward does not count.
 
+**Unchecked transfer** (warning): a transfer whose `from` is not `world` warns unless a matching check — `hasGold` for the
+same actor with a high enough `min` (or `minGold` for a transfer from `player`), `hasItem` for that item and count — sits
+in the node's own `when`, the conversation's `when`, or the `when` of any node it can be reached from along `next` (top
+level and nested `all` only; `any`/`not` do not count).
+
 ### Variables
 Declared per companion in dialogs.json; permanent per campaign until changed.
 
@@ -192,6 +197,8 @@ Declared per companion in dialogs.json; permanent per campaign until changed.
 - **Missing companion**: when the referenced companion is not loaded at all (no folder, skipped for errors, or a required
   module is missing) the reference is only a **warning**: the condition containing it is false as a whole (even inside
   `not`/`any`) and a write to it is skipped; the referencing companion still loads.
+- **Never changes** (warning): a declared variable that no effect of any loaded companion writes and whose `default` is
+  its type default (`false` / `0`) can never hold anything else.
 - **Saving**: each written value is saved by companion and name. On load, values of variables that no longer exist are
   ignored, a value whose type changed falls back to the default, and new variables start at their default. A variable
   that was never written follows its current `default`. **Renaming a variable loses its saved value.**

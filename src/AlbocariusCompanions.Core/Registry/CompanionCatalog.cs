@@ -50,6 +50,10 @@ public static class CompanionCatalog
         // so one pass after the skip loop is enough.
         crossIssues = crossIssues.Concat(TransferChecks.CrossCompanion(kept)).ToList();
 
+        // Authoring warnings (I5: variables that never change, transfers without a matching check) read the same
+        // final kept set; they are warnings only, so they never feed back into the skip loop.
+        crossIssues = crossIssues.Concat(AuthoringChecks.Validate(kept)).ToList();
+
         var issues = loaded.Issues.Concat(validationIssues).Concat(crossIssues).ToList();
         return new CatalogResult(new CompanionRegistry(kept), issues, moduleSkips);
     }

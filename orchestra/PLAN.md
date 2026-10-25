@@ -214,7 +214,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
   runtime → skipped + warning.
 - [x] 73-validation-graph (worker) — I5: cycle with no path to `hub`/`end` → error (dangling `next` and unreachable already
   exist from M6; tests confirm). Accept: staged tests.
-- [ ] 74-validation-variables (worker) — I5: declared variable never written and default = type default → warning
+- [x] 74-validation-variables (as 74-validation-authoring) (worker) — I5: declared variable never written and default = type default → warning
   "never changes"; transfer from ≠ world without hasGold/hasItem on the node or its path entry → warning (D6).
 - [x] 75-validation-repeatable (self) — I5 repeatable reward warning (path analysis: positive gold/item/relation to the
   player, conversation not `once`, no condition on that path that the path itself makes false). No "shadowing" rule.
