@@ -97,4 +97,31 @@ public class MissingAudioTests
         Assert.Equal(8, report.Count);
         Assert.Equal(new[] { "a_comp", "b_comp" }, report.Select(e => e.CompanionId).Distinct());
     }
+
+    // Task 76 (M7 I4): voiced conversation nodes follow the line rule (audio/<local id>.ogg); unvoiced and player nodes never.
+    [Fact]
+    public void Voiced_conversation_nodes_are_reported_like_lines()
+    {
+        using var tmp = new TempDir();
+        var d = Fixtures.Dialogs(Id);
+        var langs = Fixtures.Langs();
+        var conversation = Fixtures.Conversation();
+        Fixtures.Node(conversation, "wound_thanks")["voiced"] = true;
+        Fixtures.Node(conversation, "wound_thanks")["audio"] = "audio/custom/thanks.ogg";
+        Fixtures.AddConversation(d, langs, conversation);
+        Fixtures.Write(tmp.Path, Id, Fixtures.Companion(Id), d, langs);
+        foreach (var f in new[] { "audio/intro_01.ogg", "audio/backstory_01.ogg", "audio/hire_offer_01.ogg", "audio/hire_accept_01.ogg", "audio/wound_story.ogg" })
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(Path.Combine(tmp.Path, Id, f))!);
+            File.WriteAllText(Path.Combine(tmp.Path, Id, f), "");
+        }
+
+        var entry = Assert.Single(MissingAudioReport.Find(CompanionLoader.LoadAll(tmp.Path).Packages));
+        Assert.Equal(Id + "_wound_thanks", entry.LineId);
+        Assert.Equal("audio/custom/thanks.ogg", entry.RelativePath);
+
+        File.Delete(Path.Combine(tmp.Path, Id, "audio", "wound_story.ogg"));
+        Assert.Equal(new[] { Id + "_wound_story", Id + "_wound_thanks" },
+            MissingAudioReport.Find(CompanionLoader.LoadAll(tmp.Path).Packages).Select(e => e.LineId));
+    }
 }

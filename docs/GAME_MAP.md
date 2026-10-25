@@ -2144,6 +2144,9 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `ConversationSentence.OnConsequenceDelegate` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationSentence.cs` | Q7 | dialog consequences |
 | `Hero.HasMet` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | intro only on first meeting |
 | `Hero.SetHasMet` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | mark met after intro |
+| `Hero.IsAlive` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q19 | console list: dead companions |
+| `Campaign.Current` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` | Q30 | console commands need a running campaign |
+| `CommandLineFunctionality.CommandLineArgumentFunction` | `decomp/TaleWorlds.Library/TaleWorlds.Library/CommandLineFunctionality.cs` | Q30 | registers the albocarius.* console commands |
 | `Hero.IsPlayerCompanion` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | hide hire offer once hired |
 | `Hero.PartyBelongedTo` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | hide hire offer while in a party |
 | `Hero.Gold` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q6 | strict gold check |
