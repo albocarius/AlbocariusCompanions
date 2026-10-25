@@ -2,12 +2,30 @@
   "schemaVersion": 1,
   "lines": {
     "intro_01": "Selam, Kaptan. Ben yer tutucu bir yoldaşım.",
+    "backstory_01": "Burada henüz bir hikâye yok, Kaptan. Bu satır yalnızca bir deneme.",
+    "hire_offer_01": "Adil bir ücrete seninle yola çıkabilirim, Kaptan.",
+    "hire_accept_01": "O hâlde anlaştık, Kaptan. Önden buyur.",
+    "hire_decline_01": "Başka zaman, öyleyse.",
     "p_ask_about_01": "Bana kendinden bahset.",
     "p_ask_hire_01": "Senin gibi birine bölüğümde ihtiyacım var.",
     "p_hire_pay_01": "Peki. Al sana {ALBOCARIUS_HIRE_COST} dinar.",
     "p_hire_full_01": "Zaten idare edebileceğimden fazla yoldaşım var.",
     "p_hire_later_01": "Şimdi değil.",
     "p_scar_ask": "Kolundaki o yara izi. Nereden geldi?",
-    "scar_story": "Yıllar önce bir sınır çatışması. Yavaş kaldım, bedelini bir dostum ödedi."
+    "scar_story": "Yıllar önce bir sınır çatışması. Yavaş kaldım, bedelini bir dostum ödedi.",
+    "p_scar_sorry": "Bunu taşımak zor olmalı.",
+    "p_scar_enough": "Hepimizin yaraları var. Geçelim.",
+    "scar_thanks": "Öyle. Sorduğun için sağ ol, Kaptan.",
+    "scar_shrug": "Nasıl istersen.",
+    "p_coin_offer": "Al, yüz dinar. Dostunun ailesi için.",
+    "p_coin_ask": "Bölük için biraz para ayırabilir misin?",
+    "coin_refuse": "Henüz değil, Kaptan. Birbirimizi daha iyi tanıyınca yine sor.",
+    "coin_fine": "Senin için mi, Kaptan? Al, elli dinar.",
+    "coin_thanks": "Onlara ulaşmasını sağlayacağım. Teşekkürler.",
+    "greet_scar": "Kaptan. Geçen günkü konuşmamızı düşünüp duruyorum.",
+    "p_greet_glad": "Bana anlattığına sevindim.",
+    "p_greet_busy": "Şimdi olmaz, meşgulüm.",
+    "greet_glad_reply": "Ben de. Peki, neye ihtiyacın var?",
+    "greet_busy_reply": "Elbette."
   }
 }

@@ -223,9 +223,9 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
   vs npc node shapes/classes, `hub`/`end` terminals, conditions on edges, effects in node labels. Accept: golden-string tests.
 - [x] 78-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
   exit 1 on errors), `mermaid <companionDir> [conversation]`. Accept: tests call the CLI entry point on fixtures.
-- [ ] 79-debug-commands (self, after 67) — I7 `albocarius.list`, `.get`, `.set`, `.reset`, `.reload` only if safe (else
+- [x] 79-debug-commands (self, after 67) — I7 `albocarius.list`, `.get`, `.set`, `.reset`, `.reload` only if safe (else
   noted); each wrapped in `Safe.Run`; parsing/formatting in Core and unit-tested.
-- [ ] 80-sample-content (self) — I8 rest: `spare_coin` exploit fixed (both paths set `got_coin`), explicit hasGold, sample on
+- [x] 80-sample-content (self) — I8 rest: `spare_coin` exploit fixed (both paths set `got_coin`), explicit hasGold, sample on
   `transfer`; `validate` on `module/ModuleData/Companions` → zero errors/warnings (acceptance test); scaffold template updated.
 - [ ] 81-report (self) — `docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md` (Track R summary + UNCERTAINs, Track I per task,
   BLOCKERS, the 5-item checklist); milestone commit. No push.

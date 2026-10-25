@@ -20,8 +20,8 @@ public class PlaceholderCompanionTests
     {
         var load = CompanionLoader.LoadAll(CompanionsRoot);
         Assert.Empty(load.Issues);
-        // tr is partial on purpose: only missing-translation warnings are allowed.
-        Assert.All(CompanionValidator.Validate(load.Packages), i => Assert.Equal(IssueCodes.MissingTranslation, i.Code));
+        // M7 I8: the sample is complete in every language and passes validation with zero warnings.
+        Assert.Empty(CompanionValidator.Validate(load.Packages));
         Assert.Contains(load.Packages, p => p.Id == "test_companion");
         Assert.DoesNotContain(load.Packages, p => p.FolderName == "_shared");
     }
@@ -65,7 +65,7 @@ public class PlaceholderCompanionTests
         Assert.All(DialogSlots.Required, slot => Assert.Contains(lines, l => l.Slot == slot));
         Assert.All(lines, l => Assert.Equal("test_companion_" + l.Id, l.FullId));
         Assert.Equal("Selam, Kaptan. Ben yer tutucu bir yoldaşım.", package.Text("intro_01", "tr"));
-        Assert.Equal("Another time, then.", package.Text("hire_decline_01", "tr")); // partial tr: en fallback
+        Assert.Equal("Başka zaman, öyleyse.", package.Text("hire_decline_01", "tr"));
         Assert.All(lines.Where(l => l.Voiced), l => Assert.Contains("Captain", package.Text(l.Id!, "en")));
         Assert.All(lines, l => Assert.Null(l.Audio)); // default audio/<local id>.ogg
     }

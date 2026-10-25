@@ -180,4 +180,13 @@ public class CliTests
         Assert.Equal("", output);
         Assert.Contains("[broken]", error);
     }
+
+    // Task 80 (M7 I8): the shipped sample content validates with zero errors and zero warnings.
+    [Fact]
+    public void Repository_companions_validate_without_errors_or_warnings()
+    {
+        var (code, output, _) = Run("validate", Path.Combine(RepoRoot, "module", "ModuleData", "Companions"));
+        Assert.Equal(0, code);
+        Assert.Equal("0 error(s), 0 warning(s).\n", output);
+    }
 }
