@@ -46,6 +46,10 @@ public static class CompanionCatalog
             validationIssues = validationIssues.Concat(crossIssues.Where(i => i.IsError)).ToList();
         }
 
+        // Transfer/hasGold actors (I3) name companions across folders too; those references can only produce warnings,
+        // so one pass after the skip loop is enough.
+        crossIssues = crossIssues.Concat(TransferChecks.CrossCompanion(kept)).ToList();
+
         var issues = loaded.Issues.Concat(validationIssues).Concat(crossIssues).ToList();
         return new CatalogResult(new CompanionRegistry(kept), issues, moduleSkips);
     }

@@ -51,6 +51,10 @@ public sealed class ConditionSet
     [JsonProperty("maxRelation")] public int? MaxRelation { get; set; }
     /// <summary>The player has at least this much gold.</summary>
     [JsonProperty("minGold")] public int? MinGold { get; set; }
+    /// <summary>An actor holds at least <see cref="GoldCheck.Min"/> of its own gold.</summary>
+    [JsonProperty("hasGold")] public GoldCheck? HasGold { get; set; }
+    /// <summary>The player's party inventory holds at least <see cref="ItemCheck.Min"/> of an item.</summary>
+    [JsonProperty("hasItem")] public ItemCheck? HasItem { get; set; }
     /// <summary>Bool variables that must all be true.</summary>
     [JsonProperty("flags")] public List<string>? Flags { get; set; }
     /// <summary>Bool variables that must all be false.</summary>
@@ -71,13 +75,36 @@ public sealed class ConditionSet
     [JsonProperty("eq")] public JToken? Eq { get; set; }
 }
 
+/// <summary>A <c>hasGold</c> condition: one actor's own gold (actors and the game's gold rules: GAME_MAP Q29).</summary>
+public sealed class GoldCheck
+{
+    /// <summary>Whose gold: "player", "self" (the companion being talked to) or another companion's id; never "world".</summary>
+    [JsonProperty("who")] public string? Who { get; set; }
+    /// <summary>The least gold (required, at least 1).</summary>
+    [JsonProperty("min")] public int? Min { get; set; }
+}
+
+/// <summary>A <c>hasItem</c> condition: an item count in the player's party inventory (GAME_MAP Q29).</summary>
+public sealed class ItemCheck
+{
+    /// <summary>Only "player": companions have no inventory of their own (the ones in the party share the party's).</summary>
+    [JsonProperty("who")] public string? Who { get; set; }
+    /// <summary>The item string id.</summary>
+    [JsonProperty("id")] public string? Id { get; set; }
+    /// <summary>The least items; default 1.</summary>
+    [JsonProperty("min")] public int? Min { get; set; }
+}
+
 /// <summary>What a node does when it is said.</summary>
 public sealed class EffectSet
 {
     /// <summary>Change of the companion's relation with the player.</summary>
     [JsonProperty("relation")] public int? Relation { get; set; }
-    /// <summary>Player gold change: negative = the player pays the companion (needs that much gold), positive = the player receives.</summary>
+    /// <summary>Player gold change, shorthand for a <see cref="Transfer"/> between "player" and "world": negative = the
+    /// player pays (needs that much gold), positive = the player receives. An error together with "transfer".</summary>
     [JsonProperty("gold")] public int? Gold { get; set; }
+    /// <summary>A transfer of gold or items between two actors (I3).</summary>
+    [JsonProperty("transfer")] public TransferEffect? Transfer { get; set; }
     /// <summary>Bool variables set to true (sugar for "set": { name: true }).</summary>
     [JsonProperty("setFlags")] public List<string>? SetFlags { get; set; }
     /// <summary>Bool variables set to false (sugar for "set": { name: false }).</summary>
@@ -88,4 +115,24 @@ public sealed class EffectSet
     [JsonProperty("add")] public Dictionary<string, int>? Add { get; set; }
     /// <summary>The companion joins the player's clan and party (no payment; offered only while not hired and the clan has room).</summary>
     [JsonProperty("join")] public bool Join { get; set; }
+}
+
+/// <summary>
+/// A transfer of gold or items from one actor to another. Actors: "player", "self" (the companion being talked to),
+/// "world" (source/sink: gold or items appear / disappear) or another companion's id (the companion's own id means the
+/// same actor as "self"). Exactly one of <see cref="Gold"/> / <see cref="Item"/>; gold moves each hero's own gold,
+/// items only move between "player" and "world" (the party inventory, GAME_MAP Q29).
+/// </summary>
+public sealed class TransferEffect
+{
+    /// <summary>The gold amount (positive).</summary>
+    [JsonProperty("gold")] public int? Gold { get; set; }
+    /// <summary>The item string id.</summary>
+    [JsonProperty("item")] public string? Item { get; set; }
+    /// <summary>How many items (at least 1); only with "item", default 1.</summary>
+    [JsonProperty("count")] public int? Count { get; set; }
+    /// <summary>Who gives.</summary>
+    [JsonProperty("from")] public string? From { get; set; }
+    /// <summary>Who receives.</summary>
+    [JsonProperty("to")] public string? To { get; set; }
 }

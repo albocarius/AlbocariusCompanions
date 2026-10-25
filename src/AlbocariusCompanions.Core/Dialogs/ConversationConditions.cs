@@ -60,6 +60,10 @@ public static class ConversationConditions
             return false;
         if (when.MinGold is { } minGold && context.PlayerGold < minGold)
             return false;
+        if (when.HasGold != null && !HoldsGold(when.HasGold, context))
+            return false;
+        if (when.HasItem != null && context.PlayerItemCount(when.HasItem.Id ?? "") < (when.HasItem.Min ?? 1))
+            return false;
         foreach (var flag in when.Flags ?? new List<string>())
             if (context.GetVariable(flag) == 0)
                 return false;
@@ -86,16 +90,27 @@ public static class ConversationConditions
         return true;
     }
 
+    /// <summary>An actor's own gold; unknown (a companion that is not loaded, or with no hero) does not hold.</summary>
+    private static bool HoldsGold(GoldCheck check, IConversationContext context) =>
+        context.GoldOf(check.Who ?? "") is { } gold && gold >= (check.Min ?? 1);
+
     /// <summary>
-    /// Conditions the node's effects imply: a payment needs the gold, joining needs a companion that is not hired yet and
-    /// a clan with room. A node whose effects cannot apply is not offered.
+    /// Conditions the node's effects imply: a transfer from an actor that is not "world" needs that source to hold the
+    /// gold or items, joining needs a companion that is not hired yet and a clan with room. A node whose effects cannot
+    /// apply is not offered.
     /// </summary>
     public static bool EffectsCanApply(EffectSet? effects, IConversationContext context)
     {
         if (effects == null)
             return true;
-        if (effects.Gold is { } gold && gold < 0 && context.PlayerGold < -gold)
-            return false;
+        var transfer = Transfers.Of(effects);
+        if (transfer != null && transfer.From != null && transfer.From != Transfers.World)
+        {
+            if (transfer.Gold is { } gold && (context.GoldOf(transfer.From) ?? -1) < gold)
+                return false;
+            if (transfer.Item != null && context.PlayerItemCount(transfer.Item) < Transfers.CountOf(transfer))
+                return false;
+        }
         if (effects.Join && (context.IsHired || context.ClanIsFull))
             return false;
         return true;

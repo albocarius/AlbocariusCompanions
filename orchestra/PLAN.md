@@ -207,7 +207,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
   sample migration part of I8 (declare `told_scar`, `got_coin`). Accept: Acceptance tests per rule + Core.Tests.
 - [x] 70-variables-game (self) — Game: `_variables` SyncData + D4 load, context/effects over `VariableStore`, log lines.
   Build-only verifiable; in-game items in the report.
-- [ ] 71-transfer-core (worker; self writes acceptance tests first — user) — I3 Core part (model, validation, evaluation): `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
+- [x] 71-transfer-core (worker; self writes acceptance tests first — user) — I3 Core part (model, validation, evaluation): `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
   rules, missing-check warning, `gold` effect → sugar → removed after sample migration (D6). Item fields validated per R9
   (waits for 66 verified). Accept: tests per actor/kind combination.
 - [ ] 72-transfer-game (self, after 66) — gold between heroes / world, items via party inventory per R9; missing item id at

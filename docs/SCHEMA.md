@@ -131,6 +131,10 @@ Extra companion ↔ player dialogs: a small graph of companion (`npc`) and `play
 **Conditions** (`when`; one object, every field that is set must hold — an implicit "all"):
 - `met` (bool), `hired` (bool: in the player's clan), `inParty` (bool: in the player's party), `minRelation` / `maxRelation`
   (−100..100: the companion's relation with the player, min ≤ max), `minGold` (≥ 0: the player's gold);
+- `hasGold: { "who": …, "min": … }` (the actor's own gold: `who` is `player`, `self` (the companion talked to) or another
+  companion's id, never `world`; `min` is required, ≥ 1) and `hasItem: { "who": "player", "id": …, "min": … }` (the item
+  count in the player's party inventory: `id` an item string id, `min` default 1; items live only in the party inventory,
+  so `player` is the only `who`);
 - `flags` (bool variables that must all be true), `notFlags` (bool variables that must all be false; a name may not be in both);
 - `var` + `min` / `max` (int variable within the bounds, min ≤ max) or `var` + `eq` (equals: `true`/`false` for a bool, a
   whole number for an int); `min`/`max`/`eq` need a `var`, `eq` is not combined with `min`/`max`;
@@ -142,11 +146,21 @@ Extra companion ↔ player dialogs: a small graph of companion (`npc`) and `play
 ```
 
 **Effects**: `relation` (non-zero, −100..100; the game scales positive changes by its own model and clamps the result),
-`gold` (non-zero: negative = the player pays the companion — the node is offered only with enough gold; positive = the
-player receives), `join` (`true`: the companion joins the player's clan and party without payment — offered only while not
-hired and the clan has room), and variable writes, applied in this order: `setFlags` (bools → true), `clearFlags` (bools →
-false), `set` (`{ "<var>": true | false | <int> }`, value of the variable's type), `add` (`{ "<int var>": <non-zero int> }`).
-One node writes a variable at most once.
+`transfer` (gold or items moved between two actors, see below), `join` (`true`: the companion joins the player's clan and
+party without payment — offered only while not hired and the clan has room), and variable writes, applied in this order:
+`setFlags` (bools → true), `clearFlags` (bools → false), `set` (`{ "<var>": true | false | <int> }`, value of the
+variable's type), `add` (`{ "<int var>": <non-zero int> }`). One node writes a variable at most once.
+
+**Transfers** (`"effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } }`): exactly one of `gold`
+(a positive amount) or `item` (an item string id, with optional `count` ≥ 1, default 1), plus `from` and `to` (both
+required, and they must name two different actors). An actor is `player`, `self` (the companion talked to), `world`
+(a source/sink: gold or items appear / disappear) or another companion's id (the companion's own id means the same as
+`self`). Gold is each hero's own, so gold moves between any two different actors; items live only in the player's party
+inventory (companions in the party share it, the others have none), so an item transfer is only between `player` and
+`world`. A transfer happens when the node is said, and the node is offered only when its source (unless `world`) holds
+the gold or items. `gold` (non-zero) is shorthand for a transfer between `player` and `world` — negative = the player
+pays the companion (offered only with enough gold), positive = the player receives — and may not be combined with
+`transfer`.
 
 ### Variables
 Declared per companion in dialogs.json; permanent per campaign until changed.
@@ -180,7 +194,9 @@ Declared per companion in dialogs.json; permanent per campaign until changed.
   Saves from before variables (M6 flags) are converted on load: a flag becomes `true` for a declared bool of the same name.
 
 Warnings: a node that cannot be reached from `start`; a `next` whose nodes all have conditions (if none holds the
-conversation gets stuck — keep one without a condition). Node texts follow the lang file rules below.
+conversation gets stuck — keep one without a condition); a transfer or `hasGold` naming a companion that is not loaded —
+that companion still loads, but the actor's gold and items are unknown: a transfer from it is never offered and a
+`hasGold` about it is false. Node texts follow the lang file rules below.
 
 ## `lang/<code>.json`
 

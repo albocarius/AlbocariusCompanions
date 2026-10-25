@@ -37,13 +37,13 @@ public static class ConversationChecks
             else if (!conversationIds.Add(conversation.Id!))
                 issues.Add(Error(IssueCodes.InvalidConversation, folder, name, "has the same id as another conversation of this companion."));
 
-            valid.AddRange(ValidateConversation(conversation, name, folder, localIds, seenFullIds, issues));
+            valid.AddRange(ValidateConversation(conversation, name, package.Id, folder, localIds, seenFullIds, issues));
         }
 
         return valid;
     }
 
-    private static List<ConversationNode> ValidateConversation(ConversationDefinition conversation, string name, string folder,
+    private static List<ConversationNode> ValidateConversation(ConversationDefinition conversation, string name, string ownId, string folder,
         HashSet<string> localIds, HashSet<string> seenFullIds, List<ValidationIssue> issues)
     {
         var valid = new List<ConversationNode>();
@@ -96,7 +96,7 @@ public static class ConversationChecks
                     $"node '{node.Id}' is a player line; the player is never voiced (remove 'voiced'/'audio')."));
 
             ValidateConditions(node.When, $"node '{node.Id}'", folder, name, issues);
-            ValidateEffects(node.Effects, node.Id, folder, name, issues);
+            ValidateEffects(node.Effects, node.Id, ownId, folder, name, issues);
         }
 
         ValidateStart(conversation, byId, folder, name, issues);
@@ -191,11 +191,19 @@ public static class ConversationChecks
     }
 
     private static bool HasCondition(ConversationNode node) =>
-        IsSet(node.When) || node.Effects?.Join == true || node.Effects?.Gold < 0;
+        IsSet(node.When) || node.Effects?.Join == true || TransferNeedsSource(node.Effects);
+
+    /// <summary>A transfer whose source is not "world" needs that source to hold: an implied hasGold/hasItem condition.</summary>
+    private static bool TransferNeedsSource(EffectSet? effects)
+    {
+        var transfer = Transfers.Of(effects);
+        return transfer != null && transfer.From != null && transfer.From != Transfers.World;
+    }
 
     private static bool IsSet(ConditionSet? when) =>
         when != null && (when.Met != null || when.Hired != null || when.InParty != null || when.MinRelation != null ||
-            when.MaxRelation != null || when.MinGold != null || when.Flags?.Count > 0 || when.NotFlags?.Count > 0 ||
+            when.MaxRelation != null || when.MinGold != null || when.HasGold != null || when.HasItem != null ||
+            when.Flags?.Count > 0 || when.NotFlags?.Count > 0 ||
             when.All?.Any(IsSet) == true || when.Any != null || when.Not != null || when.Var != null);
 
     private static void ReportUnreachable(ConversationDefinition conversation, Dictionary<string, ConversationNode> byId, string folder,
@@ -232,6 +240,10 @@ public static class ConversationChecks
             Bad($"minRelation {when.MinRelation} is greater than maxRelation {when.MaxRelation}.");
         if (when.MinGold < 0)
             Bad($"minGold {when.MinGold} is negative.");
+        if (when.HasGold != null && GoldCheckProblem(when.HasGold) is { } goldProblem)
+            Bad($"hasGold: {goldProblem}.");
+        if (when.HasItem != null && ItemCheckProblem(when.HasItem) is { } itemProblem)
+            Bad($"hasItem: {itemProblem}.");
         foreach (var flag in Both(when.Flags, when.NotFlags))
             Bad($"'{flag}' is in both 'flags' and 'notFlags'; that can never hold.");
 
@@ -262,7 +274,35 @@ public static class ConversationChecks
             ValidateConditions(when.Not, $"{where} not", folder, name, issues);
     }
 
-    private static void ValidateEffects(EffectSet? effects, string? nodeId, string folder, string name, List<ValidationIssue> issues)
+    private static string? GoldCheckProblem(GoldCheck check)
+    {
+        if (check.Who == null)
+            return $"'who' is missing; use \"{Transfers.Player}\", \"{Transfers.Self}\" or a companion id";
+        if (!Transfers.IsValidActor(check.Who))
+            return BadActor("'who'", check.Who);
+        if (check.Who == Transfers.World)
+            return $"'who' cannot be \"{Transfers.World}\"; it is a source/sink and has no gold of its own";
+        if (check.Min == null)
+            return "'min' is missing";
+        if (check.Min < 1)
+            return $"min {check.Min.Value} must be at least 1";
+        return null;
+    }
+
+    private static string? ItemCheckProblem(ItemCheck check)
+    {
+        if (check.Who == null)
+            return $"'who' is missing; use \"{Transfers.Player}\"";
+        if (check.Who != Transfers.Player)
+            return $"'who' '{check.Who}' is not supported; items are counted in the player's party inventory, so use \"{Transfers.Player}\"";
+        if (string.IsNullOrWhiteSpace(check.Id))
+            return "'id' is missing or empty";
+        if (check.Min is { } min && min < 1)
+            return $"min {min} must be at least 1";
+        return null;
+    }
+
+    private static void ValidateEffects(EffectSet? effects, string? nodeId, string ownId, string folder, string name, List<ValidationIssue> issues)
     {
         if (effects == null)
             return;
@@ -272,6 +312,13 @@ public static class ConversationChecks
             Bad($"relation {relation} must be a non-zero change within {ConversationRules.MinRelation}..{ConversationRules.MaxRelation}.");
         if (effects.Gold == 0)
             Bad("gold 0 has no effect; use a negative amount (the player pays) or a positive one (the player receives).");
+        if (effects.Transfer != null)
+        {
+            if (effects.Gold != null)
+                Bad("has both 'transfer' and the old 'gold' key; 'gold' is only the shorthand for a player/world transfer.");
+            else if (TransferProblem(effects.Transfer, ownId) is { } problem)
+                Bad($"transfer: {problem}.");
+        }
         foreach (var pair in effects.Add ?? new Dictionary<string, int>())
             if (pair.Value == 0)
                 Bad($"add {pair.Value} to '{pair.Key}' has no effect.");
@@ -279,6 +326,42 @@ public static class ConversationChecks
             if (group.Count() > 1)
                 Bad($"'{group.Key}' is written more than once ({string.Join(", ", group.Select(u => u.Key))}).");
     }
+
+    /// <summary>What is wrong with a transfer (I3), or null when it is valid; the companion's own id names "self".</summary>
+    private static string? TransferProblem(TransferEffect transfer, string ownId)
+    {
+        if (transfer.Gold == null && transfer.Item == null)
+            return "needs either 'gold' or 'item'";
+        if (transfer.Gold != null && transfer.Item != null)
+            return "has both 'gold' and 'item'; transfer one of them";
+        if (transfer.Gold is { } gold && gold <= 0)
+            return $"gold {gold} is not an amount; it must be positive and the direction comes from 'from'/'to'";
+        if (transfer.Item is { } item && string.IsNullOrWhiteSpace(item))
+            return "'item' is empty";
+        if (transfer.Count != null && transfer.Item == null)
+            return "'count' only applies to an 'item'";
+        if (transfer.Count is { } count && count < 1)
+            return $"count {count} must be at least 1";
+        if (transfer.From == null)
+            return "'from' is missing";
+        if (transfer.To == null)
+            return "'to' is missing";
+        if (!Transfers.IsValidActor(transfer.From))
+            return BadActor("'from'", transfer.From);
+        if (!Transfers.IsValidActor(transfer.To))
+            return BadActor("'to'", transfer.To);
+        var from = Transfers.NormalizeActor(transfer.From, ownId);
+        var to = Transfers.NormalizeActor(transfer.To, ownId);
+        if (from == to)
+            return $"'from' and 'to' are both '{from}'; a transfer needs two different actors";
+        if (transfer.Item != null &&
+            (from != Transfers.Player && from != Transfers.World || to != Transfers.Player && to != Transfers.World))
+            return "items only move between the player and the world; companions have no inventory of their own, those in the player's party share its inventory";
+        return null;
+    }
+
+    private static string BadActor(string key, string? actor) =>
+        $"{key} '{actor}' is not an actor; use \"{Transfers.Player}\", \"{Transfers.Self}\", \"{Transfers.World}\" or a companion id";
 
     private static bool InRelationRange(int value) => value >= ConversationRules.MinRelation && value <= ConversationRules.MaxRelation;
 
