@@ -200,12 +200,12 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [ ] 68-gm-q31-misc (worker) — R11 clan tier, war state, hero in party.
 
 ### Track I — implementation (self unless noted; worker research runs in parallel)
-- [ ] 69-variables-core (self) — I1 + I2 in Core: `variables` block (types/scopes/defaults, built-in `mood`), D1 effects,
+- [x] 69-variables-core (self) — I1 + I2 in Core: `variables` block (types/scopes/defaults, built-in `mood`), D1 effects,
   D3 conditions (all/any/not, var min/max/eq, flags sugar on declared bools incl. dotted shared refs), validation (undeclared,
   foreign local, type mismatch, bad names, min>max…, catalog-level cross-companion check D2), `VariableStore` (typed values,
   get/set/add, defaults, save list encode/decode with D4 migration), `ConversationConditions` over the store. Then the
   sample migration part of I8 (declare `told_scar`, `got_coin`). Accept: Acceptance tests per rule + Core.Tests.
-- [ ] 70-variables-game (self) — Game: `_variables` SyncData + D4 load, context/effects over `VariableStore`, log lines.
+- [x] 70-variables-game (self) — Game: `_variables` SyncData + D4 load, context/effects over `VariableStore`, log lines.
   Build-only verifiable; in-game items in the report.
 - [ ] 71-transfer-core (worker; self writes acceptance tests first — user) — I3 Core part (model, validation, evaluation): `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
   rules, missing-check warning, `gold` effect → sugar → removed after sample migration (D6). Item fields validated per R9
