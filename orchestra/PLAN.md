@@ -14,7 +14,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   in-game checklist in the report, incl. renaming the audio files to local ids.
 - M6 done 2026-10-25 (docs/RUN_REPORT_CONVERSATIONS.md): per-companion player lines, conversations. Core.Tests 215,
   Acceptance 359. Not tested in game.
-- M7 planned 2026-10-25 (section M7); waiting for plan approval (PLAN_GATE).
+- M7 approved 2026-10-25 with changes (D2 missing-companion rule, 71 to the worker). In progress.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -163,9 +163,12 @@ Ordering constraints: I3 items after R9 verified; I7 after R10 verified.
 - D1 Writing variables: effects `"set": { "<var>": <bool|int> }` and `"add": { "<var>": <int> }` (int only, may be negative).
   `setFlags`/`clearFlags` stay as sugar for `set` true/false. Shared vars of another companion are written as `<companionId>.<name>`.
 - D2 Variable names: `[a-z0-9_]+`, `mood` reserved (built-in, may not be declared). A dotted reference `<id>.<name>` is
-  resolved across the catalog: unknown companion, undeclared or `local` var of another companion → validation error. Because
-  this needs every companion, cross-companion checks run in `CompanionCatalog` after per-folder validation; the offending
-  companion is skipped like any other validation error.
+  resolved across the catalog after per-folder validation (user, plan gate 2026-10-25):
+  - referenced companion **loaded** but the variable is undeclared or `local` (or the type does not match) → error, the
+    referencing companion is skipped;
+  - referenced companion **not loaded** (missing folder, skipped, required module missing) → warning; at runtime a condition
+    containing that reference is false, an effect writing to it is skipped, the referencing companion still loads.
+    Test: Ahmet references `jeremus.told_scar`, Jeremus absent → Ahmet loads, the conversation is not offered.
 - D3 Condition shape: `when` stays an object; in addition to today's keys it may hold `all: [ … ]`, `any: [ … ]`,
   `not: { … }` (each element is again a `when` object) and `var` + `min`/`max`/`eq`. One object = AND of everything in it.
   Today's `minGold` stays as sugar for `hasGold: { who: player, min }`.
@@ -204,7 +207,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
   sample migration part of I8 (declare `told_scar`, `got_coin`). Accept: Acceptance tests per rule + Core.Tests.
 - [ ] 70-variables-game (self) — Game: `_variables` SyncData + D4 load, context/effects over `VariableStore`, log lines.
   Build-only verifiable; in-game items in the report.
-- [ ] 71-transfer-core (self) — I3 gold part: `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
+- [ ] 71-transfer-core (worker; self writes acceptance tests first — user) — I3 Core part (model, validation, evaluation): `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
   rules, missing-check warning, `gold` effect → sugar → removed after sample migration (D6). Item fields validated per R9
   (waits for 66 verified). Accept: tests per actor/kind combination.
 - [ ] 72-transfer-game (self, after 66) — gold between heroes / world, items via party inventory per R9; missing item id at
