@@ -41,3 +41,4 @@
 | 71-transfer-core | 1 | PASS, review fix | clean; review: actor warnings missed hasGold nested in all/any/not → fixed + unit test |
 | 73-validation-graph | 1 | PASS | clean reverse BFS; missing next counts as exit (already an error) |
 | 74-validation-authoring | 1 | PASS | clean; 25 own unit tests |
+| 77-mermaid-core | 1 | PASS | matches golden; known edge: a node named "entry" collides with <c>__entry (noted, format kept) |

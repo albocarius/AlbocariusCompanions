@@ -219,7 +219,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [x] 75-validation-repeatable (self) — I5 repeatable reward warning (path analysis: positive gold/item/relation to the
   player, conversation not `once`, no condition on that path that the path itself makes false). No "shadowing" rule.
 - [x] 76-voiced-nodes (self) — I4 check (D7): tests for `voiced` on npc nodes → voiced-lines XML + missing-audio report.
-- [ ] 77-mermaid-core (worker) — Core `MermaidExport.Render(package, conversationId?)`: flowchart per conversation, player
+- [x] 77-mermaid-core (worker) — Core `MermaidExport.Render(package, conversationId?)`: flowchart per conversation, player
   vs npc node shapes/classes, `hub`/`end` terminals, conditions on edges, effects in node labels. Accept: golden-string tests.
 - [ ] 78-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
   exit 1 on errors), `mermaid <companionDir> [conversation]`. Accept: tests call the CLI entry point on fixtures.
