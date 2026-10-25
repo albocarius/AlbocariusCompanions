@@ -175,9 +175,9 @@ Ordering constraints: I3 items after R9 verified; I7 after R10 verified.
   Values with a type that no longer matches the declaration → default (logged).
 - D5 Transfers keep today's "implied condition": a node whose transfer source cannot pay/has not the item is not offered
   (as `gold < 0` today). The hasGold/hasItem warning is about making it explicit for authors. Relation effect unchanged.
-- D6 `gold` effect is removed in 64 after the sample is migrated (spec I3); `giveItem`/`takeItem` never existed, so I5's
+- D6 `gold` effect is removed in 71 after the sample is migrated (spec I3); `giveItem`/`takeItem` never existed, so I5's
   rules are written against `transfer` (from ≠ world without matching hasGold/hasItem → warning).
-- D7 I4 already exists (M6: `voiced`/`audio` on nodes, `audio/<local id>.ogg`): task 65 only adds missing tests if any.
+- D7 I4 already exists (M6: `voiced`/`audio` on nodes, `audio/<local id>.ogg`): task 76 only adds missing tests if any.
 - D8 CLI: new project `tools/AlbocariusCompanions.Cli` (net8.0, `RollForward=Major` so it runs on the installed .NET 10),
   added to the solution; Mermaid export logic lives in Core (`Dialogs/MermaidExport`) so it is unit-tested.
 
@@ -190,41 +190,41 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [ ] 61-gm-q24-traits (worker) — R4 player traits.
 - [ ] 62-gm-q25-open-conversation (worker) — R5 programmatic conversation on the map.
 - [ ] 63-gm-q26-inquiry (worker) — R6 inquiry pop-ups.
-- [ ] 64r-gm-q27-time (worker) — R7 campaign time + save timestamps.
-- [ ] 65r-gm-q28-location (worker) — R8 location & surroundings.
-- [ ] 66r-gm-q29-items-gold (worker, **first in queue**) — R9 items, inventory, gold between heroes, companion inventories.
-- [ ] 67r-gm-q30-console (worker, **second in queue**) — R10 console commands.
-- [ ] 68r-gm-q31-misc (worker) — R11 clan tier, war state, hero in party.
+- [ ] 64-gm-q27-time (worker) — R7 campaign time + save timestamps.
+- [ ] 65-gm-q28-location (worker) — R8 location & surroundings.
+- [ ] 66-gm-q29-items-gold (worker, **first in queue**) — R9 items, inventory, gold between heroes, companion inventories.
+- [ ] 67-gm-q30-console (worker, **second in queue**) — R10 console commands.
+- [ ] 68-gm-q31-misc (worker) — R11 clan tier, war state, hero in party.
 
 ### Track I — implementation (self unless noted; worker research runs in parallel)
-- [ ] 64-variables-core (self) — I1 + I2 in Core: `variables` block (types/scopes/defaults, built-in `mood`), D1 effects,
+- [ ] 69-variables-core (self) — I1 + I2 in Core: `variables` block (types/scopes/defaults, built-in `mood`), D1 effects,
   D3 conditions (all/any/not, var min/max/eq, flags sugar on declared bools incl. dotted shared refs), validation (undeclared,
   foreign local, type mismatch, bad names, min>max…, catalog-level cross-companion check D2), `VariableStore` (typed values,
   get/set/add, defaults, save list encode/decode with D4 migration), `ConversationConditions` over the store. Then the
   sample migration part of I8 (declare `told_scar`, `got_coin`). Accept: Acceptance tests per rule + Core.Tests.
-- [ ] 65-variables-game (self) — Game: `_variables` SyncData + D4 load, context/effects over `VariableStore`, log lines.
+- [ ] 70-variables-game (self) — Game: `_variables` SyncData + D4 load, context/effects over `VariableStore`, log lines.
   Build-only verifiable; in-game items in the report.
-- [ ] 66-transfer-core (self) — I3 gold part: `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
+- [ ] 71-transfer-core (self) — I3 gold part: `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
   rules, missing-check warning, `gold` effect → sugar → removed after sample migration (D6). Item fields validated per R9
-  (waits for 66r verified). Accept: tests per actor/kind combination.
-- [ ] 67-transfer-game (self, after 66r) — gold between heroes / world, items via party inventory per R9; missing item id at
+  (waits for 66 verified). Accept: tests per actor/kind combination.
+- [ ] 72-transfer-game (self, after 66) — gold between heroes / world, items via party inventory per R9; missing item id at
   runtime → skipped + warning.
-- [ ] 68-validation-graph (worker) — I5: cycle with no path to `hub`/`end` → error (dangling `next` and unreachable already
+- [ ] 73-validation-graph (worker) — I5: cycle with no path to `hub`/`end` → error (dangling `next` and unreachable already
   exist from M6; tests confirm). Accept: staged tests.
-- [ ] 69-validation-variables (worker) — I5: declared variable never written and default = type default → warning
+- [ ] 74-validation-variables (worker) — I5: declared variable never written and default = type default → warning
   "never changes"; transfer from ≠ world without hasGold/hasItem on the node or its path entry → warning (D6).
-- [ ] 70-validation-repeatable (self) — I5 repeatable reward warning (path analysis: positive gold/item/relation to the
+- [ ] 75-validation-repeatable (self) — I5 repeatable reward warning (path analysis: positive gold/item/relation to the
   player, conversation not `once`, no condition on that path that the path itself makes false). No "shadowing" rule.
-- [ ] 71-voiced-nodes (self) — I4 check (D7): tests for `voiced` on npc nodes → voiced-lines XML + missing-audio report.
-- [ ] 72-mermaid-core (worker) — Core `MermaidExport.Render(package, conversationId?)`: flowchart per conversation, player
+- [ ] 76-voiced-nodes (self) — I4 check (D7): tests for `voiced` on npc nodes → voiced-lines XML + missing-audio report.
+- [ ] 77-mermaid-core (worker) — Core `MermaidExport.Render(package, conversationId?)`: flowchart per conversation, player
   vs npc node shapes/classes, `hub`/`end` terminals, conditions on edges, effects in node labels. Accept: golden-string tests.
-- [ ] 73-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
+- [ ] 78-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
   exit 1 on errors), `mermaid <companionDir> [conversation]`. Accept: tests call the CLI entry point on fixtures.
-- [ ] 74-debug-commands (self, after 67r) — I7 `albocarius.list`, `.get`, `.set`, `.reset`, `.reload` only if safe (else
+- [ ] 79-debug-commands (self, after 67) — I7 `albocarius.list`, `.get`, `.set`, `.reset`, `.reload` only if safe (else
   noted); each wrapped in `Safe.Run`; parsing/formatting in Core and unit-tested.
-- [ ] 75-sample-content (self) — I8 rest: `spare_coin` exploit fixed (both paths set `got_coin`), explicit hasGold, sample on
+- [ ] 80-sample-content (self) — I8 rest: `spare_coin` exploit fixed (both paths set `got_coin`), explicit hasGold, sample on
   `transfer`; `validate` on `module/ModuleData/Companions` → zero errors/warnings (acceptance test); scaffold template updated.
-- [ ] 76-report (self) — `docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md` (Track R summary + UNCERTAINs, Track I per task,
+- [ ] 81-report (self) — `docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md` (Track R summary + UNCERTAINs, Track I per task,
   BLOCKERS, the 5-item checklist); milestone commit. No push.
 
 ## Decisions already fixed
