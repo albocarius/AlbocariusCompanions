@@ -11,6 +11,7 @@ using TaleWorlds.CampaignSystem.Conversation;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
+using TaleWorlds.ObjectSystem;
 
 namespace AlbocariusCompanions.Game;
 
@@ -255,6 +256,19 @@ internal static class CompanionDialogs
         public int PlayerGold => Hero.MainHero.Gold;
         public bool ClanIsFull => TooManyCompanions();
         public int? GetVariable(string reference) => ModRuntime.Variables.Get(_companionId, reference);
+
+        public int? GoldOf(string actor) => actor switch
+        {
+            "player" => Hero.MainHero.Gold,
+            "self" => _hero.Gold,
+            _ => ModRuntime.Registry.Contains(actor) ? ModRuntime.HeroOf(actor)?.Gold : null,
+        };
+
+        public int PlayerItemCount(string itemId)
+        {
+            var item = MBObjectManager.Instance.GetObject<ItemObject>(itemId);
+            return item == null ? 0 : MobileParty.MainParty.ItemRoster.GetItemNumber(item);
+        }
     }
 
     /// <summary>Vanilla limit check (Q6): the hire option is refused once the clan is at its companion limit.</summary>

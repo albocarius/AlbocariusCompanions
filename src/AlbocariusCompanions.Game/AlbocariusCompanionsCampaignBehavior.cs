@@ -34,6 +34,7 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
         // One behavior per campaign: a new game starts with no markers and default variables, a load replaces them in SyncData.
         ModRuntime.Flags = new Core.Dialogs.ConversationFlags();
         ModRuntime.Variables = new Core.Dialogs.VariableStore(ModRuntime.Registry.All);
+        ModRuntime.HeroOf = id => _companionHeroes != null && _companionHeroes.TryGetValue(id, out var hero) ? hero : null;
     }
 
     public override void RegisterEvents()

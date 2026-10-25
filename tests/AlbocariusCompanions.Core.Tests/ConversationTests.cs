@@ -86,6 +86,8 @@ public class ConversationConditionsTests
         public HashSet<string> MissingCompanions { get; } = new HashSet<string>();
         public int? GetVariable(string reference) =>
             reference.Contains('.') && MissingCompanions.Contains(reference.Split('.')[0]) ? null : Variables.GetValueOrDefault(reference);
+        public int? GoldOf(string actor) => actor == "player" ? PlayerGold : null;
+        public int PlayerItemCount(string itemId) => 0;
     }
 
     [Fact]
