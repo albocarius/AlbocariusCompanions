@@ -28,8 +28,7 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
   Native, SandBoxCore, SandBox, StoryMode, NavalDLC, CustomBattle + every SubModule.xml + Bannerlord.Harmony's SubModule.xml,
   copied from the user's live install (game v1.4.8). Read-only, never commit. Prefer it over the partial copy.
 - Decompiled source: `decomp/` (symlink to `~/bannerlord/decomp`). Contains TaleWorlds.CampaignSystem, .Core,
-  .MountAndBlade, .ObjectSystem, SandBox*, StoryMode*, NavalDLC*. **Not** decompiled: TaleWorlds.Library,
-  TaleWorlds.Localization, TaleWorlds.Engine, TaleWorlds.ModuleManager — use `ilspycmd` on the DLL into a
+  .MountAndBlade, .ObjectSystem, SandBox*, StoryMode*, NavalDLC*. **Not** decompiled: TaleWorlds.Localization, TaleWorlds.Engine, TaleWorlds.ModuleManager — use `ilspycmd` on the DLL into a
   scratch dir outside the repo if needed.
 - XSD schemas: `xmlschemas/` (symlink to `~/bannerlord/xmlschemas`, gitignored, read-only) = the game's `XmlSchemas`
   folder. The game validates each module XML listed under `Xmls/XmlNode` in SubModule.xml against `XmlSchemas/<id>.xsd`

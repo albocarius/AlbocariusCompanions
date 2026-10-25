@@ -1869,7 +1869,201 @@ one deliberately: `GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, companio
 
 ## Q30 — Debug console commands
 
-Status: TODO
+Status: VERIFIED
+
+### Answer
+**Registration is one attribute on one static method.** A command is a method carrying
+`TaleWorlds.Library.CommandLineFunctionality.CommandLineArgumentFunction` — a public class nested in the static class
+`CommandLineFunctionality`, derived from `Attribute`, with public fields `Name` and `GroupName` and the constructor
+`CommandLineArgumentFunction(string name, string groupname)`. With `using TaleWorlds.Library;` the vanilla spelling is
+`[CommandLineFunctionality.CommandLineArgumentFunction("add_gold_to_hero", "campaign")]`. There is no XML, no
+`SubModule.xml` entry and no registration call a mod has to make:
+
+```csharp
+[CommandLineFunctionality.CommandLineArgumentFunction("behavior_dump", "albocarius")]
+public static string BehaviorDump(List<string> strings)
+{
+    return "...";   // the returned string is what the console prints
+}
+```
+
+**Method signature.** Required: `static`, return type exactly `string`, and a parameter list bindable to
+`Func<List<string>, string>` — in practice exactly one `List<string>`. All 135 attributed methods in the locally decompiled
+sources have the identical shape `public static string Name(List<string> strings)`. The scan is
+`GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)`, so `public` is convention, not a rule:
+`internal` and `private` static commands register just as well. The parameter list itself is never validated (see Uncertain).
+
+**The declaring class need be neither static nor public.** The scan walks every type of the assembly
+(`assembly.GetTypesSafe()`) and binds the method statically, so it can live anywhere: `Mission` is
+`public sealed class Mission` and hosts `mission.flee_enemies` → `public static string MakeEnemiesFleeCheat(…)`;
+`GauntletUISubModule` is a `public class … : MBSubModuleBase` and hosts `chatlog.clear` →
+`public static string ClearChatLog(List<string> strings)`. A mod may therefore put commands straight on its
+`MBSubModuleBase` subclass or on a plain static helper class. Instance methods and open generic types are not usable — the
+delegate is created with no target instance.
+
+**Discovery: every loaded assembly that references TaleWorlds.Library.**
+`CommandLineFunctionality.CollectCommandLineFunctions()` iterates `AppDomain.CurrentDomain.GetAssemblies()` — vanilla,
+module and mod assemblies alike, anything already loaded — and keeps an assembly when `CheckAssemblyReferencesThis` says
+yes: the assembly *is* TaleWorlds.Library, or one of its `GetReferencedAssemblies()` entries (direct references only, not
+transitive) is named `TaleWorlds.Library`. Using the attribute creates that reference, so a normal mod assembly qualifies by
+itself; an assembly that never references TaleWorlds.Library (the netstandard2.0 Core project, PROJECT rule 4) can never
+host commands. Inside a qualifying assembly every static method with the attribute (`inherit: false`, and only the *first*
+attribute instance is examined) whose `ReturnType == typeof(string)` is registered. Module assemblies are the same kind of
+assembly a mod ships: `SandBox.View` provides `campaign.kill_hero` → `public static string KillHero(List<string> strings)`
+and StoryMode provides `storymode.add_family_members` → `public static string AddFamilyMembers(List<string> strings)`. The
+consequence of `GetAssemblies()` is load order — an assembly loaded after the scan is invisible to it. Module and submodule
+assemblies are loaded at start-up (`ModuleHelper.InitializeModules(Utilities.GetModulesNames(), …)`, then
+`Module.LoadSubModules`), but the scan is triggered from native code, so its exact moment is not visible in the managed
+sources (see Uncertain).
+
+**From the managed table to the console window.** The discovered keys are pushed into the engine by the internal callback
+`ManagedExtensions.CollectCommandLineFunctions()`, marked `[EngineCallback(null, false)]`, which calls
+`TaleWorlds.Engine.Utilities.AddCommandLineFunction(string concatName)` per name; that forwards to
+`IUtil.AddCommandLineFunction` (`[EngineMethod("add_command_line_function", false, null, false)]`). Completion reads the same
+native registry (`IUtil.GetPossibleCommandLineStartingWith(string command, int index)`,
+`[EngineMethod("get_possible_command_line_starting_with", …)]`, wrapped by `Utilities.GetPossibleCommandLineStartingWith`),
+and any code can run a command line with `Utilities.ExecuteCommandLineCommand(string command)` →
+`IUtil.ExecuteCommandLineCommand` (`[EngineMethod("execute_command_line_command", …)]`). Both
+`CommandLineFunctionality.CollectCommandLineFunctions()` and `Utilities.AddCommandLineFunction` are public, so a mod can
+re-scan and push names itself; re-scanning is cheap and safe because `AllFunctions` is a static dictionary and only names not
+already in it are returned and added.
+
+**Naming: `group.command`.** The key is literally `GroupName + "." + Name`, and that full key is what the player types —
+group, dot, command. The group is free-form and is the only namespacing mechanism. Sixteen groups and 134 distinct commands
+appear in the local sources:
+
+| group | count | example |
+|---|---|---|
+| `campaign` | 89 | `campaign.add_gold_to_hero` |
+| `naval` | 14 | `naval.add_ship_to_player` (NavalDLC — DLC, not an API to copy) |
+| `mission` | 12 | `mission.flee_enemies` |
+| `console` | 3 | `console.clear` |
+| `localization` | 3 | `localization.change_language` |
+| `chatlog` | 2 | `chatlog.clear` |
+| `facegen` | 2 | `facegen.show_debug` |
+| `mp_host` | 2 | `mp_host.end_warmup` |
+| `mp_perks` | 2 | `mp_perks.raise_event` |
+| `ai`, `game`, `module`, `scoreboard`, `storymode`, `ui` | 1 each | `ui.toggle_ui`, `module.get_item_mesh_names` |
+
+Registration is first-wins (`if (!AllFunctions.ContainsKey(text))`): a mod cannot override `campaign.add_gold_to_hero`, and
+two mods choosing the same `group.command` silently lose the race. So the group must be unique to the mod
+(`albocarius.…`), lower-case snake_case like every vanilla name.
+
+**Argument parsing: what the method receives.** Dispatch goes through
+`CommandLineFunctionality.CallFunction(string concatName, string concatArguments, out bool found)` (plus a `List<string>`
+overload). `concatName` is the full `group.command` key; `concatArguments` is the remainder of the typed line, split by
+`concatArguments.Split(new char[1] { ' ' })` — one space, no quote handling, so `a  b` yields an empty entry, and an empty
+argument string yields an **empty** list rather than one empty string. Every token is a raw string: the command parses
+numbers itself (`int.TryParse`) and multi-word names use the pipe separator (`CampaignCheats.CheatNameSeparator = "|"`, read
+back by `CampaignCheats.GetSeparatedNames` / `ConcatenateString`). The vanilla argument hygiene is
+`CheckParameters(List<string> strings, int ParameterCount)`, `CheckHelp(List<string> strings)` (`help` is the reserved first
+token, `CampaignCheats.Help = "help"`) and a returned usage line — none of it automatic:
+`GauntletUISubModule.SetCanFocusWhileInMission` reads `strings[0]` with no guard, so a bare
+`chatlog.can_focus_while_in_mission` is an `IndexOutOfRangeException`. An unregistered name returns
+`"Could not find the command " + concatName` with `found = false`; the native console answers its own `Unknown command.` for
+names only it knows. `CommandLineFunctionality.HasFunctionForCommand(string command)` is the public probe, and
+`GameStateManager.StateActivateCommand` shows managed code invoking a command by name
+(`CommandLineFunctionality.CallFunction(GameStateManager.StateActivateCommand, "", out var _)`), set to
+`"state_string.benchmark_start"` by the options screen.
+
+**Output = the return value.** The `string` a command returns is its printed result; vanilla commands return player-facing
+text (`"UI is now disabled."`, `"Chatlog cleared!"`, `"Cheat mode is not enabled."`) and multi-line usage text with embedded
+`\n` (`Mission.MakeTeamFleeCheat`). A command that wants to write *while* it runs calls `MBDebug.EchoCommandWindow(string
+content)`, which forwards to `IDebug.EchoCommandWindow` (`[EngineMethod("echo_command_window", false, null, false)]`); the
+same write is itself a command, `console.echo_command_window`, which returns `""`. `console.clear` (`MBDebug.ClearConsole`)
+clears the window. The log is a separate pipe: `MBDebug.Print(string message, int logLevel = 0, …)` is unconditional, while
+`MBDebug.ConsolePrint` is `[Conditional("_RGL_KEEP_ASSERTS")]` and is therefore compiled away in a normal mod build — code
+calling it produces nothing in game.
+
+**Availability in a normal, non-developer game.** Nothing on the managed side gates it: registration and dispatch never
+consult cheat or development mode, and the window itself is a native feature — `TaleWorlds.Native.dll` carries the console
+title string `RGL Command line console`, the widget strings `Input`, `Clear`, `- History -`, `input_popup`, and native-only
+messages such as `Unknown command.`, `Invalid number of arguments. Expecting 0 or 1` and
+`Development mode needs to be enabled.` for the engine's own command set. What *is* gated is the behaviour of most vanilla
+commands: `Game.Current.CheatMode` → `GameManager.CheatMode` → `MBGameManager.CheatMode` → `NativeConfig.CheatMode`,
+refreshed in `NativeConfig.OnConfigChanged()` from `IConfig.GetCheatMode()` / `IConfig.GetDevelopmentMode()`
+(`[EngineMethod("get_cheat_mode", false, null, false)]`, `[EngineMethod("get_development_mode", …)]`), i.e. from the engine
+config file whose keys `cheat_mode` and `development_mode` live only in the native DLL. Each command then enforces its own
+policy — `CampaignCheats.CheckCheatUsage(ref string ErrorType)` yields `Cheat mode is disabled!` when
+`Game.Current.CheatMode` is false, and `Mission.MakeEnemiesFleeCheat` returns `Cheat mode is not enabled.`. **How a normal
+player opens the window — key, config entry or launcher option — could not be established from the local data** (see
+Uncertain): `DebugHotKeyCategory` declares the ids `EngineInterfaceHotkeyToggleConsole` and
+`EngineInterfaceHotkeyShowConsoleManager` but never calls `RegisterDebugHotkey` for them, no console binding exists in any
+module XML, and `Module.ProcessApplicationArguments` understands only the `/dedicated…` server switches — other launch
+arguments are read ad hoc (`MBDebug.TestModeEnabled = Utilities.CommandLineArgumentExists("/runTest")`), and no shipped
+launcher DLL mentions a cheat or dev flag. For this mod: treat the console as a developer/QA surface, never as a player
+feature, and gate any state-mutating command yourself. The in-game *cheat menu* is a different thing and is gamepad-only:
+`ActionCampaignOptionData("EnableCheats", …)` is yielded only under `if (TaleWorlds.InputSystem.Input.IsGamepadActive)` and
+runs `DefaultCampaignOptionsProvider.ExecuteEnableCheats` → `mapState.Handler.OnGameplayCheatsEnabled()` →
+`MapScreen.HandleCheatMenuInput` / `OpenGameplayCheats` (the `Native/ModuleData/consoles.xml` text documents the
+L1 + R2 + Down combo). The PC keyboard path is the console, not that menu.
+
+**Commands on the campaign map, and what they see.** Yes: the 89-command `campaign` group exists to be typed on the map, and
+a command body runs inside the game's own managed context with the same live objects the running game uses —
+`campaign.add_gold_to_hero` ends in `GiveGoldAction.ApplyBetweenCharacters(null, obj, result, disableNotification: true)`, an
+ordinary campaign mutation that the game and the save both see. What is live depends on the game state, and the command must
+guard it: `Campaign.Current` is `public static Campaign Current { get; private set; }`, assigned in
+`Campaign.SetLoadingParameters(GameLoadingType)` and set back to null in `Campaign.OnDestroy()`, so in the main menu, a
+custom battle or a multiplayer game it is null and vanilla answers `Campaign was not started.`
+(`CampaignCheats.CheckCheatUsage`, whose other failure is `Cheat mode is disabled!`). In a loaded single-player campaign it
+is the live campaign object whether the map or a mission is on screen; `Mission.Current` is the other state handle, and
+`Mission.MakeEnemiesFleeCheat` additionally refuses when `GameNetwork.IsClientOrReplay`. Whether campaign simulation keeps
+ticking while the window is open is native-side and unverified (Uncertain).
+
+**Use in this mod (SPEC Track R, R10).** Put the commands in `src/AlbocariusCompanions.Game` — the only project allowed to
+reference TaleWorlds — as `public static string X(List<string> strings)` methods under a mod-unique group (`albocarius`, so
+`albocarius.behavior_dump`), validate the arguments, guard on `Campaign.Current` / `Game.Current.CheatMode`, return one
+summary line and echo progress with `MBDebug.EchoCommandWindow`.
+
+### Evidence
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/CommandLineFunctionality.cs` — `CommandLineArgumentFunction(string name, string groupname)` — the attribute is a public class nested in `public static class CommandLineFunctionality`, with public fields `Name` and `GroupName` and nothing else.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/CommandLineFunctionality.cs` — `CommandLineFunctionality.CollectCommandLineFunctions` — the whole scan: `AppDomain.CurrentDomain.GetAssemblies()` → `CheckAssemblyReferencesThis` → `assembly.GetTypesSafe()` → `GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)` → attribute with `inherit: false` (`customAttributesSafe[0]`) → `methodInfo.ReturnType != typeof(string)` is skipped → key `commandLineArgumentFunction.GroupName + "." + name`. The parameter list is never inspected.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/CommandLineFunctionality.cs` — `CommandLineFunctionality.CheckAssemblyReferencesThis` — true when the assembly is TaleWorlds.Library itself or `assembly.GetReferencedAssemblies()` contains an entry whose `Name` is TaleWorlds.Library (direct references only).
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/CommandLineFunctionality.cs` — `CommandLineFunctionality.AllFunctions` — `private static Dictionary<string, CommandLineFunction> AllFunctions` plus `if (!AllFunctions.ContainsKey(text))`: first registration wins, and a repeated scan returns only new names; the binding is `(Func<List<string>, string>)Delegate.CreateDelegate(typeof(Func<List<string>, string>), methodInfo)`, outside any try/catch.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/CommandLineFunctionality.cs` — `CommandLineFunctionality.CallFunction(string, List<string>, out bool)` — argument splitting `new List<string>(concatArguments.Split(new char[1] { ' ' }))` only when `concatArguments != string.Empty` (otherwise an empty list), and `"Could not find the command " + concatName` with `found = false` for an unknown key.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/CommandLineFunctionality.cs` — `CommandLineFunctionality.HasFunctionForCommand` — `public static bool HasFunctionForCommand(string command)`, the public probe against the managed table.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/ManagedExtensions.cs` — `ManagedExtensions.CollectCommandLineFunctions` — `[EngineCallback(null, false)] internal static void CollectCommandLineFunctions()`; its body is a loop over `CommandLineFunctionality.CollectCommandLineFunctions()` calling `Utilities.AddCommandLineFunction(item)` — the engine drives the registration.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/Utilities.cs` — `Utilities.AddCommandLineFunction` — `public static void AddCommandLineFunction(string concatName)` (line 592): the registration entry point is public, so a mod can push a name after start-up.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/IUtil.cs` — `IUtil.AddCommandLineFunction` — `[EngineMethod("add_command_line_function", false, null, false)] void AddCommandLineFunction(string concatName);` — the managed name table becomes native console state.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/IUtil.cs` — `IUtil.ExecuteCommandLineCommand` — `[EngineMethod("execute_command_line_command", false, null, false)] string ExecuteCommandLineCommand(string command);` — a whole command line can be executed from code (wrapped by `Utilities.ExecuteCommandLineCommand`).
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/IUtil.cs` — `IUtil.GetPossibleCommandLineStartingWith` — `[EngineMethod("get_possible_command_line_starting_with", false, null, false)] string GetPossibleCommandLineStartingWith(string command, int index);` — completion is served by the native registry the names were pushed into.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/GameState.cs` — `GameStateManager.StateActivateCommand` — `CommandLineFunctionality.CallFunction(GameStateManager.StateActivateCommand, "", out var _);` — managed code invokes the same dispatch by command name.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/MBDebug.cs` — `MBDebug.DisableUI` — `[CommandLineFunctionality.CommandLineArgumentFunction("toggle_ui", "ui")] public static string DisableUI(List<string> strings)` — the vanilla form: attribute, `public static string`, one `List<string>`.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/MBDebug.cs` — `MBDebug.ClearConsole` — `[CommandLineArgumentFunction("clear", "console")] public static string ClearConsole(List<string> strings)` returning `"Debug console cleared."` — the return value is the console's output line.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/MBDebug.cs` — `MBDebug.EchoCommandWindow` — `public static void EchoCommandWindow(string content)` and the command `[CommandLineArgumentFunction("echo_command_window", "console")] public static string EchoCommandWindow(List<string> strings)`, which returns `""` — mid-command output uses this path, not the return value.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/IDebug.cs` — `IDebug.EchoCommandWindow` — `[EngineMethod("echo_command_window", false, null, false)] void EchoCommandWindow(string content);` — the native write into the command window.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/MBDebug.cs` — `MBDebug.ConsolePrint` — `[Conditional("_RGL_KEEP_ASSERTS")] public static void ConsolePrint(string message, …)` versus the unconditional `MBDebug.Print(string message, int logLevel = 0, …)` — a mod's `ConsolePrint` calls are not emitted at all.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Mission.cs` — `Mission.MakeEnemiesFleeCheat` — `[CommandLineFunctionality.CommandLineArgumentFunction("flee_enemies", "mission")] public static string MakeEnemiesFleeCheat(List<string> strings)` inside `public sealed class Mission : DotNetObject, IMission`; it checks `Game.Current … .CheatMode`, `GameNetwork.IsClientOrReplay` and `Current != null` and returns `"Cheat mode is not enabled."` / `"does not work in multiplayer"` / `"mission is not available"` / `"enemies are fleeing"` — the declaring class is an ordinary instance class, and state gating is written inside the command.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Mission.cs` — `Mission.MakeTeamFleeCheat` — `mission.flee_team` builds a usage string containing `\n` and checks `strings.IsEmpty() || strings[0] == "help"` — the returned text is printed as-is, including multi-line.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletUISubModule.cs` — `GauntletUISubModule.ClearChatLog` — `[CommandLineArgumentFunction("clear", "chatlog")] public static string ClearChatLog(List<string> strings)` on `public class GauntletUISubModule : MBSubModuleBase` — an `MBSubModuleBase` subclass hosts commands, and the attribute is spelled unqualified thanks to `using TaleWorlds.Library;`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletUISubModule.cs` — `GauntletUISubModule.SetCanFocusWhileInMission` — `chatlog.can_focus_while_in_mission` reads `strings[0]` with no length check: argument validation is entirely the command's own job.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignCheats.cs` — `CampaignCheats.CheckCheatUsage` — `public static bool CheckCheatUsage(ref string ErrorType)`: `Campaign.Current == null` → `CampaignNotStarted` (`"Campaign was not started."`), `!Game.Current.CheatMode` → `CheatModeDisabled` (`"Cheat mode is disabled!"`). The dispatcher gates nothing; commands gate themselves.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignCheats.cs` — `CampaignCheats.AddGoldToHero` — `[CommandLineFunctionality.CommandLineArgumentFunction("add_gold_to_hero", "campaign")] public static string AddGoldToHero(List<string> strings)`: `CheckCheatUsage`, `CheckHelp`, `CheckParameters`, `int.TryParse`, a bounds message, then `GiveGoldAction.ApplyBetweenCharacters(null, obj, result, disableNotification: true)` and a returned summary sentence — a campaign mutation performed synchronously by the command.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignCheats.cs` — `CampaignCheats.CheatNameSeparator` — `public const string CheatNameSeparator = "|"`, with `GetSeparatedNames(List<string> strings, bool removeEmptySpaces = false)` and `ConcatenateString(List<string> strings)` — multi-word names are joined with a pipe token, and `CheckHelp` / `Help = "help"` is the usage convention.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` — `Campaign.Current` — `public static Campaign Current { get; private set; }`, assigned `Current = this` in `SetLoadingParameters(GameLoadingType gameLoadingType)` and `Current = null` in `public override void OnDestroy()` — null whenever no campaign is loaded.
+- `decomp/SandBox.View/SandBox.View/SandBoxViewCheats.cs` — `SandBoxViewCheats.KillHero` — `public static class SandBoxViewCheats` with `[CommandLineArgumentFunction("kill_hero", "campaign")] public static string KillHero(List<string> strings)` — a *module* assembly (`~/bannerlord/dlls/Modules/SandBox/SandBox.View.dll`, the same location a mod assembly occupies) registers console commands.
+- `decomp/StoryMode/StoryMode/StoryModeCheats.cs` — `StoryModeCheats.AddFamilyMembers` — `[CommandLineArgumentFunction("add_family_members", "storymode")] public static string AddFamilyMembers(List<string> strings)` — groups are invented by whoever registers them; here a whole content module adds its own.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs` — `Module.LoadSubModules` — start-up order `ModuleHelper.InitializeModules(Utilities.GetModulesNames(), platformModulePaths)` … `LoadSubModules(modules, loadNewModules: false)` … `NativeConfig.OnConfigChanged()`: module and submodule assemblies are in the process before gameplay, which is what `GetAssemblies()` needs.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs` — `Module.ProcessApplicationArguments` — `private void ProcessApplicationArguments()` reads `Utilities.GetFullCommandLineString().Split(new char[1] { ' ' })` and understands only `/dedicatedmatchmakingserver`, `/dedicatedcustomserver`, `/dedicatedcommunityserver`; elsewhere `MBDebug.TestModeEnabled = Utilities.CommandLineArgumentExists("/runTest")` — launch arguments are ad hoc and no managed code reads a cheat/dev switch.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/NativeConfig.cs` — `NativeConfig.OnConfigChanged` — `public static void OnConfigChanged()` sets `CheatMode = EngineApplicationInterface.IConfig.GetCheatMode();` and `IsDevelopmentMode = EngineApplicationInterface.IConfig.GetDevelopmentMode();` on `public static bool CheatMode { get; private set; }` / `public static bool IsDevelopmentMode { get; private set; }`.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/IConfig.cs` — `IConfig.GetCheatMode` — `[EngineMethod("get_cheat_mode", false, null, false)] bool GetCheatMode();`.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/IConfig.cs` — `IConfig.GetDevelopmentMode` — `[EngineMethod("get_development_mode", false, null, false)] bool GetDevelopmentMode();`.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/Game.cs` — `Game.CheatMode` — `public bool CheatMode => GameManager.CheatMode;` (and `public bool IsDevelopmentMode => GameManager.IsDevelopmentMode;`) — the handle every vanilla command tests.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBGameManager.cs` — `MBGameManager.CheatMode` — `public override bool CheatMode => NativeConfig.CheatMode;` closes the chain `Game.Current.CheatMode` → engine config.
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine.InputSystem/DebugHotKeyCategory.cs` — `DebugHotKeyCategory.EngineInterfaceHotkeyToggleConsole` — `public const string EngineInterfaceHotkeyToggleConsole = "EngineInterfaceHotkeyToggleConsole";` (next to `EngineInterfaceHotkeyShowConsoleManager`) in the `Debug` key context, but `private void RegisterDebugHotkey(string id, InputKey hotkeyKey, …)` is never called with them — the console-open binding does not exist in managed code.
+- `~/bannerlord/dlls/bin/TaleWorlds.Native.dll` — `RGL Command line console` — strings of the native engine: the console title, its widget strings (`Input`, `Clear`, `- History -`, `input_popup`), and its own error/help text (`Unknown command.`, `Unknown command line option: %s`, `Invalid number of arguments. Expecting 0 or 1`, `Incorrect number of arguments!`, `Needs two arguments.`, `Development mode needs to be enabled.`, `Edit mode needs to be enabled!`) — the window and the native command set live entirely below the managed layer.
+- `~/bannerlord/dlls/bin/TaleWorlds.Native.dll` — `cheat_mode` — the strings `cheat_mode`, `development_mode` and the file name `engine_config.txt` (also `/engine_config.txt`, `Engine config changed successfully.`) exist only in the native DLL; the flags are engine config state read through `get_cheat_mode` / `get_development_mode`. No `-cheat`-style switch string exists in the native or launcher DLLs.
+- `~/bannerlord/moduledata_win/Native/ModuleData/consoles.xml` — `str_campaign_options_description.EnableCheats_ps` — the only shipped text about enabling cheats is the gamepad hint (`Cheat Menu can also be enabled by holding "L1 + R2 + Down Button" in map.`); no `EngineInterfaceHotkey*` id appears anywhere in `moduledata_win`, so no XML rebinds the console key.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection/DefaultCampaignOptionsProvider.cs` — `DefaultCampaignOptionsProvider.ExecuteEnableCheats` — `if (TaleWorlds.InputSystem.Input.IsGamepadActive) yield return new ActionCampaignOptionData("EnableCheats", 11000, CampaignOptionEnableState.Enabled, ExecuteEnableCheats);` and `ExecuteEnableCheats` calls `mapState.Handler.OnGameplayCheatsEnabled()` — the gamepad-only cheat *menu*, a different surface from the console.
+- `decomp/SandBox.View/SandBox.View.Map/MapScreen.cs` — `MapScreen.HandleCheatMenuInput` — `private bool HandleCheatMenuInput(float dt)` requires three simultaneous gamepad keys (`Input.IsKeyDown((InputKey)248) && … 255 … 241`) and is reached only under `Input.IsGamepadActive`; the map screen's own key handling contains no console key at all, i.e. the console key is consumed before any managed screen sees it.
+
+### Uncertain
+- **UNCERTAIN**: which key — or launcher option / config entry — opens the console window in a retail PC build. The managed layer declares but never binds `EngineInterfaceHotkeyToggleConsole` / `EngineInterfaceHotkeyShowConsoleManager`, and no shipped XML contains a console binding. Resolve on the Windows test machine (`ssh aliboron@100.94.114.51`): start the game and try `` ` ``, Ctrl+``, F12 and Ctrl+Shift+C; then inspect `%USERPROFILE%\Documents\Mount and Blade II Bannerlord\config\engine_config.txt` for `cheat_mode` / `development_mode`, and try `campaign.add_gold_to_hero 1000`.
+- **UNCERTAIN**: whether the window opens at all in a plain retail game with `cheat_mode` and `development_mode` both false, or whether the native side refuses it — the native strings prove the config keys and a `Development mode needs to be enabled.` message but not whether that gate covers the window, the native commands only, or specific managed commands. Same test run resolves it.
+- **UNCERTAIN**: when the native engine calls the `[EngineCallback]` `ManagedExtensions.CollectCommandLineFunctions` relative to `Module.LoadSubModules`, i.e. whether a mod's commands are found in the first scan. Resolve with one attributed command in the mod build: type `albocarius.behavior_dump`; if it is missing, call `CommandLineFunctionality.CollectCommandLineFunctions()` and `TaleWorlds.Engine.Utilities.AddCommandLineFunction(name)` from `OnSubModuleLoad` and retest.
+- **UNCERTAIN**: what happens to an attributed method whose parameter list is not `List<string>` — only the return type is checked, and the `Delegate.CreateDelegate` cast sits outside any try/catch, so either the exception escapes the whole scan (losing later commands) or the engine tolerates it. Resolve by shipping one deliberately bad method in the mod and checking whether the game still starts and whether the other commands of the same assembly work.
+- **UNCERTAIN**: whether the native console prints the returned string verbatim (including embedded `\n`) and whether mod names appear in its completion list (`IUtil.GetPossibleCommandLineStartingWith`). Resolve in the same session: `mission.flee_team help` returns multi-line usage text, then press Tab after typing `albocarius.`.
+- **UNCERTAIN**: whether campaign simulation keeps ticking while the console window is open, and on which thread the command body actually runs (all vanilla bodies touch `Campaign.Current` / `Mission.Current` objects directly, which implies the game thread but does not prove it). Resolve by watching a party's position or a tick counter with the window open, or by timing `Campaign.Current.GameTick` before and after a command.
 
 ## Q31 — Misc conditions
 

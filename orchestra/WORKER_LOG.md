@@ -37,3 +37,4 @@
 | 35-required-modules-core | 1 | PASS | clean: fallbacks removed end to end, RequiredModules.Missing + InvalidRequiredModule |
 | 42-gm-q18-vanilla-dialog-points | 1 | PASS (exit 124 timeout, section complete), verified | very thorough: 8 tables, ~100 points, spot checks correct |
 | 66-gm-q29-items-gold | 1 | PASS, verified | thorough; GiveGoldAction cap/create/destroy, null GetObject, AddToCounts assert spot-checked. Note for 72: removing more than present goes negative → clamp to GetItemNumber |
+| 67-gm-q30-console | 1 | PASS, verified | attribute/signature/scan/first-wins/space split checked; console key + cheat-mode gating UNCERTAIN (needs Windows run). Found TaleWorlds.Library is decompiled (PROJECT.md fixed) |
