@@ -221,10 +221,8 @@ internal static class CompanionDialogs
         if (effects.Relation is { } relation)
             ChangeRelationAction.ApplyPlayerRelation(hero, relation);
 
-        if (effects.Gold is { } gold && gold < 0)
-            GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, hero, -gold);
-        else if (effects.Gold is { } received && received > 0)
-            GiveGoldAction.ApplyBetweenCharacters(null, Hero.MainHero, received);
+        if (Transfers.Of(effects) is { } transfer)
+            ApplyTransfer(id, node, transfer, hero);
 
         if (effects.Join)
         {
@@ -234,7 +232,58 @@ internal static class CompanionDialogs
 
         ModRuntime.Log.Info($"Conversation effects of '{id}' node '{node.Id}': " +
             $"variables [{string.Join(", ", VariableUses.InEffects(effects).Select(u => u.Reference))}], " +
-            $"relation {effects.Relation?.ToString() ?? "-"}, gold {effects.Gold?.ToString() ?? "-"}, join {effects.Join}.");
+            $"relation {effects.Relation?.ToString() ?? "-"}, join {effects.Join}.");
+    }
+
+    /// <summary>
+    /// A transfer (I3, GAME_MAP Q29). Gold moves between heroes' own purses with GiveGoldAction (null side = world: created
+    /// or destroyed; capped at the giver). Items move in and out of the player's party inventory (validation allows only
+    /// player ↔ world); removal is clamped to what is there, an unknown item id is skipped with a warning.
+    /// </summary>
+    private static void ApplyTransfer(string id, ConversationNode node, TransferEffect transfer, Hero self)
+    {
+        var where = $"Conversation transfer of '{id}' node '{node.Id}'";
+        if (transfer.Gold is { } gold)
+        {
+            var hasGiver = TryActor(transfer.From, id, self, out var giver);
+            var hasRecipient = TryActor(transfer.To, id, self, out var recipient);
+            if (!hasGiver || !hasRecipient)
+            {
+                ModRuntime.Log.Warning($"{where}: companion '{(hasGiver ? transfer.To : transfer.From)}' is not loaded or has no hero; skipped.");
+                return;
+            }
+            GiveGoldAction.ApplyBetweenCharacters(giver, recipient, gold);
+            ModRuntime.Log.Info($"{where}: {gold} gold {transfer.From} -> {transfer.To}.");
+            return;
+        }
+
+        var item = MBObjectManager.Instance.GetObject<ItemObject>(transfer.Item);
+        if (item == null)
+        {
+            ModRuntime.Log.Warning($"{where}: no item with id '{transfer.Item}' (is its module loaded? see requiredModules); skipped.");
+            return;
+        }
+        var roster = MobileParty.MainParty.ItemRoster;
+        var count = Transfers.CountOf(transfer);
+        if (transfer.From == Transfers.Player)
+            count = Math.Min(count, roster.GetItemNumber(item));
+        if (count > 0)
+            roster.AddToCounts(item, transfer.From == Transfers.Player ? -count : count);
+        ModRuntime.Log.Info($"{where}: {count} x {transfer.Item} {transfer.From} -> {transfer.To}.");
+    }
+
+    /// <summary>The hero behind a transfer actor; world is null. False when a named companion has no hero.</summary>
+    private static bool TryActor(string? actor, string id, Hero self, out Hero? hero)
+    {
+        hero = actor switch
+        {
+            Transfers.World => null,
+            Transfers.Player => Hero.MainHero,
+            Transfers.Self => self,
+            _ when actor == id => self,
+            _ => ModRuntime.Registry.Contains(actor!) ? ModRuntime.HeroOf(actor!) : null,
+        };
+        return hero != null || actor == Transfers.World;
     }
 
     /// <summary>The live values conversation conditions read, over the hero being talked to.</summary>
