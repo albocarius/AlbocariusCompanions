@@ -47,6 +47,7 @@ public static class IssueCodes
     public const string InvalidEffect = "invalid_effect";
     public const string UnreachableNode = "unreachable_node";
     public const string ConversationMayStall = "conversation_may_stall";
+    public const string ConversationNoExit = "conversation_no_exit";
 
     // dialogs.json variables (M7)
     public const string InvalidVariable = "invalid_variable";

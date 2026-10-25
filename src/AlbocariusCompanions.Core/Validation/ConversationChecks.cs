@@ -108,6 +108,7 @@ public static class ConversationChecks
                 "is a greeting with \"met\": false; greetings are for companions already met (the first meeting is the intro)."));
 
         ReportUnreachable(conversation, byId, folder, name, issues);
+        ReportNoExit(conversation, byId, folder, name, issues);
         return valid;
     }
 
@@ -224,6 +225,53 @@ public static class ConversationChecks
         foreach (var id in byId.Keys.Where(id => !reached.Contains(id)))
             issues.Add(ValidationIssue.Warning(IssueCodes.UnreachableNode, folder,
                 $"Conversation '{name}': node '{id}' cannot be reached from the start; it is never said."));
+    }
+
+    /// <summary>
+    /// One error when nodes lead to no exit: a node is an exit when its 'next' is "hub"/"end", or reaches one through its
+    /// 'next' nodes. Conditions are ignored (one of the follow-ups may hold); an unknown or missing 'next' target counts as
+    /// an exit here because it is already reported as UnknownNode/InvalidConversation.
+    /// </summary>
+    private static void ReportNoExit(ConversationDefinition conversation, Dictionary<string, ConversationNode> byId, string folder,
+        string name, List<ValidationIssue> issues)
+    {
+        var canLeave = new HashSet<string>(StringComparer.Ordinal);
+        var queue = new Queue<string>();
+        var predecessors = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+
+        foreach (var node in byId.Values)
+        {
+            var next = node.Next ?? new List<string>();
+            if (next.Count == 0 || next.Any(id => id == null || ConversationRules.IsReservedNext(id) || !byId.ContainsKey(id)))
+            {
+                canLeave.Add(node.Id!);
+                queue.Enqueue(node.Id!);
+                continue;
+            }
+
+            foreach (var id in next)
+            {
+                if (!predecessors.TryGetValue(id, out var parents))
+                    predecessors[id] = parents = new List<string>();
+                parents.Add(node.Id!);
+            }
+        }
+
+        while (queue.Count > 0)
+            if (predecessors.TryGetValue(queue.Dequeue(), out var parents))
+                foreach (var parent in parents)
+                    if (canLeave.Add(parent))
+                        queue.Enqueue(parent);
+
+        var trapped = (conversation.Nodes ?? new List<ConversationNode>()).Where(node => node != null && node.Id != null
+                && byId.ContainsKey(node.Id) && !canLeave.Contains(node.Id))
+            .Select(node => node.Id!).Distinct(StringComparer.Ordinal).ToList();
+        if (trapped.Count == 0)
+            return;
+
+        issues.Add(ValidationIssue.Error(IssueCodes.ConversationNoExit, folder,
+            $"Conversation '{name}': nodes {string.Join(", ", trapped.Select(id => $"'{id}'"))} can never reach " +
+            $"'{ConversationRules.NextHub}' or '{ConversationRules.NextEnd}'; add a way out."));
     }
 
     private static void ValidateConditions(ConditionSet? when, string where, string folder, string name, List<ValidationIssue> issues)

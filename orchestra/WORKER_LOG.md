@@ -39,3 +39,4 @@
 | 66-gm-q29-items-gold | 1 | PASS, verified | thorough; GiveGoldAction cap/create/destroy, null GetObject, AddToCounts assert spot-checked. Note for 72: removing more than present goes negative → clamp to GetItemNumber |
 | 67-gm-q30-console | 1 | PASS, verified | attribute/signature/scan/first-wins/space split checked; console key + cheat-mode gating UNCERTAIN (needs Windows run). Found TaleWorlds.Library is decompiled (PROJECT.md fixed) |
 | 71-transfer-core | 1 | PASS, review fix | clean; review: actor warnings missed hasGold nested in all/any/not → fixed + unit test |
+| 73-validation-graph | 1 | PASS | clean reverse BFS; missing next counts as exit (already an error) |

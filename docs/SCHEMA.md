@@ -193,6 +193,9 @@ Declared per companion in dialogs.json; permanent per campaign until changed.
 - `flags` / `notFlags` / `setFlags` / `clearFlags` are shorthand for bool variables (the variables must be declared).
   Saves from before variables (M6 flags) are converted on load: a flag becomes `true` for a declared bool of the same name.
 
+Error: nodes from which no `next` path (conditions ignored) leads to a node whose `next` is `["hub"]` or `["end"]` — the
+conversation would loop there forever, so every node needs a way out.
+
 Warnings: a node that cannot be reached from `start`; a `next` whose nodes all have conditions (if none holds the
 conversation gets stuck — keep one without a condition); a transfer or `hasGold` naming a companion that is not loaded —
 that companion still loads, but the actor's gold and items are unknown: a transfer from it is never offered and a

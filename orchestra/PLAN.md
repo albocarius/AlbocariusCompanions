@@ -210,15 +210,15 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [x] 71-transfer-core (worker; self writes acceptance tests first — user) — I3 Core part (model, validation, evaluation): `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
   rules, missing-check warning, `gold` effect → sugar → removed after sample migration (D6). Item fields validated per R9
   (waits for 66 verified). Accept: tests per actor/kind combination.
-- [ ] 72-transfer-game (self, after 66) — gold between heroes / world, items via party inventory per R9; missing item id at
+- [x] 72-transfer-game (self, after 66) — gold between heroes / world, items via party inventory per R9; missing item id at
   runtime → skipped + warning.
-- [ ] 73-validation-graph (worker) — I5: cycle with no path to `hub`/`end` → error (dangling `next` and unreachable already
+- [x] 73-validation-graph (worker) — I5: cycle with no path to `hub`/`end` → error (dangling `next` and unreachable already
   exist from M6; tests confirm). Accept: staged tests.
 - [ ] 74-validation-variables (worker) — I5: declared variable never written and default = type default → warning
   "never changes"; transfer from ≠ world without hasGold/hasItem on the node or its path entry → warning (D6).
-- [ ] 75-validation-repeatable (self) — I5 repeatable reward warning (path analysis: positive gold/item/relation to the
+- [x] 75-validation-repeatable (self) — I5 repeatable reward warning (path analysis: positive gold/item/relation to the
   player, conversation not `once`, no condition on that path that the path itself makes false). No "shadowing" rule.
-- [ ] 76-voiced-nodes (self) — I4 check (D7): tests for `voiced` on npc nodes → voiced-lines XML + missing-audio report.
+- [x] 76-voiced-nodes (self) — I4 check (D7): tests for `voiced` on npc nodes → voiced-lines XML + missing-audio report.
 - [ ] 77-mermaid-core (worker) — Core `MermaidExport.Render(package, conversationId?)`: flowchart per conversation, player
   vs npc node shapes/classes, `hub`/`end` terminals, conditions on edges, effects in node labels. Accept: golden-string tests.
 - [ ] 78-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
