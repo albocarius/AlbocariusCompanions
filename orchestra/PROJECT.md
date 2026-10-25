@@ -7,12 +7,15 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
 - Target game version: Bannerlord 1.4.8. Harmony: Lib.Harmony 2.4.2 (compile-only; runtime from the Bannerlord.Harmony module).
 - .NET SDK 10.0.402 from `~/.dotnet-ms` (Microsoft build; set via orchestra/config.env). The distro SDK 10.0.113 crashes intermittently — do not use it. Game runs on a separate Windows machine; nobody can run it here.
 - `src/AlbocariusCompanions.Core` — netstandard2.0, **no TaleWorlds references**. Models, JSON loading,
-  registry, validation, slots, line-id rules. Everything testable lives here.
+  registry, validation, slots, line-id rules, conversation graph/conditions/effects, variables (VariableStore),
+  transfers, debug-command text, Mermaid export. Everything testable lives here.
 - `src/AlbocariusCompanions.Game` — net472, references Core + game DLLs (HintPath, Private=false).
   Thin layer: SubModule, campaign behavior, Harmony patches, dialog registration, logging.
 - `tests/AlbocariusCompanions.Core.Tests` — net10.0 xunit, unit tests for Core (worker may add tests here).
 - `tests/AlbocariusCompanions.Acceptance` — net10.0 xunit, orchestrator-owned acceptance tests. **Worker must not edit.**
-- `module/` (to be created) — SubModule.xml + ModuleData/Companions/<id>/{companion.json,dialogs.json}.
+- `tools/AlbocariusCompanions.Cli` — net8.0 (RollForward Major) authoring CLI: `validate`, `mermaid`; references Core only.
+- `tools/new-companion.sh|.bat` + `tools/companion-template/` — companion scaffold.
+- `module/` — SubModule.xml + ModuleData/Companions/<id>/{companion.json,dialogs.json,lang/<code>.json}.
 - `docs/GAME_MAP.md` — every TaleWorlds API used in code must be listed here with its decomp source file.
 - `docs/BLOCKERS.md` — unresolved problems (error, attempts, best guess).
 - `dist/` — post-build output in Bannerlord module layout (gitignored).
@@ -20,6 +23,7 @@ The request is `orchestra/SPEC.md` (read it for rules; §1 Hard rules are bindin
 ## Commands
 - Build+test: `dotnet build AlbocariusCompanions.sln && dotnet test AlbocariusCompanions.sln --no-build`
 - Baseline (2026-10-24, commit eff1e6a): build OK, 0 tests in both test projects, exit 0.
+- If `dotnet test` on the .sln hangs, run the two test projects separately (seen once with stale MSBuild nodes).
 
 ## External, read-only paths (never commit, never copy into repo)
 - Game DLLs: `~/bannerlord/dlls/bin/*.dll`, `~/bannerlord/dlls/Modules/<Native|SandBoxCore|SandBox|StoryMode|CustomBattle|NavalDLC>/...`
