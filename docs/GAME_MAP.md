@@ -1632,6 +1632,54 @@ the field untouched (Q9), so it starts empty.
 - **UNCERTAIN**: greeting priority 119 against mod or DLC lines on `start` between 111 and 125 is untested in game.
 - **UNCERTAIN**: whether the game's relation notification shows for every `ApplyPlayerRelation` call from a conversation consequence (vanilla passes `showQuickNotification` true by default) — check in game.
 
+## Behavior system (SPEC_BEHAVIOR_FOUNDATION Track R)
+
+Q21–Q31 answer the research questions R1–R11. Nothing here is used in mod code until it has an API index row.
+
+## Q21 — Hero-to-hero relations
+
+Status: TODO
+
+## Q22 — Morale
+
+Status: TODO
+
+## Q23 — Game events
+
+Status: TODO
+
+## Q24 — Player traits
+
+Status: TODO
+
+## Q25 — Companion-initiated conversation
+
+Status: TODO
+
+## Q26 — Inquiry pop-ups
+
+Status: TODO
+
+## Q27 — Campaign time
+
+Status: TODO
+
+## Q28 — Location and surroundings
+
+Status: TODO
+
+## Q29 — Items, inventory and gold
+
+Status: TODO
+
+## Q30 — Debug console commands
+
+Status: TODO
+
+## Q31 — Misc conditions
+
+Status: TODO
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
