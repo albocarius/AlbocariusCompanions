@@ -298,7 +298,6 @@ public class ConversationTests
     [Theory]
     [InlineData("relation", 0)]
     [InlineData("relation", 150)]
-    [InlineData("gold", 0)]
     public void Effect_values_out_of_range(string field, int value) =>
         SingleError(Validate(c => Fixtures.Node(c, "p_wound_skip")["effects"] = new JObject { [field] = value }), IssueCodes.InvalidEffect);
 
@@ -312,7 +311,8 @@ public class ConversationTests
     {
         c["when"] = new JObject { ["met"] = true, ["hired"] = false, ["inParty"] = false, ["minRelation"] = -20, ["maxRelation"] = 50,
             ["minGold"] = 0, ["flags"] = new JArray("a"), ["notFlags"] = new JArray("b") };
-        Fixtures.Node(c, "p_wound_sorry")["effects"] = new JObject { ["relation"] = -3, ["gold"] = -200, ["setFlags"] = new JArray("b"),
+        Fixtures.Node(c, "p_wound_sorry")["effects"] = new JObject { ["relation"] = -3,
+            ["transfer"] = new JObject { ["gold"] = 200, ["from"] = "player", ["to"] = "self" }, ["setFlags"] = new JArray("b"),
             ["clearFlags"] = new JArray("a"), ["join"] = true };
     }));
 }

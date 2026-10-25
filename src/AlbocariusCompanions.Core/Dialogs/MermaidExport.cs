@@ -155,8 +155,6 @@ public static class MermaidExport
         var parts = new List<string>();
         if (effects.Relation is { } relation)
             parts.Add(Signed("relation", relation));
-        if (effects.Gold is { } gold)
-            parts.Add(Signed("gold", gold));
         if (effects.Transfer is { } transfer)
             parts.Add(transfer.Gold is { } transferGold
                 ? $"{transferGold} gold {transfer.From} -> {transfer.To}"

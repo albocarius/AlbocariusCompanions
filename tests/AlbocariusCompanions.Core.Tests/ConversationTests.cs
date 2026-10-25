@@ -116,10 +116,12 @@ public class ConversationConditionsTests
     public void Payment_needs_the_gold_and_receiving_needs_nothing()
     {
         var context = new FakeContext { PlayerGold = 99 };
-        Assert.False(ConversationConditions.EffectsCanApply(new EffectSet { Gold = -100 }, context));
+        var pay = new EffectSet { Transfer = new TransferEffect { Gold = 100, From = "player", To = "self" } };
+        Assert.False(ConversationConditions.EffectsCanApply(pay, context));
         context.PlayerGold = 100;
-        Assert.True(ConversationConditions.EffectsCanApply(new EffectSet { Gold = -100 }, context));
-        Assert.True(ConversationConditions.EffectsCanApply(new EffectSet { Gold = 500 }, new FakeContext { PlayerGold = 0 }));
+        Assert.True(ConversationConditions.EffectsCanApply(pay, context));
+        var receive = new EffectSet { Transfer = new TransferEffect { Gold = 500, From = "world", To = "player" } };
+        Assert.True(ConversationConditions.EffectsCanApply(receive, new FakeContext { PlayerGold = 0 }));
     }
 
     [Fact]

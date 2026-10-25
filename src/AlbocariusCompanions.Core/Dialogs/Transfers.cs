@@ -23,23 +23,8 @@ public static class Transfers
     public static string? NormalizeActor(string? actor, string? ownId) =>
         actor != null && ownId != null && actor == ownId ? Self : actor;
 
-    /// <summary>
-    /// The transfer of a node's effects: the explicit one when set (the same instance), else the old "gold" key as
-    /// sugar for a "player"/"world" gold transfer (negative = player → world, positive = world → player);
-    /// null when the node transfers nothing.
-    /// </summary>
-    public static TransferEffect? Of(EffectSet? effects)
-    {
-        if (effects == null)
-            return null;
-        if (effects.Transfer != null)
-            return effects.Transfer;
-        if (effects.Gold is { } gold && gold != 0)
-            return gold < 0
-                ? new TransferEffect { Gold = -gold, From = Player, To = World }
-                : new TransferEffect { Gold = gold, From = World, To = Player };
-        return null;
-    }
+    /// <summary>The transfer of a node's effects; null when the node transfers nothing.</summary>
+    public static TransferEffect? Of(EffectSet? effects) => effects?.Transfer;
 
     /// <summary>Number of items transferred; 1 when "count" is not given.</summary>
     public static int CountOf(TransferEffect t) => t.Count ?? 1;

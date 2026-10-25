@@ -100,9 +100,6 @@ public sealed class EffectSet
 {
     /// <summary>Change of the companion's relation with the player.</summary>
     [JsonProperty("relation")] public int? Relation { get; set; }
-    /// <summary>Player gold change, shorthand for a <see cref="Transfer"/> between "player" and "world": negative = the
-    /// player pays (needs that much gold), positive = the player receives. An error together with "transfer".</summary>
-    [JsonProperty("gold")] public int? Gold { get; set; }
     /// <summary>A transfer of gold or items between two actors (I3).</summary>
     [JsonProperty("transfer")] public TransferEffect? Transfer { get; set; }
     /// <summary>Bool variables set to true (sugar for "set": { name: true }).</summary>

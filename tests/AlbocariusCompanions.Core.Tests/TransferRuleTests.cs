@@ -15,34 +15,11 @@ public class TransferRuleTests
     }
 
     [Fact]
-    public void The_gold_key_is_sugar_for_a_player_world_transfer()
-    {
-        var pays = Transfers.Of(new EffectSet { Gold = -100 });
-        Assert.Equal(100, pays.Gold);
-        Assert.Equal(Transfers.Player, pays.From);
-        Assert.Equal(Transfers.World, pays.To);
-
-        var receives = Transfers.Of(new EffectSet { Gold = 50 });
-        Assert.Equal(50, receives.Gold);
-        Assert.Equal(Transfers.World, receives.From);
-        Assert.Equal(Transfers.Player, receives.To);
-    }
-
-    [Fact]
     public void A_node_that_transfers_nothing_has_no_transfer()
     {
         Assert.Null(Transfers.Of(null));
         Assert.Null(Transfers.Of(new EffectSet()));
-        Assert.Null(Transfers.Of(new EffectSet { Gold = 0 }));
         Assert.Null(Transfers.Of(new EffectSet { Relation = 5 }));
-    }
-
-    [Fact]
-    public void An_explicit_transfer_wins_over_the_gold_shorthand()
-    {
-        // Loading them together is a validation error; Of just never applies the shorthand then.
-        var transfer = new TransferEffect { Gold = 5, From = Transfers.World, To = Transfers.World };
-        Assert.Same(transfer, Transfers.Of(new EffectSet { Gold = -50, Transfer = transfer }));
     }
 
     [Fact]

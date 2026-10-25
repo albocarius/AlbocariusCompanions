@@ -94,7 +94,6 @@ public class AuthoringChecksTests
     [Theory]
     [InlineData("""{ "hired": true }""", "{}", "{}", "{}", """{ "transfer": { "gold": 100, "from": "player", "to": "self" } }""")] // no check at all
     [InlineData("""{ "hired": true }""", "{}", "{}", """{ "hasGold": { "who": "player", "min": 99 } }""", """{ "transfer": { "gold": 100, "from": "player", "to": "self" } }""")] // too little
-    [InlineData("""{ "hired": true }""", "{}", "{}", """{ "minGold": 99 }""", """{ "gold": -100 }""")] // old gold sugar
     [InlineData("""{ "hired": true }""", "{}", "{}", """{ "hasGold": { "who": "self", "min": 100 } }""", """{ "transfer": { "gold": 100, "from": "player", "to": "self" } }""")] // wrong actor
     [InlineData("""{ "hired": true }""", "{}", """{ "hasGold": { "who": "player", "min": 100 } }""", "{}", """{ "transfer": { "gold": 100, "from": "player", "to": "self" } }""")] // check on the sibling branch only
     [InlineData("""{ "hired": true }""", "{}", "{}", """{ "any": [ { "hasGold": { "who": "player", "min": 100 } } ] }""", """{ "transfer": { "gold": 100, "from": "player", "to": "self" } }""")] // inside any
