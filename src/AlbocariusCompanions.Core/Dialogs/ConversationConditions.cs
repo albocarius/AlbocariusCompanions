@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Rules;
 
@@ -14,17 +15,32 @@ public interface IConversationContext
     int PlayerGold { get; }
     /// <summary>True when the clan is at its companion limit.</summary>
     bool ClanIsFull { get; }
-    bool HasFlag(string flag);
+    /// <summary>
+    /// A variable as referenced by this companion's conditions ("name" or "companion.name"), bool as 0/1; null when its
+    /// companion is not loaded (or the variable is unknown).
+    /// </summary>
+    int? GetVariable(string reference);
 }
 
 /// <summary>Condition checks of conversations (M6). Pure: no game types, tested with a fake context.</summary>
 public static class ConversationConditions
 {
-    /// <summary>Every set field of <paramref name="when"/> holds; null means no condition.</summary>
+    /// <summary>
+    /// Every set field of <paramref name="when"/> holds (an implicit "all"); null means no condition. A condition that
+    /// references a variable of a companion that is not loaded is false as a whole, whatever "not"/"any" around it says.
+    /// </summary>
     public static bool Holds(ConditionSet? when, IConversationContext context)
     {
         if (when == null)
             return true;
+        foreach (var use in VariableUses.InCondition(when))
+            if (use.Reference == null || context.GetVariable(use.Reference) == null)
+                return false;
+        return Evaluate(when, context);
+    }
+
+    private static bool Evaluate(ConditionSet when, IConversationContext context)
+    {
         if (when.Met is { } met && context.HasMet != met)
             return false;
         if (when.Hired is { } hired && context.IsHired != hired)
@@ -38,11 +54,28 @@ public static class ConversationConditions
         if (when.MinGold is { } minGold && context.PlayerGold < minGold)
             return false;
         foreach (var flag in when.Flags ?? new List<string>())
-            if (!context.HasFlag(flag))
+            if (context.GetVariable(flag) == 0)
                 return false;
         foreach (var flag in when.NotFlags ?? new List<string>())
-            if (context.HasFlag(flag))
+            if (context.GetVariable(flag) != 0)
                 return false;
+        if (when.Var != null)
+        {
+            var value = context.GetVariable(when.Var) ?? 0;
+            if (when.Min is { } min && value < min)
+                return false;
+            if (when.Max is { } max && value > max)
+                return false;
+            if (when.Eq != null && VariableUses.TypeOf(when.Eq) != null && value != VariableUses.ValueOf(when.Eq))
+                return false;
+        }
+        foreach (var nested in when.All ?? new List<ConditionSet>())
+            if (nested != null && !Evaluate(nested, context))
+                return false;
+        if (when.Any != null && !when.Any.Any(nested => nested != null && Evaluate(nested, context)))
+            return false;
+        if (when.Not != null && Evaluate(when.Not, context))
+            return false;
         return true;
     }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Rules;
 
@@ -23,6 +24,7 @@ public static class ConversationChecks
         var valid = new List<ConversationNode>();
         var conversationIds = new HashSet<string>(StringComparer.Ordinal);
 
+        VariableChecks.Validate(package, issues);
         if (package.Dialogs?.Conversations?.Any(c => c == null) == true)
             issues.Add(ValidationIssue.Error(IssueCodes.InvalidConversation, folder, "dialogs.json contains an empty (null) conversation."));
 
@@ -193,7 +195,8 @@ public static class ConversationChecks
 
     private static bool IsSet(ConditionSet? when) =>
         when != null && (when.Met != null || when.Hired != null || when.InParty != null || when.MinRelation != null ||
-            when.MaxRelation != null || when.MinGold != null || when.Flags?.Count > 0 || when.NotFlags?.Count > 0);
+            when.MaxRelation != null || when.MinGold != null || when.Flags?.Count > 0 || when.NotFlags?.Count > 0 ||
+            when.All?.Any(IsSet) == true || when.Any != null || when.Not != null || when.Var != null);
 
     private static void ReportUnreachable(ConversationDefinition conversation, Dictionary<string, ConversationNode> byId, string folder,
         string name, List<ValidationIssue> issues)
@@ -229,10 +232,34 @@ public static class ConversationChecks
             Bad($"minRelation {when.MinRelation} is greater than maxRelation {when.MaxRelation}.");
         if (when.MinGold < 0)
             Bad($"minGold {when.MinGold} is negative.");
-        foreach (var flag in InvalidFlags(when.Flags).Concat(InvalidFlags(when.NotFlags)))
-            Bad($"flag '{flag}' must match {ConversationRules.FlagPattern}.");
         foreach (var flag in Both(when.Flags, when.NotFlags))
-            Bad($"flag '{flag}' is in both 'flags' and 'notFlags'; that can never hold.");
+            Bad($"'{flag}' is in both 'flags' and 'notFlags'; that can never hold.");
+
+        if (when.Var == null && (when.Min != null || when.Max != null || when.Eq != null))
+            Bad("'min'/'max'/'eq' need a 'var' in the same object.");
+        if (when.Var != null && when.Min == null && when.Max == null && when.Eq == null)
+            Bad($"'var' '{when.Var}' needs 'min', 'max' or 'eq'.");
+        if (when.Eq != null && (when.Min != null || when.Max != null))
+            Bad($"'var' '{when.Var}': use either 'eq' or 'min'/'max'.");
+        if (when.Min > when.Max)
+            Bad($"'var' '{when.Var}': min {when.Min} is greater than max {when.Max}.");
+
+        void Nested(List<ConditionSet>? list, string key)
+        {
+            if (list == null)
+                return;
+            if (list.Count == 0)
+                Bad($"'{key}' is empty.");
+            for (var i = 0; i < list.Count; i++)
+                if (list[i] == null)
+                    Bad($"'{key}' contains an empty (null) condition.");
+                else
+                    ValidateConditions(list[i], $"{where} {key}[{i}]", folder, name, issues);
+        }
+        Nested(when.All, "all");
+        Nested(when.Any, "any");
+        if (when.Not != null)
+            ValidateConditions(when.Not, $"{where} not", folder, name, issues);
     }
 
     private static void ValidateEffects(EffectSet? effects, string? nodeId, string folder, string name, List<ValidationIssue> issues)
@@ -245,16 +272,15 @@ public static class ConversationChecks
             Bad($"relation {relation} must be a non-zero change within {ConversationRules.MinRelation}..{ConversationRules.MaxRelation}.");
         if (effects.Gold == 0)
             Bad("gold 0 has no effect; use a negative amount (the player pays) or a positive one (the player receives).");
-        foreach (var flag in InvalidFlags(effects.SetFlags).Concat(InvalidFlags(effects.ClearFlags)))
-            Bad($"flag '{flag}' must match {ConversationRules.FlagPattern}.");
-        foreach (var flag in Both(effects.SetFlags, effects.ClearFlags))
-            Bad($"flag '{flag}' is both set and cleared.");
+        foreach (var pair in effects.Add ?? new Dictionary<string, int>())
+            if (pair.Value == 0)
+                Bad($"add {pair.Value} to '{pair.Key}' has no effect.");
+        foreach (var group in VariableUses.InEffects(effects).Where(u => u.Reference != null).GroupBy(u => u.Reference!, StringComparer.Ordinal))
+            if (group.Count() > 1)
+                Bad($"'{group.Key}' is written more than once ({string.Join(", ", group.Select(u => u.Key))}).");
     }
 
     private static bool InRelationRange(int value) => value >= ConversationRules.MinRelation && value <= ConversationRules.MaxRelation;
-
-    private static IEnumerable<string?> InvalidFlags(List<string>? flags) =>
-        (flags ?? new List<string>()).Where(f => f == null || !ConversationRules.FlagPattern.IsMatch(f));
 
     private static IEnumerable<string> Both(List<string>? a, List<string>? b) =>
         (a ?? new List<string>()).Intersect(b ?? new List<string>(), StringComparer.Ordinal).Where(f => f != null);

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AlbocariusCompanions.Core.Models;
 
@@ -35,7 +36,10 @@ public sealed class ConversationNode : ISpokenLine
     [JsonIgnore] public string? FullId { get; set; }
 }
 
-/// <summary>Conditions; every field that is set must hold. Relation is the companion's relation with the player.</summary>
+/// <summary>
+/// Conditions; every field that is set must hold (an implicit "all"). Relation is the companion's relation with the player.
+/// Variables are named "&lt;name&gt;" (this companion's) or "&lt;companionId&gt;.&lt;name&gt;" (another companion's shared one).
+/// </summary>
 public sealed class ConditionSet
 {
     [JsonProperty("met")] public bool? Met { get; set; }
@@ -47,10 +51,24 @@ public sealed class ConditionSet
     [JsonProperty("maxRelation")] public int? MaxRelation { get; set; }
     /// <summary>The player has at least this much gold.</summary>
     [JsonProperty("minGold")] public int? MinGold { get; set; }
-    /// <summary>Flags of this companion that must all be set.</summary>
+    /// <summary>Bool variables that must all be true.</summary>
     [JsonProperty("flags")] public List<string>? Flags { get; set; }
-    /// <summary>Flags of this companion that must all be unset.</summary>
+    /// <summary>Bool variables that must all be false.</summary>
     [JsonProperty("notFlags")] public List<string>? NotFlags { get; set; }
+    /// <summary>Nested condition objects that must all hold.</summary>
+    [JsonProperty("all")] public List<ConditionSet>? All { get; set; }
+    /// <summary>Nested condition objects of which at least one must hold.</summary>
+    [JsonProperty("any")] public List<ConditionSet>? Any { get; set; }
+    /// <summary>A nested condition object that must not hold.</summary>
+    [JsonProperty("not")] public ConditionSet? Not { get; set; }
+    /// <summary>The variable compared by <see cref="Min"/>, <see cref="Max"/> or <see cref="Eq"/>.</summary>
+    [JsonProperty("var")] public string? Var { get; set; }
+    /// <summary>Int variable at least this.</summary>
+    [JsonProperty("min")] public int? Min { get; set; }
+    /// <summary>Int variable at most this.</summary>
+    [JsonProperty("max")] public int? Max { get; set; }
+    /// <summary>Variable equals this: a JSON bool for a bool variable, an integer for an int one.</summary>
+    [JsonProperty("eq")] public JToken? Eq { get; set; }
 }
 
 /// <summary>What a node does when it is said.</summary>
@@ -60,8 +78,14 @@ public sealed class EffectSet
     [JsonProperty("relation")] public int? Relation { get; set; }
     /// <summary>Player gold change: negative = the player pays the companion (needs that much gold), positive = the player receives.</summary>
     [JsonProperty("gold")] public int? Gold { get; set; }
+    /// <summary>Bool variables set to true (sugar for "set": { name: true }).</summary>
     [JsonProperty("setFlags")] public List<string>? SetFlags { get; set; }
+    /// <summary>Bool variables set to false (sugar for "set": { name: false }).</summary>
     [JsonProperty("clearFlags")] public List<string>? ClearFlags { get; set; }
+    /// <summary>Variable → new value: a JSON bool for a bool variable, an integer for an int one.</summary>
+    [JsonProperty("set")] public Dictionary<string, JToken>? Set { get; set; }
+    /// <summary>Int variable → amount added (may be negative).</summary>
+    [JsonProperty("add")] public Dictionary<string, int>? Add { get; set; }
     /// <summary>The companion joins the player's clan and party (no payment; offered only while not hired and the clan has room).</summary>
     [JsonProperty("join")] public bool Join { get; set; }
 }

@@ -21,10 +21,13 @@ internal static class ModRuntime
     public static int SkippedAtLoad { get; set; }
 
     /// <summary>
-    /// Conversation flags and "once" markers of the running campaign. Replaced by each new campaign behavior (new game or
-    /// load) and filled from the save in its SyncData (GAME_MAP Q20).
+    /// Conversation "once" markers of the running campaign. Replaced by each new campaign behavior (new game or load) and
+    /// filled from the save in its SyncData (GAME_MAP Q20).
     /// </summary>
     public static ConversationFlags Flags { get; set; } = new ConversationFlags();
+
+    /// <summary>Conversation variables of the running campaign (M7); replaced and restored like <see cref="Flags"/>.</summary>
+    public static VariableStore Variables { get; set; } = new VariableStore();
 
     /// <summary>Companion id → registered template for the current campaign (AfterRegisterSubModuleObjects).</summary>
     public static IReadOnlyDictionary<string, CharacterObject> Templates { get; set; } = new Dictionary<string, CharacterObject>();

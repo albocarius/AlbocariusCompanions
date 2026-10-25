@@ -17,6 +17,9 @@ public class ConversationTests
         var conversation = Fixtures.Conversation();
         mutate?.Invoke(conversation);
         Fixtures.AddConversation(d, langs, conversation);
+        // Bool variables the condition/effect tests below use (M7: every flag is a declared variable).
+        foreach (var name in new[] { "a", "b", "x", "asked" })
+            d["variables"]![name] = new JObject { ["type"] = "bool" };
         mutateDialogs?.Invoke(d);
         mutateLangs?.Invoke(langs);
         return DialogChecks.Validate(new[] { Fixtures.Package(Id, Fixtures.Companion(Id), d, langs: langs) });

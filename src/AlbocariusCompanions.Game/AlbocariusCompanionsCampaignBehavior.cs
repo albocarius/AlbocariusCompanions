@@ -23,13 +23,17 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
     /// </summary>
     private Dictionary<string, Hero> _companionHeroes = new Dictionary<string, Hero>();
 
-    /// <summary>Conversation flag keys (ConversationFlags), saved as a List&lt;string&gt; (GAME_MAP Q20).</summary>
+    /// <summary>Conversation "once" keys (ConversationFlags), saved as a List&lt;string&gt; (GAME_MAP Q20).</summary>
     private List<string> _conversationFlags = new List<string>();
+
+    /// <summary>Written conversation variables ("owner.name=value", VariableStore), saved as a List&lt;string&gt; (GAME_MAP Q20).</summary>
+    private List<string> _variables = new List<string>();
 
     public AlbocariusCompanionsCampaignBehavior() : base(BehaviorId)
     {
-        // One behavior per campaign: a new game starts with no flags, a load replaces them in SyncData.
+        // One behavior per campaign: a new game starts with no markers and default variables, a load replaces them in SyncData.
         ModRuntime.Flags = new Core.Dialogs.ConversationFlags();
+        ModRuntime.Variables = new Core.Dialogs.VariableStore(ModRuntime.Registry.All);
     }
 
     public override void RegisterEvents()
@@ -62,7 +66,19 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
             if (dataStore.IsLoading)
             {
                 ModRuntime.Flags.Load(_conversationFlags);
-                ModRuntime.Log.Info($"Conversation flags loaded: {ModRuntime.Flags.Count}.");
+                ModRuntime.Log.Info($"Conversation markers loaded: {ModRuntime.Flags.Count}.");
+            }
+
+            // Saves made before M7 have no variables key: the field keeps its empty initializer (GAME_MAP Q9). Their flags
+            // were kept with the markers; each becomes its declared bool variable.
+            if (dataStore.IsSaving)
+                _variables = ModRuntime.Variables.ToList();
+            dataStore.SyncData("_variables", ref _variables);
+            if (dataStore.IsLoading)
+            {
+                var restored = ModRuntime.Variables.Load(_variables, ModRuntime.Log.Warning);
+                var imported = ModRuntime.Variables.ImportLegacyFlags(ModRuntime.Flags.TakeLegacyFlags(), ModRuntime.Log.Warning);
+                ModRuntime.Log.Info($"Conversation variables loaded: {restored}" + (imported > 0 ? $", {imported} imported from old flags." : "."));
             }
         });
     }

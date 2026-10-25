@@ -106,6 +106,9 @@ public static class Fixtures
         if (dialogs["conversations"] is not JArray conversations)
             dialogs["conversations"] = conversations = new JArray();
         conversations.Add(conversation ?? Conversation());
+        if (dialogs["variables"] is not JObject variables)
+            dialogs["variables"] = variables = new JObject();
+        variables["told_wound"] = new JObject { ["type"] = "bool" };
         foreach (var (id, text) in texts ?? ConversationEn())
             LangLines(langs["en"])[id] = text;
     }
