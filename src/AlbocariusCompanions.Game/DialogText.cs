@@ -25,24 +25,23 @@ internal static class DialogText
             .Where(l => l?.Slot == slot && l.FullId != null && package.Text(l.Id!, CompanionRules.EnglishCode) != null)
             .ToList();
 
-    /// <summary>One random line of the slot as a TextObject, or null when the slot has no line.</summary>
-    public static TextObject? PickNpcText(CompanionPackage package, string slot)
+    /// <summary>One random line of the slot (companion or player slot) as a TextObject, or null when the slot has no line.</summary>
+    public static TextObject? PickText(CompanionPackage package, string slot)
     {
         var line = LinePicker.Pick(LinesOf(package, slot), Random);
-        if (line == null)
-            return null;
-        var text = package.Text(line.Id!, LanguageCode(package.Languages.Keys));
-        return new TextObject("{=" + line.FullId + "}" + text);
+        return line == null ? null : TextOf(package, line);
     }
 
-    /// <summary>One random player line of the slot as a TextObject (never voiced), or null.</summary>
-    public static TextObject? PickPlayerText(SharedPackage playerLines, string slot)
+    /// <summary>
+    /// Text of one line or conversation node in the active language, keyed by its full id (voice-over finds voiced ones;
+    /// player lines are never voiced). Player slot lines are picked like NPC ones, through <see cref="PickText"/>.
+    /// </summary>
+    public static TextObject? TextOf(CompanionPackage package, ISpokenLine line)
     {
-        var line = LinePicker.Pick(playerLines.Lines.Where(l => l.Slot == slot).ToList(), Random);
-        if (line == null)
+        if (line.Id == null || line.FullId == null)
             return null;
-        var text = playerLines.Text(line.Id!, LanguageCode(playerLines.Languages.Keys));
-        return new TextObject("{=" + line.Id + "}" + text);
+        var text = package.Text(line.Id, LanguageCode(package.Languages.Keys));
+        return text == null ? null : new TextObject("{=" + line.FullId + "}" + text);
     }
 
     /// <summary>The lang file code for the game's active language (Q14 note 2), else "en".</summary>

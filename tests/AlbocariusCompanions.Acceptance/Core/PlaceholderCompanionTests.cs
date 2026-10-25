@@ -27,11 +27,12 @@ public class PlaceholderCompanionTests
     }
 
     [Fact]
-    public void Shared_player_lines_load_and_validate_cleanly()
+    public void Placeholder_has_its_own_player_lines_and_example_conversations()
     {
-        var catalog = AlbocariusCompanions.Core.Registry.CompanionCatalog.Load(CompanionsRoot);
-        Assert.Empty(catalog.Issues.Where(i => i.Folder == "_shared"));
-        Assert.Equal(PlayerSlots.All.Count, catalog.Registry.PlayerLines!.Lines.Select(l => l.Slot).Distinct().Count());
+        var package = AlbocariusCompanions.Core.Registry.CompanionCatalog.Load(CompanionsRoot).Registry.All.Single(p => p.Id == "test_companion");
+        Assert.All(PlayerSlots.All, slot => Assert.Contains(package.Dialogs.Lines!, l => l.Slot == slot));
+        Assert.Equal(new[] { "the_scar", "spare_coin", "after_scar" }, package.Conversations.Select(c => c.Id));
+        Assert.False(Directory.Exists(Path.Combine(CompanionsRoot, "_shared")));
     }
 
     [Fact]
@@ -63,7 +64,8 @@ public class PlaceholderCompanionTests
 
         Assert.All(DialogSlots.Required, slot => Assert.Contains(lines, l => l.Slot == slot));
         Assert.All(lines, l => Assert.Equal("test_companion_" + l.Id, l.FullId));
-        Assert.Single(package.Languages["tr"].Lines!);
+        Assert.Equal("Selam, Kaptan. Ben yer tutucu bir yoldaşım.", package.Text("intro_01", "tr"));
+        Assert.Equal("Another time, then.", package.Text("hire_decline_01", "tr")); // partial tr: en fallback
         Assert.All(lines.Where(l => l.Voiced), l => Assert.Contains("Captain", package.Text(l.Id!, "en")));
         Assert.All(lines, l => Assert.Null(l.Audio)); // default audio/<local id>.ogg
     }

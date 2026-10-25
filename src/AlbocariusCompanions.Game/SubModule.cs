@@ -42,10 +42,11 @@ public sealed class SubModule : MBSubModuleBase
             foreach (var issue in catalog.Issues)
                 CompanionTemplates.LogIssue(log, issue);
             foreach (var package in catalog.Registry.All)
-                log.Info($"Companion loaded: {package.Id} ({package.Dialogs.Lines?.Count ?? 0} dialog lines).");
+                log.Info($"Companion loaded: {package.Id} ({package.Dialogs.Lines?.Count ?? 0} dialog lines, " +
+                    $"{package.Conversations.Count} conversation(s)).");
             foreach (var language in MissingTranslations.CountByLanguage(catalog.Issues))
                 log.Info($"Missing translations in '{language.Key}': {language.Value} line(s) fall back to English.");
-            var skipped = catalog.Issues.Where(i => i.IsError && i.Folder != SharedPackage.FolderName)
+            var skipped = catalog.Issues.Where(i => i.IsError)
                 .Select(i => i.Folder).Distinct().ToList();
             if (skipped.Count > 0)
                 log.Warning($"Companions skipped because of errors: {string.Join(", ", skipped)}.");
@@ -63,7 +64,7 @@ public sealed class SubModule : MBSubModuleBase
 
             log.Info($"{kept.Count} companion(s) ready from {root}.");
             ModRuntime.SkippedAtLoad = skipped.Count + (catalog.Registry.Count - kept.Count);
-            ModRuntime.Registry = new CompanionRegistry(kept, catalog.Registry.PlayerLines);
+            ModRuntime.Registry = new CompanionRegistry(kept);
         });
 
         Safe.Run(log, "write voiced lines", () => VoicedLinesFile.Write(ModRuntime.Registry, log));

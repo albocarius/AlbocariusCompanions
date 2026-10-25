@@ -161,7 +161,7 @@ internal static class ReplaceVanillaTextForModCompanions
             if (!ModRuntime.IsModHero(hero) || !ModRuntime.Registry.TryGet(hero.Template.StringId, out var package) || package == null)
                 return;
 
-            var text = DialogText.PickNpcText(package, point.Slot);
+            var text = DialogText.PickText(package, point.Slot);
             if (text != null)
                 ____currentSentenceText = text;
         }

@@ -1,6 +1,6 @@
 # PLAN — AlbocariusCompanions
 
-Active milestone: **M5 core gaps** — source of truth `orchestra/SPEC_CORE_GAPS.md` (follow-up to `orchestra/SPEC.md`;
+Active milestone: **M6 conversations** (section M6 below; no spec file). Previous: **M5 core gaps** — source of truth `orchestra/SPEC_CORE_GAPS.md` (follow-up to `orchestra/SPEC.md`;
 SPEC §1 rules and `orchestra/HARD_RULES.md` still apply). The foundation run (M1–M4) is archived at the end of this file.
 Commit policy: per task `feat(NN-slug): ...`; at the end `milestone core-gaps: <summary>` (SPEC_CORE_GAPS §1.4).
 Stop condition (SPEC rule 5): 3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
@@ -13,6 +13,8 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - Foundation done and played in game (see archive + docs/RUN_REPORT.md). Repo clean at 5730899 "phase 4: run report".
 - M5 done 2026-10-24 (docs/RUN_REPORT_CORE_GAPS.md): Core.Tests 201, Acceptance 319. Not deployed (Windows laptop closed);
   in-game checklist in the report, incl. renaming the audio files to local ids.
+- M6 done 2026-10-25 (docs/RUN_REPORT_CONVERSATIONS.md): per-companion player lines, conversations. Core.Tests 215,
+  Acceptance 359. Not tested in game.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -132,6 +134,23 @@ in game. The user renames the Windows audio files to local ids (`intro_01.ogg`).
 5. Voice has no language support: `audio/<id>.ogg` plays whatever the game language is.
 - `EOE_Armory` was only an example; it may be used as a "module not loaded" case in tests.
 - The user renames the audio files on Windows after 41.
+
+## M6 — per-companion player lines + companion conversations (user request 2026-10-25, no spec file)
+User: "make the player lines separate for each companion … extra/special dialogs with companion and player, the dialog
+system should support it"; answers: remove `_shared` (player lines per companion, in the scaffold template too) and build
+a complete conversation system now (not a basic one). Overrides the M5 out-of-scope items "author dialog branches,
+companion-initiated talks, flags/conditions". Vanilla dialog points stay as they are (user: mod companions do not use
+vanilla dialogs; the template override is fine).
+- [x] 54-player-lines-per-companion (self) — player slots `player_ask_about`, `player_ask_hire`, `player_hire_pay`,
+  `player_hire_full`, `player_hire_later` in each companion's dialogs.json (required, never voiced), texts in its lang
+  files; `_shared` removed (a leftover `_shared` folder is skipped with a warning); template + test_companion + fixtures.
+- [x] 55-gm-conversations (self) — GAME_MAP Q20: hub/greeting entry tokens and priorities, `hub` return tokens, save of
+  `List<string>`, relation/gold/join actions; API rows.
+- [x] 56-conversations (self) — `conversations` in dialogs.json: entry `hub`/`greeting`, `once`, `when` (met, hired,
+  inParty, min/maxRelation, minGold, flags, notFlags), nodes (npc/player, `next` = nodes | `hub` | `end`, `when`,
+  `effects`: relation, gold, setFlags, clearFlags, join; voiced/audio like lines). Core: models, validation, graph →
+  sentence edges, condition evaluation; Game: registration, flags saved in the campaign; test_companion example; SCHEMA.md.
+- [x] 57-report (self) — docs/RUN_REPORT_CONVERSATIONS.md with the in-game checklist; milestone commit, no push.
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).

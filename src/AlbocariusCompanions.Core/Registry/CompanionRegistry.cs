@@ -12,10 +12,9 @@ public sealed class CompanionRegistry
     private readonly Dictionary<string, CompanionPackage> _byId;
 
     /// <summary>Throws <see cref="ArgumentException"/> on duplicate ids (the catalog never passes any).</summary>
-    public CompanionRegistry(IEnumerable<CompanionPackage> packages, SharedPackage? playerLines = null)
+    public CompanionRegistry(IEnumerable<CompanionPackage> packages)
     {
         if (packages == null) throw new ArgumentNullException(nameof(packages));
-        PlayerLines = playerLines;
 
         _byId = new Dictionary<string, CompanionPackage>(StringComparer.Ordinal);
         foreach (var package in packages)
@@ -32,9 +31,6 @@ public sealed class CompanionRegistry
     }
 
     public int Count => _byId.Count;
-
-    /// <summary>The player's lines from _shared; null when they are missing or invalid.</summary>
-    public SharedPackage? PlayerLines { get; }
 
     /// <summary>All mod companion ids (ordinal comparison).</summary>
     public IReadOnlyCollection<string> Ids { get; }

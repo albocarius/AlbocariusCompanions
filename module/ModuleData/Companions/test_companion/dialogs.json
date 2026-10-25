@@ -5,6 +5,57 @@
     {"id": "backstory_01", "slot": "backstory", "voiced": true},
     {"id": "hire_offer_01", "slot": "hire_offer", "voiced": true},
     {"id": "hire_accept_01", "slot": "hire_accept", "voiced": true},
-    {"id": "hire_decline_01", "slot": "hire_decline", "voiced": false}
+    {"id": "hire_decline_01", "slot": "hire_decline", "voiced": false},
+    {"id": "p_ask_about_01", "slot": "player_ask_about"},
+    {"id": "p_ask_hire_01", "slot": "player_ask_hire"},
+    {"id": "p_hire_pay_01", "slot": "player_hire_pay"},
+    {"id": "p_hire_full_01", "slot": "player_hire_full"},
+    {"id": "p_hire_later_01", "slot": "player_hire_later"}
+  ],
+  "conversations": [
+    {
+      "id": "the_scar",
+      "entry": "hub",
+      "once": true,
+      "when": {"hired": true},
+      "start": ["p_scar_ask"],
+      "nodes": [
+        {"id": "p_scar_ask", "speaker": "player", "next": ["scar_story"]},
+        {"id": "scar_story", "speaker": "npc", "next": ["p_scar_sorry", "p_scar_enough"]},
+        {"id": "p_scar_sorry", "speaker": "player", "next": ["scar_thanks"],
+         "effects": {"relation": 2, "setFlags": ["told_scar"]}},
+        {"id": "p_scar_enough", "speaker": "player", "next": ["scar_shrug"]},
+        {"id": "scar_thanks", "speaker": "npc", "next": ["hub"]},
+        {"id": "scar_shrug", "speaker": "npc", "next": ["hub"]}
+      ]
+    },
+    {
+      "id": "spare_coin",
+      "entry": "hub",
+      "when": {"hired": true, "flags": ["told_scar"], "notFlags": ["got_coin"]},
+      "start": ["p_coin_offer", "p_coin_ask"],
+      "nodes": [
+        {"id": "p_coin_offer", "speaker": "player", "next": ["coin_thanks"],
+         "effects": {"gold": -100, "relation": 1, "setFlags": ["got_coin"]}},
+        {"id": "p_coin_ask", "speaker": "player", "when": {"minRelation": 10}, "next": ["coin_refuse", "coin_fine"]},
+        {"id": "coin_refuse", "speaker": "npc", "when": {"maxRelation": 20}, "next": ["hub"]},
+        {"id": "coin_fine", "speaker": "npc", "next": ["end"], "effects": {"gold": 50}},
+        {"id": "coin_thanks", "speaker": "npc", "next": ["end"]}
+      ]
+    },
+    {
+      "id": "after_scar",
+      "entry": "greeting",
+      "once": true,
+      "when": {"inParty": true, "flags": ["told_scar"]},
+      "start": ["greet_scar"],
+      "nodes": [
+        {"id": "greet_scar", "speaker": "npc", "next": ["p_greet_glad", "p_greet_busy"]},
+        {"id": "p_greet_glad", "speaker": "player", "next": ["greet_glad_reply"]},
+        {"id": "p_greet_busy", "speaker": "player", "next": ["greet_busy_reply"]},
+        {"id": "greet_glad_reply", "speaker": "npc", "next": ["hub"]},
+        {"id": "greet_busy_reply", "speaker": "npc", "next": ["end"]}
+      ]
+    }
   ]
 }

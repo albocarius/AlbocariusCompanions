@@ -31,7 +31,12 @@ public static class Fixtures
         { "id": "backstory_01", "slot": "backstory", "voiced": true },
         { "id": "hire_offer_01", "slot": "hire_offer", "voiced": true },
         { "id": "hire_accept_01", "slot": "hire_accept", "voiced": true },
-        { "id": "hire_decline_01", "slot": "hire_decline", "voiced": false }
+        { "id": "hire_decline_01", "slot": "hire_decline", "voiced": false },
+        { "id": "p_ask_about_01", "slot": "player_ask_about" },
+        { "id": "p_ask_hire_01", "slot": "player_ask_hire" },
+        { "id": "p_hire_pay_01", "slot": "player_hire_pay" },
+        { "id": "p_hire_full_01", "slot": "player_hire_full" },
+        { "id": "p_hire_later_01", "slot": "player_hire_later" }
       ]
     }
     """);
@@ -45,7 +50,12 @@ public static class Fixtures
         "backstory_01": "A placeholder past.",
         "hire_offer_01": "I could join you, Captain.",
         "hire_accept_01": "Lead on, Captain.",
-        "hire_decline_01": "Another time, then."
+        "hire_decline_01": "Another time, then.",
+        "p_ask_about_01": "Tell me about yourself.",
+        "p_ask_hire_01": "I could use someone like you in my company.",
+        "p_hire_pay_01": "Very well. Here is {ALBOCARIUS_HIRE_COST} denars.",
+        "p_hire_full_01": "I already have more companions than I can manage.",
+        "p_hire_later_01": "Not now."
       }
     }
     """);
@@ -58,6 +68,52 @@ public static class Fixtures
 
     public static JObject Line(string id, string slot, bool voiced = true) =>
         new() { ["id"] = id, ["slot"] = slot, ["voiced"] = voiced };
+
+    /// <summary>
+    /// A small valid conversation: menu option → companion story → two player answers (one with effects) → back to the
+    /// menu / end. Texts in <see cref="ConversationEn"/>.
+    /// </summary>
+    public static JObject Conversation() => JObject.Parse("""
+    {
+      "id": "old_wound",
+      "entry": "hub",
+      "once": true,
+      "when": { "hired": true },
+      "start": ["p_wound_ask"],
+      "nodes": [
+        { "id": "p_wound_ask", "speaker": "player", "next": ["wound_story"] },
+        { "id": "wound_story", "speaker": "npc", "voiced": true, "next": ["p_wound_sorry", "p_wound_skip"] },
+        { "id": "p_wound_sorry", "speaker": "player", "next": ["wound_thanks"], "effects": { "relation": 2, "setFlags": ["told_wound"] } },
+        { "id": "p_wound_skip", "speaker": "player", "next": ["hub"] },
+        { "id": "wound_thanks", "speaker": "npc", "next": ["end"] }
+      ]
+    }
+    """);
+
+    public static Dictionary<string, string> ConversationEn() => new()
+    {
+        ["p_wound_ask"] = "Where did that wound come from?",
+        ["wound_story"] = "A border skirmish, Captain.",
+        ["p_wound_sorry"] = "I'm sorry.",
+        ["p_wound_skip"] = "Let's move on.",
+        ["wound_thanks"] = "Thank you, Captain.",
+    };
+
+    /// <summary>Adds <paramref name="conversation"/> to dialogs.json and its texts to the English lang file.</summary>
+    public static void AddConversation(JObject dialogs, Dictionary<string, JObject> langs, JObject? conversation = null,
+        Dictionary<string, string>? texts = null)
+    {
+        if (dialogs["conversations"] is not JArray conversations)
+            dialogs["conversations"] = conversations = new JArray();
+        conversations.Add(conversation ?? Conversation());
+        foreach (var (id, text) in texts ?? ConversationEn())
+            LangLines(langs["en"])[id] = text;
+    }
+
+    public static JArray Nodes(JObject conversation) => (JArray)conversation["nodes"]!;
+
+    public static JObject Node(JObject conversation, string id) =>
+        (JObject)Nodes(conversation).First(n => (string?)n["id"] == id);
 
     public static JArray Lines(JObject dialogs) => (JArray)dialogs["lines"]!;
 
@@ -89,41 +145,6 @@ public static class Fixtures
     }
 
     public static void WriteValid(string root, string id) => Write(root, id, Companion(id), Dialogs(id));
-
-    /// <summary>_shared/player_lines.json with one line per player slot.</summary>
-    public static JObject PlayerLines() => JObject.Parse("""
-    {
-      "schemaVersion": 1,
-      "lines": [
-        { "id": "player_ask_about", "slot": "ask_about" },
-        { "id": "player_ask_hire", "slot": "ask_hire" },
-        { "id": "player_hire_pay", "slot": "hire_pay" },
-        { "id": "player_hire_full", "slot": "hire_full" },
-        { "id": "player_hire_later", "slot": "hire_later" }
-      ]
-    }
-    """);
-
-    public static JObject PlayerEn() => JObject.Parse("""
-    {
-      "schemaVersion": 1,
-      "lines": {
-        "player_ask_about": "Tell me about yourself.",
-        "player_ask_hire": "I could use someone like you in my company.",
-        "player_hire_pay": "Very well. Here is {ALBOCARIUS_HIRE_COST} denars.",
-        "player_hire_full": "I already have more companions than I can manage.",
-        "player_hire_later": "Not now."
-      }
-    }
-    """);
-
-    /// <summary>Writes a valid _shared folder (player lines + en) into <paramref name="root"/>.</summary>
-    public static void WriteShared(string root, JObject? playerLines = null, Dictionary<string, JObject>? langs = null)
-    {
-        var dir = Directory.CreateDirectory(Path.Combine(root, "_shared")).FullName;
-        File.WriteAllText(Path.Combine(dir, "player_lines.json"), (playerLines ?? PlayerLines()).ToString(Formatting.Indented));
-        WriteLangs(dir, langs ?? new Dictionary<string, JObject> { ["en"] = PlayerEn() });
-    }
 
     public static IEnumerable<ValidationIssue> Errors(this IEnumerable<ValidationIssue> issues) => issues.Where(i => i.IsError);
 }

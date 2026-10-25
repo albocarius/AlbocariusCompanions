@@ -6,24 +6,13 @@ using AlbocariusCompanions.Core.Validation;
 
 namespace AlbocariusCompanions.Core.Registry;
 
-/// <summary>
-/// Load + validate + build registry. Folders with any error are skipped; the rest still load. The _shared player lines
-/// are kept only when they have no error (the game then registers no companion dialogs); companions never depend on them.
-/// </summary>
+/// <summary>Load + validate + build registry. Folders with any error are skipped; the rest still load.</summary>
 public static class CompanionCatalog
 {
     public static CatalogResult Load(string companionsRoot)
     {
         var loaded = CompanionLoader.LoadAll(companionsRoot);
-        var sharedIssues = new List<ValidationIssue>();
-        var shared = CompanionLoader.LoadShared(companionsRoot, sharedIssues);
         var validationIssues = CompanionValidator.Validate(loaded.Packages);
-        if (shared != null)
-        {
-            sharedIssues.AddRange(SharedChecks.Validate(shared, loaded.Packages));
-            if (sharedIssues.Any(i => i.IsError))
-                shared = null;
-        }
 
         // Issues are keyed by folder, so a broken folder can never take down the real owner of an id.
         var errorFolders = new HashSet<string>(
@@ -31,8 +20,8 @@ public static class CompanionCatalog
 
         var kept = loaded.Packages.Where(p => !errorFolders.Contains(p.FolderName)).ToList();
 
-        var issues = loaded.Issues.Concat(validationIssues).Concat(sharedIssues).ToList();
-        return new CatalogResult(new CompanionRegistry(kept, shared), issues);
+        var issues = loaded.Issues.Concat(validationIssues).ToList();
+        return new CatalogResult(new CompanionRegistry(kept), issues);
     }
 }
 

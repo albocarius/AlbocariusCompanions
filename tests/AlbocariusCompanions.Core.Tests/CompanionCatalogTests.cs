@@ -34,7 +34,7 @@ public class CompanionCatalogTests
     private static string EnJson() =>
         $$"""{ "schemaVersion": 1, "lines": { {{string.Join(", ", DialogSlots.Required.Select(slot => $"\"{slot}_01\": \"Greetings, Captain.\""))}} } }""";
 
-    /// <summary>Writes a companion folder (with lang/en.json) and, once per root, a valid _shared folder.</summary>
+    /// <summary>Writes a companion folder (with lang/en.json).</summary>
     private static void Write(string root, string folder, string? companionJson, string? dialogsJson)
     {
         var dir = Directory.CreateDirectory(Path.Combine(root, folder)).FullName;
@@ -42,18 +42,6 @@ public class CompanionCatalogTests
         if (dialogsJson != null) File.WriteAllText(Path.Combine(dir, "dialogs.json"), dialogsJson);
         Directory.CreateDirectory(Path.Combine(dir, "lang"));
         File.WriteAllText(Path.Combine(dir, "lang", "en.json"), EnJson());
-        WriteShared(root);
-    }
-
-    private static void WriteShared(string root)
-    {
-        var dir = Path.Combine(root, "_shared");
-        if (Directory.Exists(dir)) return;
-        Directory.CreateDirectory(Path.Combine(dir, "lang"));
-        File.WriteAllText(Path.Combine(dir, "player_lines.json"), $$"""{ "schemaVersion": 1, "lines": [{{string.Join(",",
-            PlayerSlots.All.Select(slot => $$"""{ "id": "player_{{slot}}", "slot": "{{slot}}" }"""))}}] }""");
-        File.WriteAllText(Path.Combine(dir, "lang", "en.json"), $$"""{ "schemaVersion": 1, "lines": { {{string.Join(", ",
-            PlayerSlots.All.Select(slot => $"\"player_{slot}\": \"Player says.\""))}} } }""");
     }
 
     private static void WriteValid(string root, string id) => Write(root, id, CompanionJson(id), DialogsJson(id));
@@ -97,14 +85,14 @@ public class CompanionCatalogTests
     }
 
     [Fact]
-    public void Empty_root_gives_empty_registry_and_only_the_missing_shared_folder()
+    public void Empty_root_gives_empty_registry_without_issues()
     {
         using var tmp = new TempDir();
 
         var result = CompanionCatalog.Load(tmp.Path);
 
         Assert.Equal(0, result.Registry.Count);
-        Assert.Equal(IssueCodes.MissingSharedFile, Assert.Single(result.Issues).Code);
+        Assert.Empty(result.Issues);
     }
 
     [Fact]

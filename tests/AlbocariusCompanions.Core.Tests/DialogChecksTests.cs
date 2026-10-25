@@ -15,7 +15,12 @@ public class DialogChecksTests
         { "id": "{{id}}_backstory_01", "slot": "backstory", "text": { "en": "A past." }, "voiced": true },
         { "id": "{{id}}_hire_offer_01", "slot": "hire_offer", "text": { "en": "Hire me?" }, "voiced": true },
         { "id": "{{id}}_hire_accept_01", "slot": "hire_accept", "text": { "en": "Lead on." }, "voiced": true },
-        { "id": "{{id}}_hire_decline_01", "slot": "hire_decline", "text": { "en": "Another time." }, "voiced": false }
+        { "id": "{{id}}_hire_decline_01", "slot": "hire_decline", "text": { "en": "Another time." }, "voiced": false },
+        { "id": "{{id}}_p_ask_about_01", "slot": "player_ask_about", "text": { "en": "Who are you?" } },
+        { "id": "{{id}}_p_ask_hire_01", "slot": "player_ask_hire", "text": { "en": "Join me." } },
+        { "id": "{{id}}_p_hire_pay_01", "slot": "player_hire_pay", "text": { "en": "Here is the gold." } },
+        { "id": "{{id}}_p_hire_full_01", "slot": "player_hire_full", "text": { "en": "I have too many." } },
+        { "id": "{{id}}_p_hire_later_01", "slot": "player_hire_later", "text": { "en": "Not now." } }
     ] }
     """;
 
@@ -63,7 +68,7 @@ public class DialogChecksTests
     public void Null_lines_report_every_required_slot_once()
     {
         var issues = Issues(Pkg("a", "{ }"));
-        Assert.Equal(5, issues.Count);
+        Assert.Equal(10, issues.Count);
         Assert.All(issues, i => Assert.Equal(IssueCodes.MissingRequiredSlot, i.Code));
     }
 
@@ -85,7 +90,7 @@ public class DialogChecksTests
         Assert.Contains(issues, i => i.Code == IssueCodes.UnknownSlot);
         Assert.Equal(2, issues.Count(i => i.Code == IssueCodes.DuplicateLineId || i.Code == IssueCodes.UnknownSlot));
         Assert.Contains(issues, i => i.Code == IssueCodes.DuplicateLineId && i.Message.Contains("intro_01"));
-        Assert.Equal(4, issues.Count(i => i.Code == IssueCodes.MissingRequiredSlot));
+        Assert.Equal(9, issues.Count(i => i.Code == IssueCodes.MissingRequiredSlot));
     }
 
     [Fact]

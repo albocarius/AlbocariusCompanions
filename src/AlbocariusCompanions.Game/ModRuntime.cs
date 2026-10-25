@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Logging;
 using AlbocariusCompanions.Core.Registry;
 using TaleWorlds.CampaignSystem;
@@ -18,6 +19,12 @@ internal static class ModRuntime
 
     /// <summary>Companion folders skipped at load because of errors (for the in-game summary).</summary>
     public static int SkippedAtLoad { get; set; }
+
+    /// <summary>
+    /// Conversation flags and "once" markers of the running campaign. Replaced by each new campaign behavior (new game or
+    /// load) and filled from the save in its SyncData (GAME_MAP Q20).
+    /// </summary>
+    public static ConversationFlags Flags { get; set; } = new ConversationFlags();
 
     /// <summary>Companion id → registered template for the current campaign (AfterRegisterSubModuleObjects).</summary>
     public static IReadOnlyDictionary<string, CharacterObject> Templates { get; set; } = new Dictionary<string, CharacterObject>();

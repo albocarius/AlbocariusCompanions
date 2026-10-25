@@ -5,6 +5,27 @@
     "backstory_01": "There is no story here yet, Captain. This line is only a test.",
     "hire_offer_01": "I could ride with you, Captain, for a fair price.",
     "hire_accept_01": "Then it is settled, Captain. Lead the way.",
-    "hire_decline_01": "Another time, then."
+    "hire_decline_01": "Another time, then.",
+    "p_ask_about_01": "Tell me about yourself.",
+    "p_ask_hire_01": "I could use someone like you in my company.",
+    "p_hire_pay_01": "Very well. Here is {ALBOCARIUS_HIRE_COST} denars.",
+    "p_hire_full_01": "I already have more companions than I can manage.",
+    "p_hire_later_01": "Not now.",
+    "p_scar_ask": "That scar on your arm. Where did it come from?",
+    "scar_story": "A border skirmish, years ago. I was too slow, and a friend paid for it.",
+    "p_scar_sorry": "That must have been hard to carry.",
+    "p_scar_enough": "We all have scars. Let's move on.",
+    "scar_thanks": "It is. Thank you for asking, Captain.",
+    "scar_shrug": "As you wish.",
+    "p_coin_offer": "Here, take a hundred denars. For your friend's family.",
+    "p_coin_ask": "Could you spare some coin for the company?",
+    "coin_refuse": "Not yet, Captain. Ask me again when we know each other better.",
+    "coin_fine": "For you, Captain? Here, fifty denars.",
+    "coin_thanks": "I will see that it reaches them. Thank you.",
+    "greet_scar": "Captain. I keep thinking about our talk the other day.",
+    "p_greet_glad": "I'm glad you told me.",
+    "p_greet_busy": "Not now, I'm busy.",
+    "greet_glad_reply": "So am I. Now, what do you need?",
+    "greet_busy_reply": "Of course."
   }
 }

@@ -9,13 +9,15 @@ public class DialogSlotsTests
     [Fact]
     public void Required_slots_match_spec()
     {
-        Assert.Equal(new[] { "intro", "backstory", "hire_offer", "hire_accept", "hire_decline" }, DialogSlots.Required);
+        Assert.Equal(new[] { "intro", "backstory", "hire_offer", "hire_accept", "hire_decline" }, DialogSlots.RequiredCompanion);
+        Assert.Equal(DialogSlots.RequiredCompanion.Concat(new[] { "player_ask_about", "player_ask_hire", "player_hire_pay",
+            "player_hire_full", "player_hire_later" }), DialogSlots.Required);
     }
 
     [Fact]
     public void All_contains_required_and_optional_without_duplicates()
     {
-        Assert.Equal(10 + VanillaDialogPoints.All.Count, DialogSlots.All.Count);
+        Assert.Equal(15 + VanillaDialogPoints.All.Count, DialogSlots.All.Count);
         Assert.Equal(DialogSlots.All.Count, DialogSlots.All.Distinct().Count());
         Assert.All(DialogSlots.Optional, s => Assert.False(DialogSlots.IsRequired(s)));
     }

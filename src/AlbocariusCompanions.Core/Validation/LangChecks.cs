@@ -7,7 +7,7 @@ using AlbocariusCompanions.Core.Rules;
 namespace AlbocariusCompanions.Core.Validation;
 
 /// <summary>
-/// Lang file rules shared by companion folders and _shared (SPEC_CORE_GAPS T6): file names are ISO 639-1 codes; en.json
+/// Lang file rules of a companion folder (SPEC_CORE_GAPS T6): file names are ISO 639-1 codes; en.json
 /// has a non-blank text for every line (error); another language missing a line is a warning (en is used); a text for an
 /// unknown line is a warning; voiced lines never contain player-name tokens, in any language.
 /// </summary>

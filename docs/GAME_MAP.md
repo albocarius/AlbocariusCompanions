@@ -1586,6 +1586,52 @@ and repeating the vanilla spawn steps makes it an unhired wanderer in a tavern a
 ### Uncertain
 - **UNCERTAIN**: no in-game test yet of a dismissal while the companion is a prisoner (`EndCaptivityAction.ApplyByEscape` path) — resolve by dismissing a captive mod companion in game.
 
+## Q20 — Authored conversations (entry points, return tokens, effects, persistence)
+
+Status: VERIFIED
+
+### Answer
+Self-verified for M6 (companion conversations in dialogs.json). Builds on Q7 (token graph, priority, selection) and Q18.
+
+**Entry from the menu.** Player options of the companion's conversation menu are player lines on `hero_main_options`
+(Q7/Q18: the hub used by wanderers and hired companions alike). Every passing player line there is listed and priority only
+orders the list, so a conversation's start option is added with priority 105: above the vanilla 100 options (hire,
+roles), below story quests (125+). **Entry as a greeting.** Every conversation begins at token `start` and only the first
+passing NPC line fires (Q7). Vanilla greetings are 100 (`start_default`) and 110 (`start_wanderer_unmet`); the mod's intro
+is 120 and needs a companion not met yet. A greeting conversation is registered at 119 and always needs a met
+companion, so it beats the vanilla greetings and never competes with the intro. Story-quest lines at higher priority still win.
+
+**Returning and ending.** `hero_pretalk_2` (`lord_pretalk` → `hero_main_options`, no condition, "Is there anything
+else?") is how vanilla returns to the menu after a player line, so a player node with next "hub" outputs `lord_pretalk`
+and the companion speaks before the menu reappears. An NPC node with next "hub" outputs `hero_main_options` directly (like
+the mod's `hire_decline`). Next "end" outputs `close_window`, which ends the conversation after an NPC or a player line (Q7).
+NPC → NPC chains are vanilla practice (`wanderer_introduction_a` → `_b` → `_c`). Equal-priority NPC lines keep
+registration order, so the first listed alternative whose condition holds is said.
+
+**Effects.** `ChangeRelationAction.ApplyPlayerRelation(hero, change)`: the game clamps the result to −100..100, and a
+positive change is first scaled by `DiplomacyModel.GetRelationIncreaseFactor` and randomly rounded, so the shown gain can
+differ from the authored number. The condition side reads `Hero.GetRelationWithPlayer()` (a float of the integer relation).
+Gold: `GiveGoldAction.ApplyBetweenCharacters(giver, recipient, amount)` caps the amount at the giver's gold, and a null
+giver creates the gold, so "the player receives" uses giver null and "the player pays" uses the main hero as giver after
+a gold check. Joining uses the hire actions of Q6 (`AddCompanionAction.Apply`, `AddHeroToPartyAction.Apply`) without payment.
+
+**Persistence.** Flags and "once" markers are a `List<string>` field synced in the mod behavior's `SyncData` (Q8). `List<string>`
+is registered by `SaveableBasicTypeDefiner`, so no `SaveableTypeDefiner` of our own is needed. A save without the key leaves
+the field untouched (Q9), so it starts empty.
+
+### Evidence
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/LordConversationsCampaignBehavior.cs` — `hero_pretalk_2` — `lord_pretalk` → `hero_main_options`, "{=DQBaaC0e}Is there anything else?", no condition.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` — `ConversationManager.SortLastSentence` — equal priority keeps registration order.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` — `ConversationManager.ProcessPartnerSentence` — first passing NPC line wins.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeRelationAction.cs` — `ChangeRelationAction.ApplyPlayerRelation` — `ApplyInternal`: positive change scaled by `GetRelationIncreaseFactor`, result clamped to −100..100.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.GetRelationWithPlayer` — `MainHero.GetRelation(this)` as float.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveGoldAction.cs` — `GiveGoldAction.ApplyBetweenCharacters` — amount capped at the giver's gold; null giver → gold is created for the recipient.
+- `decomp/TaleWorlds.SaveSystem/TaleWorlds.SaveSystem/SaveableBasicTypeDefiner.cs` — `ConstructContainerDefinition` — `List<string>` is a registered container.
+
+### Uncertain
+- **UNCERTAIN**: greeting priority 119 against mod or DLC lines on `start` between 111 and 125 is untested in game.
+- **UNCERTAIN**: whether the game's relation notification shows for every `ApplyPlayerRelation` call from a conversation consequence (vanilla passes `showQuickNotification` true by default) — check in game.
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
@@ -1642,6 +1688,8 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `CampaignEvents` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | static campaign event receivers |
 | `IMbEvent.AddNonSerializedListener` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IMbEvent.cs` | Q8 | subscribe handlers (owner = this behavior) |
 | `IDataStore.SyncData` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IDataStore.cs` | Q8 | save/load of the companion id → hero map |
+| `IDataStore.IsSaving` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IDataStore.cs` | Q8 | copy conversation flags into the synced list before a save |
+| `IDataStore.IsLoading` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IDataStore.cs` | Q8 | restore conversation flags after a load |
 | `CampaignGameStarter` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignGameStarter.cs` | Q8 | parameter of OnNewGameCreated / OnSessionLaunched |
 | `Hero.AllAliveHeroes` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q1 | re-link scan, alive heroes first |
 | `Hero.DeadOrDisabledHeroes` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | re-link scan, dead or disabled heroes second |
@@ -1669,6 +1717,8 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `AddCompanionAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddCompanionAction.cs` | Q6 | join player clan |
 | `AddHeroToPartyAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddHeroToPartyAction.cs` | Q6 | join main party |
 | `MobileParty.MainParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q6 | player party |
+| `ChangeRelationAction.ApplyPlayerRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeRelationAction.cs` | Q20 | conversation relation effect |
+| `Hero.GetRelationWithPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q20 | conversation relation condition |
 | `MBTextManager.SetTextVariable` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | hire cost in player line |
 | `Hero.SetName` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | keep the JSON name (creation gives Special templates a random one) |
 | `CharacterObject.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` | Q2 | template display name `{=<id>_name}<name>` |

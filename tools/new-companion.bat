@@ -1,7 +1,7 @@
 @echo off
 rem Creates a new companion folder from tools\companion-template\.
 rem Usage: tools\new-companion.bat <id> [companions-root]
-rem   <id>              folder name = companion id, [a-z0-9_]+ ("_shared" is reserved)
+rem   <id>              folder name = companion id, [a-z0-9_]+ ("_shared" is reserved: an old install may still have it)
 rem   [companions-root] default: module\ModuleData\Companions next to this script's repo
 setlocal EnableExtensions
 
@@ -21,7 +21,7 @@ if errorlevel 1 (
   exit /b 1
 )
 if /i "%ID%"=="_shared" (
-  echo error: '_shared' is reserved for the player lines 1>&2
+  echo error: '_shared' is reserved ^(old player-lines folder^) 1>&2
   exit /b 1
 )
 if exist "%ROOT%\%ID%" (

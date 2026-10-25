@@ -7,19 +7,16 @@ namespace AlbocariusCompanions.Core.Audio;
 /// <summary>Voiced lines whose audio file does not exist (used later by the voice pipeline).</summary>
 public static class MissingAudioReport
 {
-    /// <summary>Walks packages in order, then lines in order; one entry per voiced line with no audio file on disk.</summary>
+    /// <summary>Walks packages in order, then lines and conversation nodes in order; one entry per voiced line with no audio file on disk.</summary>
     public static IReadOnlyList<MissingAudioEntry> Find(IEnumerable<CompanionPackage> packages)
     {
         var entries = new List<MissingAudioEntry>();
 
         foreach (var package in packages)
         {
-            var lines = package.Dialogs.Lines;
-            if (lines == null) continue;
-
-            foreach (var line in lines)
+            foreach (var line in package.SpokenLines)
             {
-                if (line == null || !line.Voiced) continue;
+                if (!line.Voiced) continue;
                 if (string.IsNullOrEmpty(line.Id)) continue;
 
                 var relativePath = VoicedLinesXml.AudioRelativePath(line);

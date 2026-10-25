@@ -23,8 +23,13 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
     /// </summary>
     private Dictionary<string, Hero> _companionHeroes = new Dictionary<string, Hero>();
 
+    /// <summary>Conversation flag keys (ConversationFlags), saved as a List&lt;string&gt; (GAME_MAP Q20).</summary>
+    private List<string> _conversationFlags = new List<string>();
+
     public AlbocariusCompanionsCampaignBehavior() : base(BehaviorId)
     {
+        // One behavior per campaign: a new game starts with no flags, a load replaces them in SyncData.
+        ModRuntime.Flags = new Core.Dialogs.ConversationFlags();
     }
 
     public override void RegisterEvents()
@@ -48,6 +53,16 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
             {
                 _companionHeroes = new Dictionary<string, Hero>();
                 ModRuntime.Log.Warning("Save data carried no companion map; continuing with an empty one.");
+            }
+
+            // Saves made before M6 have no flags key: the field keeps its empty initializer (GAME_MAP Q9).
+            if (dataStore.IsSaving)
+                _conversationFlags = ModRuntime.Flags.ToList();
+            dataStore.SyncData("_conversationFlags", ref _conversationFlags);
+            if (dataStore.IsLoading)
+            {
+                ModRuntime.Flags.Load(_conversationFlags);
+                ModRuntime.Log.Info($"Conversation flags loaded: {ModRuntime.Flags.Count}.");
             }
         });
     }

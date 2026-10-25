@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Creates a new companion folder from tools/companion-template/.
 # Usage: tools/new-companion.sh <id> [companions-root]
-#   <id>              folder name = companion id, [a-z0-9_]+ ("_shared" is reserved)
+#   <id>              folder name = companion id, [a-z0-9_]+ ("_shared" is reserved: an old install may still have it)
 #   [companions-root] default: module/ModuleData/Companions next to this script's repo
 set -euo pipefail
 
@@ -18,7 +18,7 @@ if [[ ! "$id" =~ ^[a-z0-9_]+$ ]]; then
   exit 1
 fi
 if [[ "$id" == "_shared" ]]; then
-  echo "error: '_shared' is reserved for the player lines" >&2
+  echo "error: '_shared' is reserved (old player-lines folder)" >&2
   exit 1
 fi
 if [[ -e "$root/$id" ]]; then

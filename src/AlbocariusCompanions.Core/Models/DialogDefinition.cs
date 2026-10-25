@@ -7,10 +7,25 @@ namespace AlbocariusCompanions.Core.Models;
 public sealed class DialogFile
 {
     [JsonProperty("schemaVersion")] public int? SchemaVersion { get; set; }
+    /// <summary>Slot lines: the companion's and the player's (player_* slots) side of the mod's fixed dialogs.</summary>
     [JsonProperty("lines")] public List<DialogLine>? Lines { get; set; }
+    /// <summary>Authored companion ↔ player conversations (optional).</summary>
+    [JsonProperty("conversations")] public List<ConversationDefinition>? Conversations { get; set; }
 }
 
-public sealed class DialogLine
+/// <summary>Anything with a text, an id and maybe a recorded voice: a slot line or a conversation node.</summary>
+public interface ISpokenLine
+{
+    /// <summary>Local id, unique within the companion; key of the text in the lang files.</summary>
+    string? Id { get; }
+    /// <summary>&lt;companionId&gt;_&lt;local id&gt;, derived when the package is built.</summary>
+    string? FullId { get; }
+    bool Voiced { get; }
+    /// <summary>Path relative to the companion folder; default audio/&lt;local id&gt;.ogg.</summary>
+    string? Audio { get; }
+}
+
+public sealed class DialogLine : ISpokenLine
 {
     /// <summary>Local id, unique within the companion (e.g. intro_01); key of the line in the lang files.</summary>
     [JsonProperty("id")] public string? Id { get; set; }
@@ -31,18 +46,4 @@ public sealed class LangFile
 {
     [JsonProperty("schemaVersion")] public int? SchemaVersion { get; set; }
     [JsonProperty("lines")] public Dictionary<string, string>? Lines { get; set; }
-}
-
-/// <summary>_shared/player_lines.json: the player's side of the companion dialogs.</summary>
-public sealed class PlayerLinesFile
-{
-    [JsonProperty("schemaVersion")] public int? SchemaVersion { get; set; }
-    [JsonProperty("lines")] public List<PlayerLine>? Lines { get; set; }
-}
-
-public sealed class PlayerLine
-{
-    /// <summary>Used as-is (no companion prefix) as localization key; must not collide with a companion line's full id.</summary>
-    [JsonProperty("id")] public string? Id { get; set; }
-    [JsonProperty("slot")] public string? Slot { get; set; }
 }

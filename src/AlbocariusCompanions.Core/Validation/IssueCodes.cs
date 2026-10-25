@@ -11,7 +11,7 @@ public static class IssueCodes
     public const string InvalidSchemaVersion = "invalid_schema_version";
     public const string UnsupportedSchemaVersion = "unsupported_schema_version";
     public const string RootNotFound = "root_not_found";
-    public const string MissingSharedFile = "missing_shared_file";
+    public const string ObsoleteSharedFolder = "obsolete_shared_folder";
 
     // companion.json
     public const string InvalidId = "invalid_id";
@@ -26,7 +26,7 @@ public static class IssueCodes
     public const string UnknownEquipmentSlot = "unknown_equipment_slot";
     public const string InvalidEquipmentItem = "invalid_equipment_item";
 
-    // dialogs.json, player_lines.json, lang files
+    // dialogs.json, lang files
     public const string InvalidLineId = "invalid_line_id";
     public const string DuplicateLineId = "duplicate_line_id";
     public const string UnknownSlot = "unknown_slot";
@@ -38,6 +38,15 @@ public static class IssueCodes
     public const string PlayerTokenInVoicedLine = "player_token_in_voiced_line";
     public const string InvalidAudioPath = "invalid_audio_path";
     public const string InvalidAudioExtension = "invalid_audio_extension";
+    public const string VoicedPlayerLine = "voiced_player_line";
+
+    // dialogs.json conversations
+    public const string InvalidConversation = "invalid_conversation";
+    public const string UnknownNode = "unknown_node";
+    public const string InvalidCondition = "invalid_condition";
+    public const string InvalidEffect = "invalid_effect";
+    public const string UnreachableNode = "unreachable_node";
+    public const string ConversationMayStall = "conversation_may_stall";
 
     // Runtime resolution (SPEC rule 9)
     public const string CultureMissing = "culture_missing";

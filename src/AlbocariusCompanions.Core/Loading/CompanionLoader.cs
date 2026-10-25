@@ -11,14 +11,17 @@ using Newtonsoft.Json.Linq;
 namespace AlbocariusCompanions.Core.Loading;
 
 /// <summary>
-/// Scans &lt;root&gt;/*/ for companion.json + dialogs.json + lang/*.json (the reserved _shared folder is skipped; see
-/// <see cref="LoadShared"/>). Never throws for bad data.
+/// Scans &lt;root&gt;/*/ for companion.json + dialogs.json + lang/*.json. The reserved _shared folder (player lines before
+/// M6) is skipped with a warning. Never throws for bad data.
 /// </summary>
 public static class CompanionLoader
 {
     public const string CompanionFileName = "companion.json";
     public const string DialogsFileName = "dialogs.json";
     public const string LangFolderName = "lang";
+
+    /// <summary>Held the shared player lines until M6; now reserved and skipped, so an old install never loads it as a companion.</summary>
+    public const string ObsoleteSharedFolderName = "_shared";
 
     /// <summary>Strict parsing: unknown properties are errors (catches typos); type mismatches throw too.</summary>
     private static JsonSerializerSettings StrictSettings { get; } = new JsonSerializerSettings
@@ -37,6 +40,11 @@ public static class CompanionLoader
                 $"Companions root folder not found: {companionsRoot}"));
             return new LoadResult(packages, issues);
         }
+
+        if (Directory.Exists(Path.Combine(companionsRoot, ObsoleteSharedFolderName)))
+            issues.Add(ValidationIssue.Warning(IssueCodes.ObsoleteSharedFolder, ObsoleteSharedFolderName,
+                $"The '{ObsoleteSharedFolderName}' folder is no longer read: player lines now live in each companion's dialogs.json " +
+                "(player_* slots). Delete the folder."));
 
         foreach (var folder in EnumerateCompanionFolders(companionsRoot))
         {
@@ -68,39 +76,11 @@ public static class CompanionLoader
         return new LoadResult(packages, issues);
     }
 
-    /// <summary>
-    /// Loads the reserved _shared folder (player lines + lang files). Null when the root or the folder is missing (no
-    /// issue: the catalog reports a missing _shared) or when a file is broken (issue added, folder "_shared").
-    /// </summary>
-    public static SharedPackage? LoadShared(string companionsRoot, List<ValidationIssue> issues)
-    {
-        if (string.IsNullOrEmpty(companionsRoot) || !Directory.Exists(companionsRoot))
-            return null;
-
-        var folder = SharedPackage.FolderName;
-        var path = Path.Combine(companionsRoot, folder);
-        var linesPath = Path.Combine(path, SharedPackage.PlayerLinesFileName);
-        if (!File.Exists(linesPath))
-        {
-            issues.Add(ValidationIssue.Error(IssueCodes.MissingSharedFile, folder,
-                $"Missing {folder}/{SharedPackage.PlayerLinesFileName}: the player's dialog lines are part of the mod install."));
-            return null;
-        }
-
-        if (!TryReadJson<PlayerLinesFile>(linesPath, SharedPackage.PlayerLinesFileName, folder, issues, out var playerLines))
-            return null;
-        if (!TryReadLanguages(path, folder, issues, out var languages))
-            return null;
-
-        playerLines!.Lines ??= new List<PlayerLine>();
-        return new SharedPackage(path, playerLines, languages);
-    }
-
-    /// <summary>Direct subdirectories of the root except the reserved _shared folder, ordered by name (ordinal).</summary>
+    /// <summary>Direct subdirectories of the root except the obsolete _shared folder, ordered by name (ordinal).</summary>
     private static IEnumerable<(string Name, string Path)> EnumerateCompanionFolders(string root) =>
         Directory.GetDirectories(root)
             .Select(p => new DirectoryInfo(p))
-            .Where(d => !string.Equals(d.Name, SharedPackage.FolderName, StringComparison.Ordinal))
+            .Where(d => !string.Equals(d.Name, ObsoleteSharedFolderName, StringComparison.Ordinal))
             .Select(d => (Name: d.Name, Path: Path.Combine(root, d.Name)))
             .OrderBy(f => f.Name, StringComparer.Ordinal);
 

@@ -12,7 +12,6 @@ public class CatalogTests
         using var tmp = new TempDir();
         Fixtures.WriteValid(tmp.Path, "a_comp");
         Fixtures.WriteValid(tmp.Path, "b_comp");
-        Fixtures.WriteShared(tmp.Path);
 
         var result = CompanionCatalog.Load(tmp.Path);
 

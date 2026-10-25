@@ -5,7 +5,10 @@ using AlbocariusCompanions.Core.Rules;
 
 namespace AlbocariusCompanions.Core.Validation;
 
-/// <summary>dialogs.json + lang file rules (SPEC §2.5, SPEC_CORE_GAPS T3/T6). Returns issues, never throws.</summary>
+/// <summary>
+/// dialogs.json + lang file rules (SPEC §2.5, SPEC_CORE_GAPS T3/T6, M6): slot lines (the companion's and the player's),
+/// conversations (<see cref="ConversationChecks"/>), then texts and audio of every line and node. Returns issues, never throws.
+/// </summary>
 public static class DialogChecks
 {
     public static IReadOnlyList<ValidationIssue> Validate(IReadOnlyList<CompanionPackage> packages)
@@ -14,7 +17,7 @@ public static class DialogChecks
         if (packages == null)
             return issues;
 
-        // Full ids (<companion>_<local>) are unique globally; a clash is reported on the later folder.
+        // Full ids (<companion>_<local>) are unique globally (lines and conversation nodes); a clash is reported on the later folder.
         var seenFullIds = new HashSet<string>(StringComparer.Ordinal);
 
         foreach (var package in packages)
@@ -39,6 +42,7 @@ public static class DialogChecks
                 continue;
             }
 
+            var isPlayer = PlayerSlots.IsKnown(line.Slot);
             if (!DialogSlots.IsKnown(line.Slot))
                 issues.Add(ValidationIssue.Error(IssueCodes.UnknownSlot, folder, line.Slot == null
                     ? LineRef(line) + " is missing 'slot'."
@@ -61,7 +65,11 @@ public static class DialogChecks
                 textLines.Add(new LangChecks.TextLine(line.Id!, line.Voiced));
             }
 
-            ValidateAudio(line, folder, issues);
+            if (isPlayer && (line.Voiced || line.Audio != null))
+                issues.Add(ValidationIssue.Error(IssueCodes.VoicedPlayerLine, folder,
+                    LineRef(line) + $" is in the player slot '{line.Slot}'; the player is never voiced (remove 'voiced'/'audio')."));
+            else
+                ValidateAudio(line, folder, issues);
         }
 
         foreach (var slot in DialogSlots.Required)
@@ -69,10 +77,17 @@ public static class DialogChecks
                 issues.Add(ValidationIssue.Error(IssueCodes.MissingRequiredSlot, folder,
                     $"Required dialog slot '{slot}' has no lines in dialogs.json."));
 
+        foreach (var node in ConversationChecks.Validate(package, localIds, seenFullIds, issues))
+        {
+            textLines.Add(new LangChecks.TextLine(node.Id!, node.Voiced));
+            if (node.Speaker != ConversationRules.SpeakerPlayer)
+                ValidateAudio(node, folder, issues);
+        }
+
         LangChecks.Validate(folder, textLines, package.Languages, issues);
     }
 
-    private static void ValidateAudio(DialogLine? line, string folder, List<ValidationIssue> issues)
+    private static void ValidateAudio(ISpokenLine? line, string folder, List<ValidationIssue> issues)
     {
         var audio = line?.Audio;
         if (audio == null)
@@ -112,6 +127,6 @@ public static class DialogChecks
         return false;
     }
 
-    private static string LineRef(DialogLine? line) =>
+    private static string LineRef(ISpokenLine? line) =>
         line?.FullId != null ? $"Line '{line.FullId}'" : line?.Id != null ? $"Line '{line.Id}'" : "A dialog line";
 }

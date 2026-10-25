@@ -139,7 +139,7 @@ public class DialogValidationTests
     public void No_lines_at_all_reports_every_required_slot()
     {
         var issues = Validate(d => d.Remove("lines"), langs => EnLines(langs).RemoveAll());
-        Assert.Equal(5, issues.Errors().Count(i => i.Code == IssueCodes.MissingRequiredSlot));
+        Assert.Equal(10, issues.Errors().Count(i => i.Code == IssueCodes.MissingRequiredSlot)); // 5 companion + 5 player slots
     }
 
     [Fact]
@@ -168,8 +168,8 @@ public class DialogValidationTests
     public void No_en_file_reports_every_line()
     {
         var issues = ValidateLangs(langs => langs.Remove("en"));
-        Assert.Equal(5, issues.Errors().Count(i => i.Code == IssueCodes.MissingEnglishText));
-        Assert.Equal(5, issues.Count);
+        Assert.Equal(10, issues.Errors().Count(i => i.Code == IssueCodes.MissingEnglishText));
+        Assert.Equal(10, issues.Count);
     }
 
     [Fact]
@@ -178,8 +178,8 @@ public class DialogValidationTests
         var issues = ValidateLangs(langs => langs["tr"] = Fixtures.Tr());
         Assert.Empty(issues.Errors());
         var warnings = issues.Where(i => i.Code == IssueCodes.MissingTranslation).ToList();
-        Assert.Equal(4, warnings.Count); // tr has only intro_01
-        Assert.Equal(4, issues.Count);
+        Assert.Equal(9, warnings.Count); // tr has only intro_01
+        Assert.Equal(9, issues.Count);
         Assert.All(warnings, w => Assert.Equal(IssueSeverity.Warning, w.Severity));
         Assert.Contains(warnings, w => w.Message.Contains("backstory_01") && w.Message.Contains("tr"));
     }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AlbocariusCompanions.Core.Rules;
 
 namespace AlbocariusCompanions.Core.Models;
@@ -18,6 +19,9 @@ public sealed class CompanionPackage
         foreach (var line in dialogs?.Lines ?? new List<DialogLine>())
             if (line != null)
                 line.FullId = string.IsNullOrEmpty(line.Id) ? null : LineIds.Full(folderName, line.Id!);
+        foreach (var node in Conversations.SelectMany(c => c.Nodes ?? new List<ConversationNode>()))
+            if (node != null)
+                node.FullId = string.IsNullOrEmpty(node.Id) ? null : LineIds.Full(folderName, node.Id!);
     }
 
     public string FolderName { get; }
@@ -27,6 +31,15 @@ public sealed class CompanionPackage
 
     /// <summary>Language code (lang file name without .json) → file.</summary>
     public IReadOnlyDictionary<string, LangFile> Languages { get; }
+
+    /// <summary>The authored conversations (empty when dialogs.json has none); null entries skipped.</summary>
+    public IReadOnlyList<ConversationDefinition> Conversations =>
+        (Dialogs?.Conversations ?? new List<ConversationDefinition>()).Where(c => c != null).ToList();
+
+    /// <summary>Every text-bearing entry: slot lines, then conversation nodes in file order (null entries skipped).</summary>
+    public IEnumerable<ISpokenLine> SpokenLines =>
+        (Dialogs?.Lines ?? new List<DialogLine>()).Where(l => l != null).Cast<ISpokenLine>()
+            .Concat(Conversations.SelectMany(c => c.Nodes ?? new List<ConversationNode>()).Where(n => n != null));
 
     /// <summary>The companion id: the folder name.</summary>
     public string Id => FolderName;

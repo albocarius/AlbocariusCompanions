@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace AlbocariusCompanions.Core.Rules;
 
-/// <summary>Companion dialog slots (SPEC §4.3); with <see cref="PlayerSlots"/> the global slot list.</summary>
+/// <summary>Dialog slots of dialogs.json lines (SPEC §4.3): the companion's slots and the player's (<see cref="PlayerSlots"/>).</summary>
 public static class DialogSlots
 {
     public const string Intro = "intro";
@@ -18,8 +18,11 @@ public static class DialogSlots
     public const string DislikeReaction = "dislike_reaction";
     public const string Idle = "idle";
 
-    /// <summary>Slots every companion must have at least one line for in this run.</summary>
-    public static readonly IReadOnlyList<string> Required = new[] { Intro, Backstory, HireOffer, HireAccept, HireDecline };
+    /// <summary>The companion's slots of the mod's meeting/hire flow.</summary>
+    public static readonly IReadOnlyList<string> RequiredCompanion = new[] { Intro, Backstory, HireOffer, HireAccept, HireDecline };
+
+    /// <summary>Slots every companion must have at least one line for: its own and the player's side of the flow.</summary>
+    public static readonly IReadOnlyList<string> Required = RequiredCompanion.Concat(PlayerSlots.All).ToArray();
 
     /// <summary>
     /// Optional slots: reserved ones without effect yet, then every vanilla dialog point (<see cref="VanillaDialogPoints"/>,
@@ -35,14 +38,17 @@ public static class DialogSlots
     public static bool IsRequired(string? slot) => slot != null && Required.Contains(slot, StringComparer.Ordinal);
 }
 
-/// <summary>Slots of the player's lines (_shared/player_lines.json); every one needs at least one line.</summary>
+/// <summary>
+/// The player's side of the mod's meeting/hire flow, per companion (M6): lines in these slots are said by the player, are
+/// never voiced, and every companion needs at least one line in each.
+/// </summary>
 public static class PlayerSlots
 {
-    public const string AskAbout = "ask_about";
-    public const string AskHire = "ask_hire";
-    public const string HirePay = "hire_pay";
-    public const string HireFull = "hire_full";
-    public const string HireLater = "hire_later";
+    public const string AskAbout = "player_ask_about";
+    public const string AskHire = "player_ask_hire";
+    public const string HirePay = "player_hire_pay";
+    public const string HireFull = "player_hire_full";
+    public const string HireLater = "player_hire_later";
 
     public static readonly IReadOnlyList<string> All = new[] { AskAbout, AskHire, HirePay, HireFull, HireLater };
 

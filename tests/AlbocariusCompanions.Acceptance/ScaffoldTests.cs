@@ -25,7 +25,6 @@ public class ScaffoldTests
     public void Scaffolded_companion_passes_validation()
     {
         using var tmp = new TempDir();
-        Fixtures.WriteShared(tmp.Path);
 
         var (exit, output) = Run("new_one", tmp.Path);
 
@@ -33,6 +32,9 @@ public class ScaffoldTests
         var result = CompanionCatalog.Load(tmp.Path);
         Assert.Empty(result.Issues.Errors());
         Assert.Equal(new[] { "new_one" }, result.Registry.Ids);
+        // The template brings the player's side of the meeting/hire flow too (M6).
+        var lines = result.Registry.All.Single().Dialogs.Lines!;
+        Assert.All(AlbocariusCompanions.Core.Rules.PlayerSlots.All, slot => Assert.Contains(lines, l => l.Slot == slot));
     }
 
     [Theory]
