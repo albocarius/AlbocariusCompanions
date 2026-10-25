@@ -100,14 +100,13 @@ public class AuthoringWarningsTests
     [InlineData("""{ "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""")]
     [InlineData("""{ "effects": { "transfer": { "gold": 100, "from": "self", "to": "player" } } }""")]
     [InlineData("""{ "effects": { "transfer": { "item": "grain", "count": 2, "from": "player", "to": "world" } } }""")]
-    [InlineData("""{ "effects": { "gold": -100 } }""")]
     [InlineData("""{ "when": { "hasGold": { "who": "player", "min": 99 } }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""")]
     [InlineData("""{ "when": { "hasGold": { "who": "self", "min": 100 } }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""")]
     [InlineData("""{ "when": { "any": [ { "hasGold": { "who": "player", "min": 100 } } ] }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""")]
     [InlineData("""{ "when": { "not": { "hasGold": { "who": "player", "min": 100 } } }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""")]
     [InlineData("""{ "when": { "hasItem": { "who": "player", "id": "grain" } }, "effects": { "transfer": { "item": "grain", "count": 2, "from": "player", "to": "world" } } }""")]
     [InlineData("""{ "when": { "hasItem": { "who": "player", "id": "wine", "min": 5 } }, "effects": { "transfer": { "item": "grain", "count": 2, "from": "player", "to": "world" } } }""")]
-    [InlineData("""{ "when": { "minGold": 50 }, "effects": { "gold": -100 } }""")]
+    [InlineData("""{ "when": { "minGold": 50 }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""")]
     public void Transfer_from_an_actor_without_a_matching_check_is_a_warning(string skipNode)
     {
         var issues = Load(root => Write(root, "alpha", nodes: new() { ["p_wound_skip"] = skipNode }));
@@ -118,12 +117,10 @@ public class AuthoringWarningsTests
 
     [Theory]
     [InlineData("""{ "effects": { "transfer": { "gold": 100, "from": "world", "to": "player" } } }""", null, null)]
-    [InlineData("""{ "effects": { "gold": 100 } }""", null, null)]
     [InlineData("""{ "when": { "hasGold": { "who": "player", "min": 100 } }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""", null, null)]
     [InlineData("""{ "when": { "hasGold": { "who": "alpha", "min": 150 } }, "effects": { "transfer": { "gold": 100, "from": "self", "to": "player" } } }""", null, null)]
     [InlineData("""{ "when": { "all": [ { "hasGold": { "who": "player", "min": 100 } } ] }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""", null, null)]
     [InlineData("""{ "when": { "hasItem": { "who": "player", "id": "grain", "min": 2 } }, "effects": { "transfer": { "item": "grain", "count": 2, "from": "player", "to": "world" } } }""", null, null)]
-    [InlineData("""{ "when": { "minGold": 100 }, "effects": { "gold": -100 } }""", null, null)]
     [InlineData("""{ "when": { "minGold": 100 }, "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""", null, null)]
     // The check sits on the conversation or on a node earlier on the path.
     [InlineData("""{ "effects": { "transfer": { "gold": 100, "from": "player", "to": "self" } } }""", """{ "hasGold": { "who": "player", "min": 100 } }""", null)]

@@ -359,15 +359,8 @@ public static class ConversationChecks
 
         if (effects.Relation is { } relation && (relation == 0 || !InRelationRange(relation)))
             Bad($"relation {relation} must be a non-zero change within {ConversationRules.MinRelation}..{ConversationRules.MaxRelation}.");
-        if (effects.Gold == 0)
-            Bad("gold 0 has no effect; use a negative amount (the player pays) or a positive one (the player receives).");
-        if (effects.Transfer != null)
-        {
-            if (effects.Gold != null)
-                Bad("has both 'transfer' and the old 'gold' key; 'gold' is only the shorthand for a player/world transfer.");
-            else if (TransferProblem(effects.Transfer, ownId) is { } problem)
-                Bad($"transfer: {problem}.");
-        }
+        if (effects.Transfer != null && TransferProblem(effects.Transfer, ownId) is { } problem)
+            Bad($"transfer: {problem}.");
         foreach (var pair in effects.Add ?? new Dictionary<string, int>())
             if (pair.Value == 0)
                 Bad($"add {pair.Value} to '{pair.Key}' has no effect.");

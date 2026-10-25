@@ -103,9 +103,7 @@ public class RepeatableRewardTests
     [InlineData("""{ "effects": { "transfer": { "gold": 50, "from": "world", "to": "player" } } }""", true)]
     [InlineData("""{ "effects": { "transfer": { "gold": 50, "from": "self", "to": "player" } } }""", true)]
     [InlineData("""{ "effects": { "transfer": { "item": "grain", "from": "world", "to": "player" } } }""", true)]
-    [InlineData("""{ "effects": { "gold": 50 } }""", true)]
     [InlineData("""{ "effects": { "transfer": { "gold": 50, "from": "player", "to": "self" } } }""", false)]
-    [InlineData("""{ "effects": { "gold": -50 } }""", false)]
     public void Reward_kinds_and_int_guards(string sorryNode, bool warns)
     {
         var count = Warnings(Validate(false, new() { ["p_wound_sorry"] = sorryNode })).Count();

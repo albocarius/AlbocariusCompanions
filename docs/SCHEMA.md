@@ -158,9 +158,7 @@ required, and they must name two different actors). An actor is `player`, `self`
 `self`). Gold is each hero's own, so gold moves between any two different actors; items live only in the player's party
 inventory (companions in the party share it, the others have none), so an item transfer is only between `player` and
 `world`. A transfer happens when the node is said, and the node is offered only when its source (unless `world`) holds
-the gold or items. `gold` (non-zero) is shorthand for a transfer between `player` and `world` — negative = the player
-loses it (`player` → `world`, offered only with enough gold), positive = the player receives it (`world` → `player`) —
-and may not be combined with `transfer`.
+the gold or items.
 
 **Repeatable reward** (warning): a conversation that is not `once` and can reward the player — relation up, or gold/items
 to the player from anyone else — along a path whose own writes never make one of its conditions false. Conditions that

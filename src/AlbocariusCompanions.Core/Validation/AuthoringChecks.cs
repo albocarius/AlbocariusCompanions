@@ -64,7 +64,7 @@ public static class AuthoringChecks
     // ---- transfer without a matching check ----
 
     /// <summary>
-    /// A transfer whose "from" is not "world" (the old "gold" key counts as one) should be guarded by a matching
+    /// A transfer whose "from" is not "world" should be guarded by a matching
     /// check: the node's own "when", the conversation's "when" or the "when" of any node from which the node can be
     /// reached along "next" (an ancestor; conditions are ignored when walking). A gold transfer matches a "hasGold"
     /// of the same actor (the companion's own id names "self") with min ≥ the amount, or a "minGold" when the actor

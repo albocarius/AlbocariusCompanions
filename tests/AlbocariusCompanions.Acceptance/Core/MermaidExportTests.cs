@@ -127,8 +127,8 @@ public class MermaidExportTests
         Assert.Equal(expected, MermaidExport.Describe(JObject.Parse(when).ToObject<ConditionSet>()!));
 
     [Theory]
-    [InlineData("""{ "relation": -3, "gold": 50 }""", "relation -3, gold +50")]
-    [InlineData("""{ "gold": -100, "join": true }""", "gold -100, join")]
+    [InlineData("""{ "relation": -3, "transfer": { "gold": 50, "from": "world", "to": "player" } }""", "relation -3, 50 gold world -> player")]
+    [InlineData("""{ "transfer": { "gold": 100, "from": "player", "to": "world" }, "join": true }""", "100 gold player -> world, join")]
     [InlineData("""{ "setFlags": ["a"], "clearFlags": ["b"], "set": { "seen": 2, "told": true }, "add": { "mood": -1 } }""",
         "a = true, b = false, seen = 2, told = true, mood += -1")]
     [InlineData("""{ "relation": 1, "transfer": { "gold": 100, "from": "player", "to": "self" }, "join": true }""",

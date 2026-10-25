@@ -58,7 +58,6 @@ public class TransferTests
     [InlineData("""{ "transfer": { "gold": 5, "from": "self", "to": "test_companion" } }""")]
     [InlineData("""{ "transfer": { "item": "grain", "from": "self", "to": "player" } }""")]
     [InlineData("""{ "transfer": { "item": "grain", "from": "world", "to": "jeremus" } }""")]
-    [InlineData("""{ "gold": 5, "transfer": { "gold": 5, "from": "world", "to": "player" } }""")]
     public void Invalid_transfer_is_an_effect_error(string effects) =>
         SingleError(Validate(JObject.Parse(effects)), IssueCodes.InvalidEffect);
 
@@ -140,13 +139,16 @@ public class TransferTests
     // ---- normalization ----
 
     [Fact]
-    public void Old_gold_key_is_sugar_for_a_player_world_transfer()
+    public void Old_gold_key_is_gone_and_the_explicit_transfer_is_returned()
     {
-        var pay = Transfers.Of(new EffectSet { Gold = -100 })!;
-        Assert.Equal((100, (string?)null, "player", "world"), (pay.Gold, pay.Item, pay.From, pay.To));
-
-        var receive = Transfers.Of(new EffectSet { Gold = 50 })!;
-        Assert.Equal((50, "world", "player"), (receive.Gold, receive.From, receive.To));
+        using var tmp = new TempDir();
+        var d = Fixtures.Dialogs(Id);
+        var langs = Fixtures.Langs();
+        var conversation = Fixtures.Conversation();
+        Fixtures.Node(conversation, "p_wound_skip")["effects"] = JObject.Parse("""{ "gold": -100 }""");
+        Fixtures.AddConversation(d, langs, conversation);
+        Fixtures.Write(tmp.Path, Id, Fixtures.Companion(Id), d, langs);
+        Assert.Equal(0, CompanionCatalog.Load(tmp.Path).Registry.Count);
 
         var explicitTransfer = new TransferEffect { Item = "grain", Count = 2, From = "world", To = "player" };
         Assert.Same(explicitTransfer, Transfers.Of(new EffectSet { Transfer = explicitTransfer }));
@@ -203,8 +205,5 @@ public class TransferTests
     [InlineData("""{ "transfer": { "item": "grain", "count": 2, "from": "player", "to": "world" } }""", true)]
     [InlineData("""{ "transfer": { "item": "grain", "count": 3, "from": "player", "to": "world" } }""", false)]
     [InlineData("""{ "transfer": { "item": "grain", "count": 9, "from": "world", "to": "player" } }""", true)]
-    [InlineData("""{ "gold": -100 }""", true)]
-    [InlineData("""{ "gold": -101 }""", false)]
-    [InlineData("""{ "gold": 500 }""", true)]
     public void Transfer_source_must_be_able_to_give(string effects, bool expected) => Assert.Equal(expected, CanApply(effects));
 }
