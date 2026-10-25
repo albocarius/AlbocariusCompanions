@@ -119,6 +119,9 @@ public class MermaidExportTests
     [InlineData("""{ "all": [ { "flags": ["a"] }, { "flags": ["b"] } ] }""", "(a and b)")]
     [InlineData("""{ "any": [ { "flags": ["a"] }, { "hired": true, "flags": ["b"] } ] }""", "(a or hired and b)")]
     [InlineData("""{ "hired": true, "not": { "flags": ["a"] } }""", "hired and not (a)")]
+    [InlineData("""{ "hasGold": { "who": "self", "min": 100 }, "hasItem": { "who": "player", "id": "grain", "min": 2 } }""",
+        "self gold >= 100 and player has 2 grain")]
+    [InlineData("""{ "hasItem": { "who": "player", "id": "grain" } }""", "player has 1 grain")]
     [InlineData("""{ }""", "")]
     public void Conditions_are_described_compactly(string when, string expected) =>
         Assert.Equal(expected, MermaidExport.Describe(JObject.Parse(when).ToObject<ConditionSet>()!));
@@ -128,6 +131,10 @@ public class MermaidExportTests
     [InlineData("""{ "gold": -100, "join": true }""", "gold -100, join")]
     [InlineData("""{ "setFlags": ["a"], "clearFlags": ["b"], "set": { "seen": 2, "told": true }, "add": { "mood": -1 } }""",
         "a = true, b = false, seen = 2, told = true, mood += -1")]
+    [InlineData("""{ "relation": 1, "transfer": { "gold": 100, "from": "player", "to": "self" }, "join": true }""",
+        "relation +1, 100 gold player -> self, join")]
+    [InlineData("""{ "transfer": { "item": "grain", "from": "world", "to": "player" } }""", "1 grain world -> player")]
+    [InlineData("""{ "transfer": { "item": "grain", "count": 3, "from": "player", "to": "world" } }""", "3 grain player -> world")]
     [InlineData("""{ }""", "")]
     public void Effects_are_described_compactly(string effects, string expected) =>
         Assert.Equal(expected, MermaidExport.Describe(JObject.Parse(effects).ToObject<EffectSet>()!));
