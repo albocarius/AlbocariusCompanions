@@ -48,6 +48,14 @@ public static class IssueCodes
     public const string UnreachableNode = "unreachable_node";
     public const string ConversationMayStall = "conversation_may_stall";
 
+    // dialogs.json variables (M7)
+    public const string InvalidVariable = "invalid_variable";
+    public const string UnknownVariable = "unknown_variable";
+    public const string LocalVariable = "local_variable";
+    public const string VariableTypeMismatch = "variable_type_mismatch";
+    /// <summary>Warning: a reference to a variable of a companion that is not loaded (the condition is false, the write skipped).</summary>
+    public const string MissingCompanionReference = "missing_companion_reference";
+
     // Runtime resolution (SPEC rule 9)
     public const string CultureMissing = "culture_missing";
     public const string EquipmentMissing = "equipment_missing";

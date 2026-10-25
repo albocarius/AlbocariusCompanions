@@ -68,6 +68,7 @@ The companion id is the folder name; there is no `id` field.
 | `lines[].voiced` | bool | no | default `false`; a player slot line must not be voiced (error) |
 | `lines[].audio` | string | no | relative to the companion folder, no `..`, must end in `.ogg` (any case) — anything else is an error; default `audio/<local id>.ogg`; not allowed on player slot lines |
 | `conversations` | array | no | authored conversations, see below |
+| `variables` | object | no | declared conversation variables, see "Variables" below |
 
 Audio is bound to the dialog line, not to a language: the line's file in the companion's `audio/` folder (default
 `audio/<local id>.ogg`) plays with that line in every game language.
@@ -127,16 +128,56 @@ Extra companion ↔ player dialogs: a small graph of companion (`npc`) and `play
 | `nodes[].when` | object | no | conditions of this node, see below; a node whose condition fails is not offered / not said |
 | `nodes[].effects` | object | no | applied when the node is said, see below |
 
-**Conditions** (`when`; every field that is set must hold): `met` (bool), `hired` (bool: in the player's clan), `inParty` (bool:
-in the player's party), `minRelation` / `maxRelation` (−100..100: the companion's relation with the player, min ≤ max),
-`minGold` (≥ 0: the player's gold), `flags` (all set), `notFlags` (none set; a flag may not be in both).
+**Conditions** (`when`; one object, every field that is set must hold — an implicit "all"):
+- `met` (bool), `hired` (bool: in the player's clan), `inParty` (bool: in the player's party), `minRelation` / `maxRelation`
+  (−100..100: the companion's relation with the player, min ≤ max), `minGold` (≥ 0: the player's gold);
+- `flags` (bool variables that must all be true), `notFlags` (bool variables that must all be false; a name may not be in both);
+- `var` + `min` / `max` (int variable within the bounds, min ≤ max) or `var` + `eq` (equals: `true`/`false` for a bool, a
+  whole number for an int); `min`/`max`/`eq` need a `var`, `eq` is not combined with `min`/`max`;
+- `all: [ … ]` (every object holds), `any: [ … ]` (at least one holds), `not: { … }` (the object does not hold); each element
+  is again a condition object, nestable; `all`/`any` may not be empty.
+
+```json
+"when": { "hired": true, "any": [ { "flags": ["told_scar"] }, { "var": "raids_seen", "min": 3 } ], "not": { "flags": ["got_coin"] } }
+```
 
 **Effects**: `relation` (non-zero, −100..100; the game scales positive changes by its own model and clamps the result),
 `gold` (non-zero: negative = the player pays the companion — the node is offered only with enough gold; positive = the
-player receives), `setFlags`, `clearFlags` (a flag may not be in both), `join` (`true`: the companion joins the player's
-clan and party without payment — offered only while not hired and the clan has room).
+player receives), `join` (`true`: the companion joins the player's clan and party without payment — offered only while not
+hired and the clan has room), and variable writes, applied in this order: `setFlags` (bools → true), `clearFlags` (bools →
+false), `set` (`{ "<var>": true | false | <int> }`, value of the variable's type), `add` (`{ "<int var>": <non-zero int> }`).
+One node writes a variable at most once.
 
-**Flags** are names `[a-z0-9_]+` per companion, saved with the campaign; they start unset in a new campaign.
+### Variables
+Declared per companion in dialogs.json; permanent per campaign until changed.
+
+```json
+"variables": {
+  "told_scar":  { "type": "bool", "scope": "shared" },
+  "raids_seen": { "type": "int",  "scope": "local", "default": 0 }
+}
+```
+
+| Field | Type | Required | Rule |
+|---|---|---|---|
+| key | string | yes | the name, `[a-z0-9_]+`; `mood` is built in and may not be declared |
+| `type` | string | yes | `bool` or `int` |
+| `scope` | string | no | `local` (default: only this companion uses it) or `shared` (other companions read/write it as `<companionId>.<name>`; this companion still owns it) |
+| `default` | bool / int | no | `false` / `0` if absent; must match the type |
+
+- **Built-in `mood`**: every companion has a local int `mood`, default 0. No game mechanic uses it yet.
+- **References**: `name` = this companion's variable, `<companionId>.<name>` = another companion's **shared** one. Every
+  reference must be declared, with the right type for where it is used (`flags`/`setFlags`… need a bool, `min`/`max`/`add`
+  an int) — otherwise a validation error and the companion is skipped. Using another companion's `local` variable (or its
+  `mood`) is an error.
+- **Missing companion**: when the referenced companion is not loaded at all (no folder, skipped for errors, or a required
+  module is missing) the reference is only a **warning**: the condition containing it is false as a whole (even inside
+  `not`/`any`) and a write to it is skipped; the referencing companion still loads.
+- **Saving**: each written value is saved by companion and name. On load, values of variables that no longer exist are
+  ignored, a value whose type changed falls back to the default, and new variables start at their default. A variable
+  that was never written follows its current `default`. **Renaming a variable loses its saved value.**
+- `flags` / `notFlags` / `setFlags` / `clearFlags` are shorthand for bool variables (the variables must be declared).
+  Saves from before variables (M6 flags) are converted on load: a flag becomes `true` for a declared bool of the same name.
 
 Warnings: a node that cannot be reached from `start`; a `next` whose nodes all have conditions (if none holds the
 conversation gets stuck — keep one without a condition). Node texts follow the lang file rules below.

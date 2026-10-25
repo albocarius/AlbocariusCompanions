@@ -206,7 +206,7 @@ internal static class CompanionDialogs
         return edges.Count;
     }
 
-    /// <summary>Node effects (GAME_MAP Q20): flags first, then relation, gold and joining, each logged.</summary>
+    /// <summary>Node effects (GAME_MAP Q20): variables first, then relation, gold and joining, each logged.</summary>
     private static void ApplyEffects(string id, ConversationNode node)
     {
         var effects = node.Effects;
@@ -214,10 +214,8 @@ internal static class CompanionDialogs
             return;
 
         var hero = Hero.OneToOneConversationHero;
-        foreach (var flag in effects.SetFlags ?? new List<string>())
-            ModRuntime.Flags.Set(id, flag);
-        foreach (var flag in effects.ClearFlags ?? new List<string>())
-            ModRuntime.Flags.Clear(id, flag);
+        foreach (var reference in ConversationEffects.ApplyVariables(id, effects, ModRuntime.Variables))
+            ModRuntime.Log.Warning($"Conversation effect of '{id}' node '{node.Id}': '{reference}' skipped, its companion is not loaded.");
 
         if (effects.Relation is { } relation)
             ChangeRelationAction.ApplyPlayerRelation(hero, relation);
@@ -234,7 +232,7 @@ internal static class CompanionDialogs
         }
 
         ModRuntime.Log.Info($"Conversation effects of '{id}' node '{node.Id}': " +
-            $"set [{string.Join(", ", effects.SetFlags ?? new List<string>())}], clear [{string.Join(", ", effects.ClearFlags ?? new List<string>())}], " +
+            $"variables [{string.Join(", ", VariableUses.InEffects(effects).Select(u => u.Reference))}], " +
             $"relation {effects.Relation?.ToString() ?? "-"}, gold {effects.Gold?.ToString() ?? "-"}, join {effects.Join}.");
     }
 
@@ -256,7 +254,7 @@ internal static class CompanionDialogs
         public int Relation => (int)Math.Round(_hero.GetRelationWithPlayer());
         public int PlayerGold => Hero.MainHero.Gold;
         public bool ClanIsFull => TooManyCompanions();
-        public bool HasFlag(string flag) => ModRuntime.Flags.Has(_companionId, flag);
+        public int? GetVariable(string reference) => ModRuntime.Variables.Get(_companionId, reference);
     }
 
     /// <summary>Vanilla limit check (Q6): the hire option is refused once the clan is at its companion limit.</summary>

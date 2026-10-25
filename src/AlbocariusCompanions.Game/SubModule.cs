@@ -38,7 +38,7 @@ public sealed class SubModule : MBSubModuleBase
         Safe.Run(log, "load companions", () =>
         {
             var root = ModuleHelper.GetModuleFullPath(ModRuntime.ModuleId) + "ModuleData/Companions";
-            var catalog = CompanionCatalog.Load(root);
+            var catalog = CompanionCatalog.Load(root, ModuleHelper.IsModuleActive);
             foreach (var issue in catalog.Issues)
                 CompanionTemplates.LogIssue(log, issue);
             foreach (var package in catalog.Registry.All)
@@ -52,19 +52,12 @@ public sealed class SubModule : MBSubModuleBase
                 log.Warning($"Companions skipped because of errors: {string.Join(", ", skipped)}.");
 
             // requiredModules (SPEC_CORE_GAPS T2.3): a companion whose module is not loaded is skipped, the rest stay.
-            var kept = new List<CompanionPackage>();
-            foreach (var package in catalog.Registry.All)
-            {
-                var missing = RequiredModules.Missing(package, ModuleHelper.IsModuleActive);
-                if (missing.Count == 0)
-                    kept.Add(package);
-                else
-                    log.Warning($"Companion '{package.Id}' skipped: required module(s) not loaded: {string.Join(", ", missing)}.");
-            }
+            foreach (var skip in catalog.ModuleSkips)
+                log.Warning($"Companion '{skip.Key}' skipped: required module(s) not loaded: {string.Join(", ", skip.Value)}.");
 
-            log.Info($"{kept.Count} companion(s) ready from {root}.");
-            ModRuntime.SkippedAtLoad = skipped.Count + (catalog.Registry.Count - kept.Count);
-            ModRuntime.Registry = new CompanionRegistry(kept);
+            log.Info($"{catalog.Registry.Count} companion(s) ready from {root}.");
+            ModRuntime.SkippedAtLoad = skipped.Count + catalog.ModuleSkips.Count;
+            ModRuntime.Registry = catalog.Registry;
         });
 
         Safe.Run(log, "write voiced lines", () => VoicedLinesFile.Write(ModRuntime.Registry, log));

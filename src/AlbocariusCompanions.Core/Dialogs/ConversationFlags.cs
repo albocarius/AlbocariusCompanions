@@ -5,19 +5,13 @@ using System.Linq;
 namespace AlbocariusCompanions.Core.Dialogs;
 
 /// <summary>
-/// Conversation flags and "once" markers of one campaign, scoped per companion. Saved as a sorted list of keys
-/// ("&lt;companion&gt;:&lt;flag&gt;", "&lt;companion&gt;#started:&lt;conversation&gt;"); ids never contain ':' or '#', so
-/// keys cannot collide.
+/// "Once" markers of one campaign, scoped per companion, saved as a sorted list of keys
+/// ("&lt;companion&gt;#started:&lt;conversation&gt;"). M6 also kept flags here ("&lt;companion&gt;:&lt;flag&gt;"); since M7
+/// flags are bool variables (<see cref="VariableStore"/>) and old keys are moved there with <see cref="TakeLegacyFlags"/>.
 /// </summary>
 public sealed class ConversationFlags
 {
     private readonly HashSet<string> _keys = new HashSet<string>(StringComparer.Ordinal);
-
-    public bool Has(string companionId, string flag) => _keys.Contains(FlagKey(companionId, flag));
-
-    public void Set(string companionId, string flag) => _keys.Add(FlagKey(companionId, flag));
-
-    public void Clear(string companionId, string flag) => _keys.Remove(FlagKey(companionId, flag));
 
     public bool HasStarted(string companionId, string conversationId) => _keys.Contains(StartedKey(companionId, conversationId));
 
@@ -35,9 +29,16 @@ public sealed class ConversationFlags
                 _keys.Add(key);
     }
 
-    public int Count => _keys.Count;
+    /// <summary>Removes and returns the M6 flag keys ("&lt;companion&gt;:&lt;flag&gt;") found in a loaded save.</summary>
+    public List<string> TakeLegacyFlags()
+    {
+        var legacy = _keys.Where(k => !k.Contains("#")).OrderBy(k => k, StringComparer.Ordinal).ToList();
+        foreach (var key in legacy)
+            _keys.Remove(key);
+        return legacy;
+    }
 
-    private static string FlagKey(string companionId, string flag) => companionId + ":" + flag;
+    public int Count => _keys.Count;
 
     private static string StartedKey(string companionId, string conversationId) => companionId + "#started:" + conversationId;
 }

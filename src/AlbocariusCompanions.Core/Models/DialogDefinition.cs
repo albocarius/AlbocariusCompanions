@@ -11,6 +11,8 @@ public sealed class DialogFile
     [JsonProperty("lines")] public List<DialogLine>? Lines { get; set; }
     /// <summary>Authored companion ↔ player conversations (optional).</summary>
     [JsonProperty("conversations")] public List<ConversationDefinition>? Conversations { get; set; }
+    /// <summary>Declared conversation variables, by name (M7). The built-in int "mood" is never declared.</summary>
+    [JsonProperty("variables")] public Dictionary<string, VariableDeclaration>? Variables { get; set; }
 }
 
 /// <summary>Anything with a text, an id and maybe a recorded voice: a slot line or a conversation node.</summary>

@@ -81,8 +81,11 @@ public class ConversationConditionsTests
         public int Relation { get; set; }
         public int PlayerGold { get; set; } = 1000;
         public bool ClanIsFull { get; set; }
-        public HashSet<string> Flags { get; } = new HashSet<string>();
-        public bool HasFlag(string flag) => Flags.Contains(flag);
+        public Dictionary<string, int> Variables { get; } = new Dictionary<string, int>();
+        /// <summary>Companions whose variables are unknown (not loaded).</summary>
+        public HashSet<string> MissingCompanions { get; } = new HashSet<string>();
+        public int? GetVariable(string reference) =>
+            reference.Contains('.') && MissingCompanions.Contains(reference.Split('.')[0]) ? null : Variables.GetValueOrDefault(reference);
     }
 
     [Fact]
@@ -92,7 +95,7 @@ public class ConversationConditionsTests
     public void Each_condition_is_checked()
     {
         var context = new FakeContext { IsHired = true, IsInPlayerParty = true, Relation = 10, PlayerGold = 100 };
-        context.Flags.Add("told");
+        context.Variables["told"] = 1;
 
         Assert.True(ConversationConditions.Holds(new ConditionSet { Met = true, Hired = true, InParty = true, MinRelation = 10,
             MaxRelation = 10, MinGold = 100, Flags = new List<string> { "told" }, NotFlags = new List<string> { "other" } }, context));
@@ -168,31 +171,34 @@ public class ConversationConditionsTests
 public class ConversationFlagsTests
 {
     [Fact]
-    public void Flags_are_scoped_per_companion_and_round_trip_through_the_save_list()
+    public void Started_markers_round_trip_through_the_save_list()
     {
         var flags = new ConversationFlags();
-        flags.Set("a", "told");
         flags.MarkStarted("a", "talk");
-        flags.Set("b", "other");
-        flags.Clear("b", "other");
 
-        Assert.True(flags.Has("a", "told"));
-        Assert.False(flags.Has("b", "told"));
-        Assert.False(flags.Has("b", "other"));
         Assert.True(flags.HasStarted("a", "talk"));
-        Assert.False(flags.Has("a", "talk")); // a started marker is not a flag
+        Assert.False(flags.HasStarted("b", "talk"));
 
         var restored = new ConversationFlags();
         restored.Load(flags.ToList());
-        Assert.Equal(flags.ToList(), restored.ToList());
-        Assert.Equal(new[] { "a#started:talk", "a:told" }, restored.ToList());
+        Assert.Equal(new[] { "a#started:talk" }, restored.ToList());
     }
 
     [Fact]
-    public void Loading_nothing_empties_the_flags()
+    public void Old_flag_keys_are_taken_out_and_markers_stay()
     {
         var flags = new ConversationFlags();
-        flags.Set("a", "x");
+        flags.Load(new[] { "a#started:talk", "a:told", "b:other" });
+
+        Assert.Equal(new[] { "a:told", "b:other" }, flags.TakeLegacyFlags());
+        Assert.Equal(new[] { "a#started:talk" }, flags.ToList());
+    }
+
+    [Fact]
+    public void Loading_nothing_empties_the_markers()
+    {
+        var flags = new ConversationFlags();
+        flags.MarkStarted("a", "x");
         flags.Load(null);
         Assert.Equal(0, flags.Count);
     }

@@ -1,5 +1,9 @@
 {
   "schemaVersion": 1,
+  "variables": {
+    "told_scar": { "type": "bool", "scope": "shared" },
+    "got_coin": { "type": "bool" }
+  },
   "lines": [
     {"id": "intro_01", "slot": "intro", "voiced": true},
     {"id": "backstory_01", "slot": "backstory", "voiced": true},
