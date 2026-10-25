@@ -1670,7 +1670,202 @@ Status: TODO
 
 ## Q29 — Items, inventory and gold
 
-Status: TODO
+Status: VERIFIED
+
+### Answer
+**Item lookup by string id.** `MBObjectManager.Instance.GetObject<ItemObject>(stringId)` is a plain registry lookup and returns
+**null** for an unknown id — no exception, no placeholder object, and null also when no type record for `ItemObject` exists.
+`ItemObject` is `sealed`, so the fast sealed branch of the lookup is used. Item ids are the `<Item id="…">` ids of the module
+item XML (`xmlschemas/Items.xsd`, `SandBoxCore/ModuleData/items/*.xml`); the type is registered as
+`RegisterType<ItemObject>("Item", "Items", 4u)`. A null result must be checked by the caller: `ItemRoster.AddToCounts` wraps
+the item in an `EquipmentElement`, which accepts `Item == null`, and the very next cached-stat update reads `item.Value` and
+throws a `NullReferenceException` (plus a `Debug.FailedAssert` dialog in a debug build). Vanilla code does not check, e.g.
+StoryMode `party.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("fish"), 20)`, which is safe only
+because that id ships in the module.
+
+An unknown id becomes a real object only through the **XML/save reference** path: `ReadObjectReferenceFromXml` reads an
+attribute of the form `Type.stringId` (`Item.ragged_robes`; `MBInvalidReferenceException` if the dot is missing, null if the
+attribute is absent) and calls `GetPresumedObject`, which for `AutoCreate` types (the `RegisterType` default) registers a
+placeholder `ItemObject` with `IsReady == false`. When such an id disappears from the XML, load-time repair replaces it:
+`ItemRoster.CalculateCachedStatsOnLoad` → `ReplaceInvalidItemsWithTrash` converts each slot holding a not-ready item (or a
+not-ready `ItemModifier`) into `DefaultItems.Trash`, and `Hero.CheckInvalidEquipmentsAndReplaceIfNeeded` does the same for the
+twelve equipment slots and compensates the party with `PartyBelongedTo?.ItemRoster.AddToCounts(DefaultItems.Trash, 1)`.
+A C# `GetObject<ItemObject>` of the same id still returns null — only XML references auto-create.
+
+**The party inventory is the party's, not the hero's.** Items live in an `ItemRoster`, which belongs to a `PartyBase`
+(`PartyBase.ItemRoster`, one per party, saved with the game); `MobileParty.ItemRoster => Party.ItemRoster`. For the player that
+is `PartyBase.MainParty.ItemRoster` == `MobileParty.MainParty.ItemRoster`. A settlement has its own party roster plus a
+separate warehouse `Settlement.Stash` (opened by `OpenScreenAsStash`). A hero owns no `ItemRoster` at all.
+
+**Add / remove.** `public int AddToCounts(ItemObject item, int number)` (public) forwards to
+`public int AddToCounts(EquipmentElement rosterElement, int number)`; the return value is the roster slot index, or −1 when
+`number == 0` (nothing happens). Negative `number` removes; the element is swap-erased once `Amount <= 0`; subtracting from an
+element that is not present raises `Debug.FailedAssert("Trying to delete an element from Item Roster that does not exist!")`
+and returns −1 with the roster unchanged. Other mutators: `Add(ItemRosterElement)` / `Add(IEnumerable<ItemRosterElement>)`
+(both go through `AddToCounts`), `Remove(ItemRosterElement)` (`AddToCounts(element, -Amount)`),
+`RemoveIf(Func<ItemRosterElement, int> match)`, `Clear()`. The roster enforces **no** capacity limit:
+`MobileParty.InventoryCapacity` (`InventoryCapacityModel`) and `TotalWeightCarried` are read by the UI and by trade/logic code,
+and `AddToCounts` will happily exceed them.
+
+**Count / find.** `public int GetItemNumber(ItemObject item)` returns the amount or 0 (it is `FindIndexOfItem` + amount);
+`FindIndexOfItem(ItemObject)` → −1 when absent; `FindIndexOfElement(EquipmentElement)` matches element equality; iteration is
+`Count` + indexer + `GetItemAtIndex` / `GetElementNumber` / `GetElementCopyAtIndex`, and cached `TotalValue`, `TotalFood`,
+`TradeGoodsTotalValue` are maintained for free. Matching is inconsistent and is a real trap: `GetItemNumber` / `FindIndexOfItem`
+match the `ItemObject` only and look at the *first* matching slot, while `AddToCounts` / `FindIndexOfElement` match item **and**
+`ItemModifier`. The same weapon with two modifiers occupies two slots and `GetItemNumber` reports only the first.
+
+**Item events.** Editing a roster directly fires nothing on the campaign event bus; the only hook is the per-roster C# event
+`ItemRoster.RosterUpdatedEvent` (`delegate void RosterUpdatedEventDelegate(ItemRosterElement item, int count)`). The
+event-bus path is `GiveItemAction.ApplyForHeroes(Hero giver, Hero receiver, in ItemRosterElement)` /
+`ApplyForParties(PartyBase giverParty, PartyBase receiverParty, in ItemRosterElement)`, which dispatch
+`CampaignEventDispatcher.OnHeroOrPartyGaveItem((Hero, PartyBase) giver, (Hero, PartyBase) receiver, ItemRosterElement, bool
+showNotification)`, listened to by `DefaultNotificationsCampaignBehavior.OnHeroOrPartyGaveItem` (plain text, and only when
+`showNotification` and `Amount > 0`). `GiveItemAction` cannot create or destroy items — both sides must exist — and its
+hero↔hero branch subtracts the amount from *both* heroes' party rosters (see Uncertain). The idiomatic vanilla move for
+party↔party is plain `AddToCounts(±n)` (`ItemBarterable.Apply` does exactly that).
+
+**Gold is not an item.** There is no gold `ItemObject` (`DefaultItems` exposes Grain, Planks, …, `public static ItemObject Trash`,
+and no `id="gold"` exists in any module item XML). Gold is three independent integer stores: `Hero._gold`
+(`[SaveableField(650)]`, `public int Gold` whose setter floors at 0, `public void ChangeHeroGold(int)` clamping to
+`int.MaxValue`); `MobileParty._partyTradeGold` (`[SaveableField(1956)]`, `public int PartyTradeGold` whose setter floors at 0,
+but for a lord party with a leader hero the property **proxies** `LeaderHero.Gold`; `IsLordParty` is
+`_partyComponent is LordPartyComponent`); and `SettlementComponent.Gold` (`public int Gold`, `public void ChangeGold(int)`).
+`Clan.Gold => Leader?.Gold ?? 0` is only a read-through to the clan leader. The player's main party is itself a lord party led
+by the player (`Campaign.OnPlayerCharacterChanged`: `MainParty = MobileParty.CreateParty("player_party_" + …, null)` then
+`LordPartyComponent.ConvertPartyToLordParty(MainParty, Hero.MainHero, Hero.MainHero)`), so `PartyBase.MainParty.PartyTradeGold`
+and `Hero.MainHero.Gold` are the same number.
+
+**Gold transfer API** (`GiveGoldAction`, all `public static`): `ApplyBetweenCharacters(Hero giverHero, Hero recipientHero,
+int amount, bool disableNotification = false)`, `ApplyForCharacterToParty(Hero, PartyBase, int, bool)`,
+`ApplyForPartyToCharacter(PartyBase, Hero, int, bool)`, `ApplyForPartyToParty(PartyBase, PartyBase, int, bool)`,
+`ApplyForCharacterToSettlement(Hero, Settlement, int, bool)`, `ApplyForSettlementToCharacter(Settlement, Hero, int, bool)`,
+`ApplyForSettlementToParty(Settlement, PartyBase, int, bool)`, `ApplyForPartyToSettlement(PartyBase, Settlement, int, bool)`.
+All funnel into `private static void ApplyInternal(Hero giverHero, PartyBase giverParty, Hero recipientHero,
+PartyBase recipientParty, int goldAmount, bool showQuickInformation, string transactionStringId = "")`, whose semantics:
+(1) the amount is **capped at the giver** — a hero giver at `MathF.Min(giverHero.Gold, goldAmount)`, a mobile-party giver at
+its `PartyTradeGold`, a settlement giver at its `SettlementComponent.Gold` — and only the clamped amount moves; (2) a **null
+giver side creates gold** (no cap, nothing is subtracted) and a **null recipient side destroys it**, which is how vanilla
+cheats (`CampaignCheats.AddGoldToHero` → `ApplyBetweenCharacters(null, hero, amount, disableNotification: true)`) and trade
+payouts (`InventoryLogic` pays a caravan master) add money out of nothing; (3) there is no recipient ceiling except
+`int.MaxValue` in `ChangeHeroGold`, and the 0 floors of the two setters; (4) **every** call dispatches
+`CampaignEventDispatcher.OnHeroOrPartyTradedGold((Hero, PartyBase) giver, (Hero, PartyBase) recipient,
+(int, string) goldAmount, bool showNotification)`, so the event is unconditional; the visible map notification comes from
+`DefaultNotificationsCampaignBehavior.OnHeroOrPartyTradedGold`, which needs `showQuickInformation` — set by the action only
+when the main hero or `PartyBase.MainParty` is one of the two sides and `disableNotification` was not passed — and then shows
+the coin icon/sound for the giving or the receiving side. Setting `hero.Gold` / `ChangeHeroGold` or
+`party.PartyTradeGold` directly bypasses the action, the cap and the event.
+
+**Companion inventory.** A companion in the player's party has no inventory of its own: the only roster a `Hero` ever touches
+in its own code is `hero.PartyBelongedTo.ItemRoster`, so everything except worn gear is ordinary party property and is shared
+with the whole party. What is per-companion is equipment — `[SaveableProperty(210/220/881)] private Equipment
+_battleEquipment/_civilianEquipment/_stealthEquipment`, exposed as `public Equipment BattleEquipment => _battleEquipment ??
+Campaign.Current.DeadBattleEquipment;` (and `CivilianEquipment`, `StealthEquipment`; twelve slots each) — filled from the
+character template by `public void ResetEquipments()`, plus `public MBList<ItemObject> SpecialItems` for mission/quest gear.
+Equipment items are *not* mirrored into the party roster unless code pushes them (`CampaignCheats`, `CharacterData`,
+StoryMode quests call `hero.PartyBelongedTo.ItemRoster.AddToCounts(hero.BattleEquipment[i], 1)`). The inventory screen models
+this as sides `InventorySide.CivilianEquipment/BattleEquipment/StealthEquipment` against `party.ItemRoster`
+(`InventoryScreenHelper.OpenScreenAsInventoryOf(MobileParty party, CharacterObject character)`). When a wanderer companion is
+fired, `RemoveCompanionAction` calls `ResetEquipments()`, so gear you handed them is gone; anything still in the party roster
+stays with the party, and no gold or item is transferred. A companion who leads their own party gets a brand-new lord party —
+`MobilePartyHelper.CreateNewClanMobileParty(Hero hero, Clan clan)` → `SpawnLordParty` — whose `ItemRoster` starts empty;
+nothing is moved out of the player's party, so such a companion only takes their equipment with them.
+
+**Companion gold.** A companion owns a normal `Hero._gold`, which starts at 0 (constructor `_gold = 0`) and in vanilla is
+funded exactly once: `conversation_companion_hire_on_consequence` pays the wanderer with
+`GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, Hero.OneToOneConversationHero, hiringPrice)` (Q6), so a hired companion
+arrives owning the hiring fee, and it is never taken back. While they sit in the player's party nothing spends that purse: party
+purchasing power and wages read `MobileParty.PartyTradeGold` (for the player's party that is the player's own gold) or
+`Clan.PlayerClan.Gold` (the clan leader, i.e. the player). The companion's own gold becomes meaningful when they are not an
+inert party member: they lead a party (their `PartyTradeGold` proxies it, and `CalculatePlunderedGoldAmountFromDefeatedParty`
+plunders `DefaultBattleRewardModel.CalculateGoldLossAfterDefeat(hero)` = min(5% of their gold, 10000)); they are ransomed
+(`DefaultRansomValueCalculationModel.PrisonerRansomValue` = `sqrt(max(0, hero.Gold)) * 6`); you ask them to lead a party or to
+be granted a fief (`CompanionRolesCampaignBehavior` tops their purse up from the main hero and gates fiefs on
+`NeededGoldToGrantFief = 20000`); they offer gold in a barter (`GoldBarterBehavior` uses `OffererHero.Gold`, or the party's
+`PartyTradeGold` when the offerer has no hero); or they ever lead a clan (`Clan.Gold` reads the clan leader's purse). To fund
+one deliberately: `GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, companionHero, amount)`.
+
+| actor | gold — meaningful? API | item — meaningful? API |
+| --- | --- | --- |
+| player | yes; one store, `Hero.MainHero.Gold` == `PartyBase.MainParty.PartyTradeGold`; `GiveGoldAction.Apply…` (capped, notified), direct `Hero.Gold`/`ChangeHeroGold` (uncapped, silent) | yes; `PartyBase.MainParty.ItemRoster.AddToCounts(item, ±n)`, `GetItemNumber(item)`; `InventoryCapacity` is advisory |
+| companion in the player's party | purse exists but is inert: `companion.Gold` is only read by ransom/plunder/barter/party-leader models, never spent by party expenses | no store of their own: shared `companion.PartyBelongedTo.Party.ItemRoster`; personal gear = `BattleEquipment`/`CivilianEquipment`/`StealthEquipment` + `SpecialItems` |
+| companion not in the player's party (wanderer, or leading their own lord party) | yes: their own `Hero.Gold`, and for their own party `party.PartyTradeGold` **is** that number | own party roster `MobileParty.MainParty`→`theirParty.ItemRoster` (fresh, empty at `CreateNewClanMobileParty`); a partyless wanderer has only equipment slots |
+| world (create / destroy) | yes: `ApplyBetweenCharacters(null, hero, n)` creates, `ApplyBetweenCharacters(hero, null, n)` destroys; always capped on the giving side | no create/destroy API: vanilla creates and deletes items by `ItemRoster.AddToCounts(item, ±n)` on a party roster (StoryMode quests, `CampaignCheats`); `GiveItemAction` only moves between two existing sides |
+| settlement | `SettlementComponent.Gold` via `ApplyForCharacterToSettlement` / `ApplyForSettlementToCharacter` / `ChangeGold(int)` | `Settlement.Stash` warehouse roster plus the settlement's own `Settlement.Party.ItemRoster` |
+
+### Evidence
+- `decomp/TaleWorlds.ObjectSystem/TaleWorlds.ObjectSystem/MBObjectManager.cs` — `MBObjectManager.GetObject` — `public T GetObject<T>(string objectName) where T : MBObjectBase`; sealed types take the record fast path, and every path ends at `return null;` — unknown id or missing type record gives null, never an exception and never a created object.
+- `decomp/TaleWorlds.ObjectSystem/TaleWorlds.ObjectSystem/MBObjectManager.cs` — `ReadObjectReferenceFromXml` — `public T ReadObjectReferenceFromXml<T>(string attributeName, XmlNode node) where T : MBObjectBase`; null when the attribute is missing, `MBInvalidReferenceException` when the value has no `Type.stringId` dot, otherwise `GetPresumedObject(text, text2) as T`.
+- `decomp/TaleWorlds.ObjectSystem/TaleWorlds.ObjectSystem/MBObjectManager.cs` — `GetPresumedObject` — `private MBObjectBase GetPresumedObject(string typeName, string objectName, bool isInitialize = false)`; registered object, else `objectTypeRecord.AutoCreate` → `CreatePresumedMBObject` + `RegisterMBObject(…, presumed: true)`, else `throw new MBCanNotCreatePresumedObjectException()`.
+- `decomp/TaleWorlds.ObjectSystem/TaleWorlds.ObjectSystem/MBObjectManager.cs` — `CreatePresumedObject` — `private T CreatePresumedObject(string stringId)` sets `val.IsReady = false; val.IsInitialized = false;`.
+- `decomp/TaleWorlds.ObjectSystem/TaleWorlds.ObjectSystem/MBObjectManager.cs` — `RegisterType` — `public void RegisterType<T>(string classPrefix, string classListPrefix, uint typeId, bool autoCreateInstance = true, bool isTemporary = false)` — `autoCreateInstance` defaults to true, which is what makes XML references of unknown ids auto-create.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/Game.cs` — `RegisterType` — line 309 `objectManager.RegisterType<ItemObject>("Item", "Items", 4u);` — the `Item`/`Items` type name and element name used by XML references.
+- `decomp/TaleWorlds.ObjectSystem/TaleWorlds.ObjectSystem/MBObjectBase.cs` — `IsReady` — `public bool IsReady { get; set; }` on `MBObjectBase`, inherited by `ItemObject`; the flag load-time repair keys on.
+- `xmlschemas/Items.xsd` — `Item` — `<xs:element name="Items">` → `<xs:element name="Item">` with `<xs:attribute name="id" type="xs:string" use="required"/>`.
+- `~/bannerlord/moduledata_win/SandBoxCore/ModuleData/items/weapons.xml` — `torch` — real definitions are `<Item id="torch" name=… culture="Culture.empire">`, i.e. the bare string id passed to `GetObject<ItemObject>`; `grep -rl 'id="gold"'` over `~/bannerlord/moduledata_win/` finds nothing, so gold is not an item.
+- `~/bannerlord/moduledata_win/SandBoxCore/ModuleData/sandboxcore_equipment_sets.xml` — `Item.ragged_robes` — XML object *references* carry the `Item.` prefix that `ReadObjectReferenceFromXml` splits, unlike a C# lookup which takes the bare id.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemObject.cs` — `ItemObject` — `public sealed class ItemObject : MBObjectBase` with `public int Value { get; private set; }` and `public float Weight` — the members a roster update dereferences without a null check.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/EquipmentElement.cs` — `EquipmentElement` — `public EquipmentElement(ItemObject item, ItemModifier itemModifier = null, ItemObject cosmeticItem = null, bool isQuestItem = false)`; `public bool IsEmpty => Item == null;` — a null `ItemObject` is representable here.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemRosterElement.cs` — `ItemRosterElement` — `public ItemRosterElement(ItemObject item, int amount = 0, ItemModifier itemModifier = null)`; properties `EquipmentElement` and `Amount`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `AddToCounts` — `public int AddToCounts(ItemObject item, int number)` returns −1 for `number == 0` else `AddToCounts(new EquipmentElement(item), number)`; `public int AddToCounts(EquipmentElement rosterElement, int number)` asserts `"Trying to delete an element from Item Roster that does not exist!"` for a negative count on a missing element, then `OnRosterUpdated(ref _data[num], number); _data[num].Amount += number;` and drops the slot at `Amount <= 0`; no capacity test anywhere in the file.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `GetItemNumber` — `public int GetItemNumber(ItemObject item)` is `FindIndexOfItem(item)` then `_data[num].Amount`, else 0 — first matching slot only.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `FindIndexOfItem` — matches `EquipmentElement.Item` only (null-safe, returns −1), while `public int FindIndexOfElement(EquipmentElement rosterElement)` matches element equality — the count/match asymmetry.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `Remove` — `public void Add(ItemRosterElement itemRosterElement)` → `AddToCounts(element, Amount)`, `public void Remove(ItemRosterElement itemRosterElement)` → `AddToCounts(element, -Amount)`, plus `public IEnumerable<ItemRosterElement> RemoveIf(Func<ItemRosterElement, int> match)` and `public void Clear()`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `OnRosterUpdated` — `private void OnRosterUpdated(ref ItemRosterElement itemRosterElement, int count)` does `TotalValue += item.Value * count;` (and food/mount counters) then raises the roster event — a null `Item` throws here.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `RosterUpdatedEvent` — `public event RosterUpdatedEventDelegate RosterUpdatedEvent` with `delegate void RosterUpdatedEventDelegate(ItemRosterElement item, int count)` — the only roster-change hook.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `CalculateCachedStatsOnLoad` — `public static void CalculateCachedStatsOnLoad()` → `private static void ReplaceInvalidItemsWithTrash(ItemRoster itemRoster)`; for `!item.IsReady` it does `itemRoster.AddToCounts(DefaultItems.Trash, amount)` and unregisters the presumed object, and it also clears slots whose `ItemModifier` is not ready.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` — `TotalValue` — `public int TotalValue { get; internal set; }` (also `TotalFood`, `TradeGoodsTotalValue`) — cached totals maintained by `OnRosterUpdated`, no capacity member.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` — `ItemRoster` — `public ItemRoster ItemRoster { get; private set; }`, constructed with the party — the item store is per `PartyBase`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` — `MainParty` — `public static PartyBase MainParty` → `Campaign.Current.MainParty.Party`, so `PartyBase.MainParty.ItemRoster` is the player's inventory.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` — `ItemRoster` — `public ItemRoster ItemRoster => Party.ItemRoster;` — one roster per party, not per hero or per companion.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` — `InventoryCapacity` — `public int InventoryCapacity => (int)Campaign.Current.Models.InventoryCapacityModel.CalculateInventoryCapacity(this, IsCurrentlyAtSea).ResultNumber;` and `public float TotalWeightCarried` — capacity lives on the party model, not on the roster.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` — `PartyTradeGold` — getter `if (IsLordParty && LeaderHero != null) return LeaderHero.Gold; return _partyTradeGold;`, setter `LeaderHero.Gold = MathF.Max(value, 0);` else `_partyTradeGold = MathF.Max(value, 0);`; backing field `[SaveableField(1956)] private int _partyTradeGold;`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` — `IsLordParty` — `public bool IsLordParty { get; private set; }`, set by `IsLordParty = _partyComponent is LordPartyComponent;`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party.PartyComponents/LordPartyComponent.cs` — `ConvertPartyToLordParty` — `public static void ConvertPartyToLordParty(MobileParty mobileParty, Hero owner, Hero partyLeader)` → `mobileParty.SetPartyComponent(new LordPartyComponent(owner, partyLeader, null))`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` — `OnPlayerCharacterChanged` — `public void OnPlayerCharacterChanged(out bool isMainPartyChanged)`: `MainParty = MobileParty.CreateParty("player_party_" + Hero.MainHero.StringId, null);` then `LordPartyComponent.ConvertPartyToLordParty(MainParty, Hero.MainHero, Hero.MainHero);` — the player party is a lord party, so its trade gold is the player's purse; the same file also sets `Hero.MainHero.Gold = 1000;` for a new campaign.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `_gold` — `[SaveableField(650)] private int _gold;`, `_gold = 0;` in the constructor — a fresh hero/companion has no gold.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Gold` — `public int Gold { get { return _gold; } set { _gold = TaleWorlds.Library.MathF.Max(0, value); } }` — writes below zero are silently floored, and there is no event.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `ChangeHeroGold` — `public void ChangeHeroGold(int changeAmount)` — `((changeAmount <= int.MaxValue - _gold) ? (_gold + changeAmount) : int.MaxValue)` then `Gold = num;` — the only ceiling on a hero purse.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `PartyBelongedTo` — `public MobileParty PartyBelongedTo`; the only two `ItemRoster` mentions in the whole of `Hero.cs` are `PartyBelongedTo?.ItemRoster.AddToCounts(DefaultItems.Trash, 1)` — a hero has no roster of its own.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `BattleEquipment` — `[SaveableProperty(210)] private Equipment _battleEquipment { get; set; }` and `public Equipment BattleEquipment => _battleEquipment ?? Campaign.Current.DeadBattleEquipment;` (same for `CivilianEquipment`, `StealthEquipment`) — twelve slots per array, the per-hero item store.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `ResetEquipments` — `public void ResetEquipments()` clones `Template.FirstBattleEquipment/FirstCivilianEquipment/FirstStealthEquipment`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `SpecialItems` — `public MBList<ItemObject> SpecialItems;` — quest/mission gear, not an inventory.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `CheckInvalidEquipmentsAndReplaceIfNeeded` — `public void CheckInvalidEquipmentsAndReplaceIfNeeded()`: `!BattleEquipment[i].Item.IsReady` → `UnregisterObject`, `HandleInvalidItem(…)`, `PartyBelongedTo?.ItemRoster.AddToCounts(DefaultItems.Trash, 1);`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/DefaultItems.cs` — `Trash` — `public static ItemObject Trash => Instance._itemTrash;` alongside `Grain`, `Planks`, …; the class has no gold member.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` — `Stash` — `public readonly ItemRoster Stash;` (`Stash = new ItemRoster();`, saved) — a settlement's second roster, opened by `InventoryScreenHelper.OpenScreenAsStash(Settlement.CurrentSettlement.Stash)` in `PlayerTownVisitCampaignBehavior`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/SettlementComponent.cs` — `ChangeGold` — `public void ChangeGold(int changeAmount)`; `public int Gold { get; private set; }` — the third gold store.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` — `Gold` — `public int Gold => Leader?.Gold ?? 0;` — clan wealth is the clan leader hero's purse, not a separate store.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveGoldAction.cs` — `ApplyBetweenCharacters` — `public static void ApplyBetweenCharacters(Hero giverHero, Hero recipientHero, int amount, bool disableNotification = false)`; `showQuickInformation = !disableNotification && (giverHero == Hero.MainHero || recipientHero == Hero.MainHero)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveGoldAction.cs` — `ApplyForPartyToParty` — the party/settlement half of the public API: `ApplyForCharacterToParty(Hero, PartyBase, int, bool)`, `ApplyForPartyToCharacter(PartyBase, Hero, int, bool)`, `ApplyForPartyToParty(PartyBase, PartyBase, int, bool)`, `ApplyForCharacterToSettlement(Hero, Settlement, int, bool)`, `ApplyForSettlementToCharacter(Settlement, Hero, int, bool)`, `ApplyForSettlementToParty(Settlement, PartyBase, int, bool)`, `ApplyForPartyToSettlement(PartyBase, Settlement, int, bool)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveGoldAction.cs` — `ApplyInternal` — `private static void ApplyInternal(Hero giverHero, PartyBase giverParty, Hero recipientHero, PartyBase recipientParty, int goldAmount, bool showQuickInformation, string transactionStringId = "")`: giver hero branch `goldAmount = MathF.Min(giverHero.Gold, goldAmount); giverHero.ChangeHeroGold(-goldAmount);`, party branch capped at `PartyTradeGold`, settlement branch capped at `SettlementComponent.Gold`; a null giver side takes nothing (gold created), a null recipient side takes it and gives it to nobody (gold destroyed); always `CampaignEventDispatcher.Instance.OnHeroOrPartyTradedGold(...)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEventDispatcher.cs` — `OnHeroOrPartyTradedGold` — `public override void OnHeroOrPartyTradedGold((Hero, PartyBase) giver, (Hero, PartyBase) recipient, (int, string) goldAmount, bool showNotification)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEventDispatcher.cs` — `OnHeroOrPartyGaveItem` — `public override void OnHeroOrPartyGaveItem((Hero, PartyBase) giver, (Hero, PartyBase) receiver, ItemRosterElement itemRosterElement, bool showNotification)`.
+- `decomp/SandBox/SandBox.CampaignBehaviors/DefaultNotificationsCampaignBehavior.cs` — `OnHeroOrPartyTradedGold` — `private void OnHeroOrPartyTradedGold((Hero, PartyBase) giverSide, (Hero, PartyBase) recipientSide, (int, string) transactionAmountAndId, bool displayNotification)`; the coin notification/text only appears when `displayNotification` and the main hero or `PartyBase.MainParty` is one of the two sides.
+- `decomp/SandBox/SandBox.CampaignBehaviors/DefaultNotificationsCampaignBehavior.cs` — `OnHeroOrPartyGaveItem` — `private void OnHeroOrPartyGaveItem(...)`: returns unless `showNotification && itemRosterElement.Amount > 0`, then shows "gave item to hero/party" or "received item from hero/party" text.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveItemAction.cs` — `ApplyForHeroes` — `public static void ApplyForHeroes(Hero giver, Hero receiver, in ItemRosterElement itemRosterElement)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveItemAction.cs` — `ApplyForParties` — `public static void ApplyForParties(PartyBase giverParty, PartyBase receiverParty, in ItemRosterElement itemRosterElement)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/GiveItemAction.cs` — `ApplyInternal` — `private static void ApplyInternal(Hero giver, Hero receiver, PartyBase giverParty, PartyBase receiverParty, in ItemRosterElement itemRosterElement)`: party-only path is `giverParty…AddToCounts(element, -Amount)` then `receiverParty…AddToCounts(element, +Amount)`; the two-hero path subtracts from **both** `PartyBelongedTo.Party.ItemRoster`s; there is no side that is null on both ends, so no item is ever created or destroyed.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.BarterSystem.Barterables/ItemBarterable.cs` — `Apply` — `public override void Apply()`: `OriginalParty.ItemRoster.AddToCounts(_itemElement.EquipmentElement, -CurrentAmount); _otherParty.ItemRoster.AddToCounts(_itemElement.EquipmentElement, CurrentAmount);` when the other side is a party, `GiveItemAction.ApplyForHeroes` otherwise.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors.BarterBehaviors/GoldBarterBehavior.cs` — `CheckForBarters` — `int val = ((args.OffererHero != null) ? args.OffererHero.Gold : args.OffererParty.MobileParty.PartyTradeGold);` then `new GoldBarterable(…)` — a hero's own gold is what that hero can offer.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.BarterSystem.Barterables/GoldBarterable.cs` — `Apply` — `public override void Apply()` routes through `GiveGoldAction.ApplyBetweenCharacters(_ownerHero, _otherHero, CurrentAmount)`, `ApplyForPartyToParty`, `ApplyForPartyToCharacter` and `ApplyForCharacterToParty`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/LordConversationsCampaignBehavior.cs` — `conversation_companion_hire_on_consequence` — `private void conversation_companion_hire_on_consequence()` pays the wanderer hero `GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, Hero.OneToOneConversationHero, …GetCompanionHiringPrice(Hero.OneToOneConversationHero))` before `AddCompanionAction.Apply` (Q6), so that money is the companion's own afterwards.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/RemoveCompanionAction.cs` — `ResetEquipments` — `ApplyInternal` only touches gear, and only for `RemoveCompanionDetail.Fire` when `companion.IsWanderer`: `companion.ResetEquipments();`; no gold and no item transfer appears in the file.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` — `NeededGoldToGrantFief` — `private const int NeededGoldToGrantFief = 20000;` and `GiveGoldAction.ApplyBetweenCharacters(Hero.MainHero, oneToOneConversationHero, 20000)`; the "lead a party" option costs `ClanFinanceModel.PartyGoldLowerThreshold - Hero.OneToOneConversationHero.Gold` and tops that purse up from the main hero.
+- `decomp/TaleWorlds.CampaignSystem/Helpers/MobilePartyHelper.cs` — `CreateNewClanMobileParty` — `public static MobileParty CreateNewClanMobileParty(Hero hero, Clan clan)` removes the hero from its old party rosters and calls `SpawnLordParty(…)`; no `ItemRoster` and no gold appears in the method.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultBattleRewardModel.cs` — `CalculateGoldLossAfterDefeat` — `public override int CalculateGoldLossAfterDefeat(Hero partyLeaderHero) => (int)Math.Min((float)partyLeaderHero.Gold * 0.05f, 10000f);`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultBattleRewardModel.cs` — `CalculatePlunderedGoldAmountFromDefeatedParty` — `public override int CalculatePlunderedGoldAmountFromDefeatedParty(PartyBase defeatedParty)`: a leader hero uses `CalculateGoldLossAfterDefeat(defeatedParty.LeaderHero)`, otherwise an active trade party yields `(int)(PartyTradeGold * (IsBandit ? 0.5f : 0.1f))`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultRansomValueCalculationModel.cs` — `PrisonerRansomValue` — `public override int PrisonerRansomValue(CharacterObject prisoner, Hero sellerHero = null)` uses `MathF.Sqrt(MathF.Max(0, prisoner.HeroObject.Gold)) * 6f`.
+- `decomp/StoryMode/StoryMode.Quests.SecondPhase.ConspiracyQuests/DisruptSupplyLinesConspiracyQuest.cs` — `AddToCounts` — `_questCaravanMobileParty.ItemRoster.AddToCounts(MBObjectManager.Instance.GetObject<ItemObject>("fish"), 20);` — the canonical lookup-then-add idiom, with no null check on the id.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignCheats.cs` — `AddGoldToHero` — `public static string AddGoldToHero(List<string> strings)` guards `if (obj.Gold + result < 0 || obj.Gold + result > 100000000) return "Hero's gold must be between 0-100000000.";` and then creates gold with `GiveGoldAction.ApplyBetweenCharacters(null, obj, result, disableNotification: true)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignCheats.cs` — `AddToCounts` — `PartyBase.MainParty.ItemRoster.AddToCounts(itemObject, result);` is how the cheat console creates items; `obj.PartyBelongedTo?.ItemRoster.AddToCounts(obj.BattleEquipment[equipmentIndex], 1);` shows the reverse direction (gear into the party roster).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Inventory/InventoryLogic.cs` — `InventorySide` — `public enum InventorySide { OtherInventory = 0, PlayerInventory = 1, CivilianEquipment = 2, BattleEquipment = 3, StealthEquipment = 4, None = -1 }`, and `Initialize(leftItemRoster, party.ItemRoster, party.MemberRoster, …, initialCharacterOfRightRoster, …)` — the screen pairs one party roster with the party members' equipment sides.
+- `decomp/TaleWorlds.CampaignSystem/Helpers/InventoryScreenHelper.cs` — `OpenScreenAsInventoryOf` — `public static void OpenScreenAsInventoryOf(MobileParty party, CharacterObject character)`, `public static void OpenScreenAsInventoryOf(PartyBase rightParty, PartyBase leftParty)`, `public static void OpenScreenAsStash(ItemRoster stash)` — the vanilla entry points for a party/companion inventory screen.
+
+### Uncertain
+- **UNCERTAIN**: `GiveItemAction.ApplyInternal` subtracts `itemRosterElement.Amount` from the giver's **and** the receiver's party roster in the two-hero branch, which reads as a vanilla bug (a hero→hero gift removes the item from both parties). Resolve by finding a vanilla caller that passes two heroes with different parties (`ItemBarterable.Apply` does when the other side has no party) and testing one gift in game, or by reading the unreleased source.
+- **UNCERTAIN**: which object the party inventory screen actually writes when gear is moved — `InventoryLogic.PartyEquipment` keeps `Dictionary<CharacterObject, Equipment[3]>` copies and `ResetEquipment()` writes them back with `character.First*Equipment.FillFrom(equipment)`, while the saved per-hero store is `Hero._battleEquipment`. Resolve by tracing the apply path in the Native/SandBox inventory screen logic (or by giving a mod companion gear, saving, and dumping `hero.BattleEquipment`).
+- **UNCERTAIN**: whether `Debug.FailedAssert("Trying to delete an element from Item Roster that does not exist!")` is visible/abortive in the shipping build or a no-op log line, which decides how defensive the mod must be before removing an item. Resolve by testing one bad removal in game, or by checking the `Debug` build configuration of TaleWorlds.Core.
+- **UNCERTAIN**: whether any DLC or module behavior outside the locally decompiled DLLs spends a companion's own gold while they are in the player's party (`GoldBarterBehavior`, ransom, plunder, `CompanionRolesCampaignBehavior` and clan finance are the only uses found). Resolve by grepping every shipped module DLL for `.Gold` and `ChangeHeroGold`.
+- **UNCERTAIN**: whether `MBObjectManager.GetObject<ItemObject>` of an id that exists only as a presumed (XML-created, `IsReady == false`) object ever returns that placeholder in a live campaign, or whether presumed items are always registered by the time a C# lookup could see them. Resolve by dumping `GetObjectTypeList<ItemObject>()` for not-ready entries at runtime.
 
 ## Q30 — Debug console commands
 
