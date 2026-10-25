@@ -95,6 +95,18 @@ greetings and hub (`greet_recent`, `greet`, `main_hub`, `anything_else`, `farewe
 New companion: `tools/new-companion.sh <id>` (Windows: `tools\new-companion.bat <id>`) copies the template; it refuses an
 existing folder, an invalid id and `_shared`.
 
+### CLI
+
+Author-time checks and exports (`tools/AlbocariusCompanions.Cli`; all the logic is in `src/AlbocariusCompanions.Core`):
+`dotnet run --project tools/AlbocariusCompanions.Cli -- validate module/ModuleData/Companions` prints one line per finding —
+`ERROR <code> [<folder>] <message>` / `WARNING …` — followed by `<E> error(s), <W> warning(s).`. A path that holds a
+`companion.json` is a single companion: only that folder's issues are printed (its parent is still loaded, so cross-companion
+checks run). `dotnet run --project tools/AlbocariusCompanions.Cli -- mermaid module/ModuleData/Companions/<id> [conversation]`
+writes that companion's `conversations` (SCHEMA "Conversations") as Mermaid flowcharts, or one of them by id. Exit codes:
+0 clean or warnings only; 1 validation errors (`mermaid` prints the broken companion's issues on stderr); 2 usage, a path
+that does not exist, or an unknown conversation id. (As built, the standalone run crashes on a missing `Newtonsoft.Json`:
+Core hides its package with `PrivateAssets=all` and the CLI csproj is orchestrator-owned — see `docs/BLOCKERS.md`.)
+
 ### Conversations
 Extra companion ↔ player dialogs: a small graph of companion (`npc`) and `player` nodes.
 

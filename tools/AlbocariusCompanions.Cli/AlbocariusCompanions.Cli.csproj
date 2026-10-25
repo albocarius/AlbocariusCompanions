@@ -10,6 +10,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
 
+  <!-- Core keeps Newtonsoft private (PrivateAssets=all, so it never reaches dist); the CLI runs outside the game and needs
+       its own copy at runtime. Same version as Core (orchestra/PLAN.md "Decisions already fixed"). -->
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
   <ItemGroup>
     <ProjectReference Include="..\..\src\AlbocariusCompanions.Core\AlbocariusCompanions.Core.csproj" />
   </ItemGroup>

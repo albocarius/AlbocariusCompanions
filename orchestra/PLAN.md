@@ -221,7 +221,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [x] 76-voiced-nodes (self) — I4 check (D7): tests for `voiced` on npc nodes → voiced-lines XML + missing-audio report.
 - [x] 77-mermaid-core (worker) — Core `MermaidExport.Render(package, conversationId?)`: flowchart per conversation, player
   vs npc node shapes/classes, `hub`/`end` terminals, conditions on edges, effects in node labels. Accept: golden-string tests.
-- [ ] 78-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
+- [x] 78-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
   exit 1 on errors), `mermaid <companionDir> [conversation]`. Accept: tests call the CLI entry point on fixtures.
 - [ ] 79-debug-commands (self, after 67) — I7 `albocarius.list`, `.get`, `.set`, `.reset`, `.reload` only if safe (else
   noted); each wrapped in `Safe.Run`; parsing/formatting in Core and unit-tested.

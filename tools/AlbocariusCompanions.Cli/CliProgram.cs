@@ -1,0 +1,143 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using AlbocariusCompanions.Core.Dialogs;
+using AlbocariusCompanions.Core.Loading;
+using AlbocariusCompanions.Core.Registry;
+using AlbocariusCompanions.Core.Validation;
+
+namespace AlbocariusCompanions.Cli;
+
+/// <summary>
+/// Authoring CLI (SPEC_BEHAVIOR_FOUNDATION I6): validate companion folders and export their conversations
+/// as Mermaid flowcharts. Only reads; nothing here writes or throws.
+/// </summary>
+public static class CliProgram
+{
+    public static int Run(string[] args, TextWriter stdout, TextWriter stderr)
+    {
+        if (args.Length == 0)
+            return Usage(stderr);
+
+        switch (args[0])
+        {
+            case "validate":
+                return Validate(args, stdout, stderr);
+            case "mermaid":
+                return Mermaid(args, stdout, stderr);
+            default:
+                stderr.WriteLine($"Unknown command \"{args[0]}\".");
+                return Usage(stderr);
+        }
+    }
+
+    /// <summary>
+    /// <c>validate &lt;path&gt;</c>: a folder with a companion.json is one companion (only its issues are reported, the
+    /// catalog is still loaded from its parent so cross-companion checks run); any other folder is a Companions root.
+    /// </summary>
+    private static int Validate(string[] args, TextWriter stdout, TextWriter stderr)
+    {
+        if (args.Length != 2)
+            return Usage(stderr);
+
+        var path = args[1];
+        if (!Directory.Exists(path))
+            return NotFound(stderr, path);
+
+        var (root, folder) = ResolveValidatePath(path, stderr);
+        if (root == null)
+            return 2;
+
+        var issues = CompanionCatalog.Load(root).Issues;
+        if (folder != null)
+            issues = issues.Where(i => i.Folder == folder).ToList();
+
+        WriteIssues(stdout, issues);
+        var errors = issues.Count(i => i.IsError);
+        stdout.WriteLine($"{errors} error(s), {issues.Count - errors} warning(s).");
+        return errors > 0 ? 1 : 0;
+    }
+
+    /// <summary>
+    /// <c>mermaid &lt;companionFolder&gt; [conversationId]</c>: the chart of one companion (or of one of its
+    /// conversations) on stdout. A companion that did not load reports its issues on stderr instead.
+    /// </summary>
+    private static int Mermaid(string[] args, TextWriter stdout, TextWriter stderr)
+    {
+        if (args.Length is < 2 or > 3)
+            return Usage(stderr);
+
+        var path = args[1];
+        var conversationId = args.Length == 3 ? args[2] : null;
+        if (!Directory.Exists(path))
+            return NotFound(stderr, path);
+
+        // The path names a companion folder: its own name and the parent as the Companions root, whether or not
+        // it is loadable (a missing companion.json then surfaces as that folder's issue).
+        var folder = new DirectoryInfo(path);
+        if (folder.Parent == null)
+        {
+            stderr.WriteLine($"Cannot load the parent folder of \"{path}\".");
+            return 2;
+        }
+
+        var catalog = CompanionCatalog.Load(folder.Parent.FullName);
+        if (!catalog.Registry.TryGet(folder.Name, out var package) || package == null)
+        {
+            WriteIssues(stderr, catalog.Issues.Where(i => i.Folder == folder.Name).ToList());
+            return 1;
+        }
+
+        try
+        {
+            stdout.Write(MermaidExport.Render(package, conversationId));
+        }
+        catch (ArgumentException ex)
+        {
+            stderr.WriteLine(ex.Message);
+            return 2;
+        }
+        return 0;
+    }
+
+    /// <summary>
+    /// The Companions root to load and the companion folder name (null for a whole root). A folder holding a
+    /// companion.json is a companion, so its parent is the root; that parent must exist.
+    /// </summary>
+    private static (string? Root, string? Folder) ResolveValidatePath(string path, TextWriter stderr)
+    {
+        var folder = new DirectoryInfo(path);
+        if (!File.Exists(Path.Combine(path, CompanionLoader.CompanionFileName)))
+            return (folder.FullName, null);
+
+        if (folder.Parent == null)
+        {
+            stderr.WriteLine($"Cannot load the parent folder of \"{path}\".");
+            return (null, null);
+        }
+        return (folder.Parent.FullName, folder.Name);
+    }
+
+    /// <summary>One line per issue, in catalog order: <c>ERROR code [folder] message</c>.</summary>
+    private static void WriteIssues(TextWriter output, IEnumerable<ValidationIssue> issues)
+    {
+        foreach (var issue in issues)
+            output.WriteLine($"{(issue.IsError ? "ERROR" : "WARNING")} {issue.Code} [{issue.Folder}] {issue.Message}");
+    }
+
+    private static int NotFound(TextWriter stderr, string path)
+    {
+        stderr.WriteLine($"Path not found: {path}");
+        return 2;
+    }
+
+    private static int Usage(TextWriter stderr)
+    {
+        stderr.WriteLine("Usage:");
+        stderr.WriteLine("  validate <path>                            a companion folder, or a Companions directory");
+        stderr.WriteLine("  mermaid <companionFolder> [conversationId] print the companion's Mermaid flowchart(s)");
+        stderr.WriteLine("Exit codes: 0 ok, 1 validation errors, 2 usage, missing path or unknown conversation.");
+        return 2;
+    }
+}
