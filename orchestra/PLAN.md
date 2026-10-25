@@ -131,7 +131,7 @@ in game. The user renames the Windows audio files to local ids (`intro_01.ogg`).
    language, else from `en.json`. At start-up only the voiced-lines XML keeps being written.
 3. Lang file names are ISO 639-1 (`en.json`, `tr.json`); the code ↔ game language id mapping is fixed after the GAME_MAP work (48).
 4. Only an absent or empty slot falls back to vanilla.
-5. Voice has no language support: `audio/<id>.ogg` plays whatever the game language is.
+5. Audio is bound to the dialog line, not to a language: `audio/<id>.ogg` from the companion's audio folder plays with its line in every game language.
 - `EOE_Armory` was only an example; it may be used as a "module not loaded" case in tests.
 - The user renames the audio files on Windows after 41.
 

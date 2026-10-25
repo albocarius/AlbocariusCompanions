@@ -69,7 +69,8 @@ The companion id is the folder name; there is no `id` field.
 | `lines[].audio` | string | no | relative to the companion folder, no `..`, must end in `.ogg` (any case) — anything else is an error; default `audio/<local id>.ogg`; not allowed on player slot lines |
 | `conversations` | array | no | authored conversations, see below |
 
-Audio plays whatever the game language is; there is no per-language audio.
+Audio is bound to the dialog line, not to a language: the line's file in the companion's `audio/` folder (default
+`audio/<local id>.ogg`) plays with that line in every game language.
 
 ### Player slots
 The player's side of the mod's meeting and hire flow belongs to each companion, so every companion can be talked to in
