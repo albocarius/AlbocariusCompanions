@@ -2158,6 +2158,7 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `AddHeroToPartyAction.Apply` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddHeroToPartyAction.cs` | Q6 | join main party |
 | `MobileParty.MainParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q6 | player party |
 | `MobileParty.ItemRoster` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q29 | player party inventory |
+| `ItemRoster.AddToCounts` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` | Q29 | item transfers in/out of the player party inventory |
 | `ItemRoster.GetItemNumber` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` | Q29 | item count for hasItem / implied transfer check |
 | `ChangeRelationAction.ApplyPlayerRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeRelationAction.cs` | Q20 | conversation relation effect |
 | `Hero.GetRelationWithPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q20 | conversation relation condition |

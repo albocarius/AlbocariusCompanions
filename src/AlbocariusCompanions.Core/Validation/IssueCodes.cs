@@ -48,6 +48,8 @@ public static class IssueCodes
     public const string UnreachableNode = "unreachable_node";
     public const string ConversationMayStall = "conversation_may_stall";
     public const string ConversationNoExit = "conversation_no_exit";
+    /// <summary>Warning: a non-"once" conversation path can reward the player every time (I5).</summary>
+    public const string RepeatableReward = "repeatable_reward";
 
     // dialogs.json variables (M7)
     public const string InvalidVariable = "invalid_variable";

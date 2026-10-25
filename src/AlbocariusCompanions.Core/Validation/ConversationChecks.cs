@@ -109,6 +109,7 @@ public static class ConversationChecks
 
         ReportUnreachable(conversation, byId, folder, name, issues);
         ReportNoExit(conversation, byId, folder, name, issues);
+        RepeatableRewardChecks.Validate(conversation, ownId, folder, issues);
         return valid;
     }
 
