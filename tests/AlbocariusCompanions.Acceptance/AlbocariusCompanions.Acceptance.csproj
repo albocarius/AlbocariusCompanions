@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\AlbocariusCompanions.Core\AlbocariusCompanions.Core.csproj" />
+    <ProjectReference Include="..\..\tools\AlbocariusCompanions.Cli\AlbocariusCompanions.Cli.csproj" />
   </ItemGroup>
 
 </Project>
