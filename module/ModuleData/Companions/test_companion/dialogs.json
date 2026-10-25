@@ -40,10 +40,12 @@
       "start": ["p_coin_offer", "p_coin_ask"],
       "nodes": [
         {"id": "p_coin_offer", "speaker": "player", "next": ["coin_thanks"],
-         "effects": {"gold": -100, "relation": 1, "setFlags": ["got_coin"]}},
+         "when": {"hasGold": {"who": "player", "min": 100}},
+         "effects": {"transfer": {"gold": 100, "from": "player", "to": "self"}, "relation": 1, "setFlags": ["got_coin"]}},
         {"id": "p_coin_ask", "speaker": "player", "when": {"minRelation": 10}, "next": ["coin_refuse", "coin_fine"]},
         {"id": "coin_refuse", "speaker": "npc", "when": {"maxRelation": 20}, "next": ["hub"]},
-        {"id": "coin_fine", "speaker": "npc", "next": ["end"], "effects": {"gold": 50}},
+        {"id": "coin_fine", "speaker": "npc", "next": ["end"],
+         "effects": {"transfer": {"gold": 50, "from": "world", "to": "player"}, "setFlags": ["got_coin"]}},
         {"id": "coin_thanks", "speaker": "npc", "next": ["end"]}
       ]
     },

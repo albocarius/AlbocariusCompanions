@@ -108,6 +108,7 @@ public static class ConversationChecks
                 "is a greeting with \"met\": false; greetings are for companions already met (the first meeting is the intro)."));
 
         ReportUnreachable(conversation, byId, folder, name, issues);
+        RepeatableRewardChecks.Validate(conversation, ownId, folder, issues);
         return valid;
     }
 

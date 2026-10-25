@@ -159,8 +159,13 @@ required, and they must name two different actors). An actor is `player`, `self`
 inventory (companions in the party share it, the others have none), so an item transfer is only between `player` and
 `world`. A transfer happens when the node is said, and the node is offered only when its source (unless `world`) holds
 the gold or items. `gold` (non-zero) is shorthand for a transfer between `player` and `world` — negative = the player
-pays the companion (offered only with enough gold), positive = the player receives — and may not be combined with
-`transfer`.
+loses it (`player` → `world`, offered only with enough gold), positive = the player receives it (`world` → `player`) —
+and may not be combined with `transfer`.
+
+**Repeatable reward** (warning): a conversation that is not `once` and can reward the player — relation up, or gold/items
+to the player from anyone else — along a path whose own writes never make one of its conditions false. Conditions that
+count are the conversation's `when` and the `when` of the nodes from the start to the reward (top level and nested `all`);
+e.g. `notFlags: ["got_coin"]` with `setFlags: ["got_coin"]` on that path. A write after the reward does not count.
 
 ### Variables
 Declared per companion in dialogs.json; permanent per campaign until changed.
