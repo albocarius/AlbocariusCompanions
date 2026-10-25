@@ -187,7 +187,7 @@ Ordering constraints: I3 items after R9 verified; I7 after R10 verified.
 ### Track R — research → GAME_MAP "Behavior system" (worker drafts, self verifies every claim against decomp)
 One task per question, numbered GAME_MAP Q21–Q31; each claim cites decomp path + class/method; unresolved → UNCERTAIN +
 what would resolve it. No code. Acceptance per task: GameMapTests section-present test (heading + Answer/Evidence/Uncertain).
-- [ ] 58-gm-q21-relations (worker) — R1 hero↔hero relations.
+- [x] 58-gm-q21-relations (worker) — R1 hero↔hero relations.
 - [ ] 59-gm-q22-morale (worker) — R2 party morale / per-hero mood.
 - [ ] 60-gm-q23-events (worker; may be split in two by event group if it times out) — R3 CampaignEvents table.
 - [ ] 61-gm-q24-traits (worker) — R4 player traits.
