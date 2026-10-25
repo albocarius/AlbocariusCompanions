@@ -1,8 +1,7 @@
-# PLAN — AlbocariusCompanions
-
-Active milestone: **M6 conversations** (section M6 below; no spec file). Previous: **M5 core gaps** — source of truth `orchestra/SPEC_CORE_GAPS.md` (follow-up to `orchestra/SPEC.md`;
-SPEC §1 rules and `orchestra/HARD_RULES.md` still apply). The foundation run (M1–M4) is archived at the end of this file.
-Commit policy: per task `feat(NN-slug): ...`; at the end `milestone core-gaps: <summary>` (SPEC_CORE_GAPS §1.4).
+Active milestone: **M7 behavior foundation** — source of truth `orchestra/SPEC_BEHAVIOR_FOUNDATION.md` (section M7 below).
+Previous: M6 conversations (no spec file), M5 core gaps (`orchestra/SPEC_CORE_GAPS.md`); SPEC §1 rules and
+`orchestra/HARD_RULES.md` still apply. The foundation run (M1–M4) is archived at the end of this file.
+Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone behavior-foundation: <summary>`.
 Stop condition (SPEC rule 5): 3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
 
 Owner legend: `self` = orchestrator, `worker` = local model via orchestra/worker.sh.
@@ -15,6 +14,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   in-game checklist in the report, incl. renaming the audio files to local ids.
 - M6 done 2026-10-25 (docs/RUN_REPORT_CONVERSATIONS.md): per-companion player lines, conversations. Core.Tests 215,
   Acceptance 359. Not tested in game.
+- M7 planned 2026-10-25 (section M7); waiting for plan approval (PLAN_GATE).
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -151,6 +151,81 @@ vanilla dialogs; the template override is fine).
   `effects`: relation, gold, setFlags, clearFlags, join; voiced/audio like lines). Core: models, validation, graph →
   sentence edges, condition evaluation; Game: registration, flags saved in the campaign; test_companion example; SCHEMA.md.
 - [x] 57-report (self) — docs/RUN_REPORT_CONVERSATIONS.md with the in-game checklist; milestone commit, no push.
+
+## M7 — Behavior foundation (SPEC_BEHAVIOR_FOUNDATION)
+Rules for every task: SPEC §0 out-of-scope list (no triggers, no companion-initiated talks, no cooldowns, **no selection
+rules** — current candidate order stays as it is, no companion↔companion relation/morale mechanics, no editor); ideas →
+`docs/IDEAS.md`. Every schema change updates models + loader + validation + test_companion + fixtures + scaffold template +
+`docs/SCHEMA.md` in the same task. Every new game API → GAME_MAP section + API index row before code uses it.
+Ordering constraints: I3 items after R9 verified; I7 after R10 verified.
+
+### Design decisions taken here (spec gaps; change at the plan gate if wrong)
+- D1 Writing variables: effects `"set": { "<var>": <bool|int> }` and `"add": { "<var>": <int> }` (int only, may be negative).
+  `setFlags`/`clearFlags` stay as sugar for `set` true/false. Shared vars of another companion are written as `<companionId>.<name>`.
+- D2 Variable names: `[a-z0-9_]+`, `mood` reserved (built-in, may not be declared). A dotted reference `<id>.<name>` is
+  resolved across the catalog: unknown companion, undeclared or `local` var of another companion → validation error. Because
+  this needs every companion, cross-companion checks run in `CompanionCatalog` after per-folder validation; the offending
+  companion is skipped like any other validation error.
+- D3 Condition shape: `when` stays an object; in addition to today's keys it may hold `all: [ … ]`, `any: [ … ]`,
+  `not: { … }` (each element is again a `when` object) and `var` + `min`/`max`/`eq`. One object = AND of everything in it.
+  Today's `minGold` stays as sugar for `hasGold: { who: player, min }`.
+- D4 Save: variables saved under a new key `_variables` as `List<string>` of `"<companionId>.<name>=<value>"` (the Q20-
+  verified type; no new save types). The existing `_conversationFlags` key keeps the "once/started" markers; old flag keys
+  (`<companion>:<flag>`) found there on load become `true` for a declared bool of that name, else are dropped (logged).
+  Values with a type that no longer matches the declaration → default (logged).
+- D5 Transfers keep today's "implied condition": a node whose transfer source cannot pay/has not the item is not offered
+  (as `gold < 0` today). The hasGold/hasItem warning is about making it explicit for authors. Relation effect unchanged.
+- D6 `gold` effect is removed in 64 after the sample is migrated (spec I3); `giveItem`/`takeItem` never existed, so I5's
+  rules are written against `transfer` (from ≠ world without matching hasGold/hasItem → warning).
+- D7 I4 already exists (M6: `voiced`/`audio` on nodes, `audio/<local id>.ogg`): task 65 only adds missing tests if any.
+- D8 CLI: new project `tools/AlbocariusCompanions.Cli` (net8.0, `RollForward=Major` so it runs on the installed .NET 10),
+  added to the solution; Mermaid export logic lives in Core (`Dialogs/MermaidExport`) so it is unit-tested.
+
+### Track R — research → GAME_MAP "Behavior system" (worker drafts, self verifies every claim against decomp)
+One task per question, numbered GAME_MAP Q21–Q31; each claim cites decomp path + class/method; unresolved → UNCERTAIN +
+what would resolve it. No code. Acceptance per task: GameMapTests section-present test (heading + Answer/Evidence/Uncertain).
+- [ ] 58-gm-q21-relations (worker) — R1 hero↔hero relations.
+- [ ] 59-gm-q22-morale (worker) — R2 party morale / per-hero mood.
+- [ ] 60-gm-q23-events (worker; may be split in two by event group if it times out) — R3 CampaignEvents table.
+- [ ] 61-gm-q24-traits (worker) — R4 player traits.
+- [ ] 62-gm-q25-open-conversation (worker) — R5 programmatic conversation on the map.
+- [ ] 63-gm-q26-inquiry (worker) — R6 inquiry pop-ups.
+- [ ] 64r-gm-q27-time (worker) — R7 campaign time + save timestamps.
+- [ ] 65r-gm-q28-location (worker) — R8 location & surroundings.
+- [ ] 66r-gm-q29-items-gold (worker, **first in queue**) — R9 items, inventory, gold between heroes, companion inventories.
+- [ ] 67r-gm-q30-console (worker, **second in queue**) — R10 console commands.
+- [ ] 68r-gm-q31-misc (worker) — R11 clan tier, war state, hero in party.
+
+### Track I — implementation (self unless noted; worker research runs in parallel)
+- [ ] 64-variables-core (self) — I1 + I2 in Core: `variables` block (types/scopes/defaults, built-in `mood`), D1 effects,
+  D3 conditions (all/any/not, var min/max/eq, flags sugar on declared bools incl. dotted shared refs), validation (undeclared,
+  foreign local, type mismatch, bad names, min>max…, catalog-level cross-companion check D2), `VariableStore` (typed values,
+  get/set/add, defaults, save list encode/decode with D4 migration), `ConversationConditions` over the store. Then the
+  sample migration part of I8 (declare `told_scar`, `got_coin`). Accept: Acceptance tests per rule + Core.Tests.
+- [ ] 65-variables-game (self) — Game: `_variables` SyncData + D4 load, context/effects over `VariableStore`, log lines.
+  Build-only verifiable; in-game items in the report.
+- [ ] 66-transfer-core (self) — I3 gold part: `transfer` effect + `hasGold`/`hasItem` conditions model/validation, actor
+  rules, missing-check warning, `gold` effect → sugar → removed after sample migration (D6). Item fields validated per R9
+  (waits for 66r verified). Accept: tests per actor/kind combination.
+- [ ] 67-transfer-game (self, after 66r) — gold between heroes / world, items via party inventory per R9; missing item id at
+  runtime → skipped + warning.
+- [ ] 68-validation-graph (worker) — I5: cycle with no path to `hub`/`end` → error (dangling `next` and unreachable already
+  exist from M6; tests confirm). Accept: staged tests.
+- [ ] 69-validation-variables (worker) — I5: declared variable never written and default = type default → warning
+  "never changes"; transfer from ≠ world without hasGold/hasItem on the node or its path entry → warning (D6).
+- [ ] 70-validation-repeatable (self) — I5 repeatable reward warning (path analysis: positive gold/item/relation to the
+  player, conversation not `once`, no condition on that path that the path itself makes false). No "shadowing" rule.
+- [ ] 71-voiced-nodes (self) — I4 check (D7): tests for `voiced` on npc nodes → voiced-lines XML + missing-audio report.
+- [ ] 72-mermaid-core (worker) — Core `MermaidExport.Render(package, conversationId?)`: flowchart per conversation, player
+  vs npc node shapes/classes, `hub`/`end` terminals, conditions on edges, effects in node labels. Accept: golden-string tests.
+- [ ] 73-cli (worker) — I6 CLI project: `validate <path>` (one companion folder or a `Companions` dir; errors/warnings,
+  exit 1 on errors), `mermaid <companionDir> [conversation]`. Accept: tests call the CLI entry point on fixtures.
+- [ ] 74-debug-commands (self, after 67r) — I7 `albocarius.list`, `.get`, `.set`, `.reset`, `.reload` only if safe (else
+  noted); each wrapped in `Safe.Run`; parsing/formatting in Core and unit-tested.
+- [ ] 75-sample-content (self) — I8 rest: `spare_coin` exploit fixed (both paths set `got_coin`), explicit hasGold, sample on
+  `transfer`; `validate` on `module/ModuleData/Companions` → zero errors/warnings (acceptance test); scaffold template updated.
+- [ ] 76-report (self) — `docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md` (Track R summary + UNCERTAINs, Track I per task,
+  BLOCKERS, the 5-item checklist); milestone commit. No push.
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
