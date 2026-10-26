@@ -65,7 +65,7 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
   (the M7 events task timed out once when unsplit). Q23/Q32 are reused, not repeated.
 
 ### Track I — implementation
-- [ ] 90-selection-core (self) — Core `Selection` (F1 rule, `IRandomSource`), `priority` on conversations / lines / npc
+- [x] 90-selection-core (self) — Core `Selection` (F1 rule, `IRandomSource`), `priority` on conversations / lines / npc
   nodes, `when` on slot lines (F4) (model, loader, validation: player node with `priority` → warning "ignored"), `LinePicker` → priority-aware,
   SCHEMA.md + example, sample F5, template. Accept: Acceptance tests (priority wins, absent = 0, seeded ties both seen,
   player options all returned, hub/greeting/npc-reply/slot sets).

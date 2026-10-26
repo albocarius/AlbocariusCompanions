@@ -36,6 +36,9 @@ public static class TransferChecks
     /// <summary>Every actor name the companion's conversations transfer from or to, or check gold of, with a location for messages.</summary>
     private static IEnumerable<(string? Actor, string Where)> Actors(CompanionPackage package)
     {
+        foreach (var line in (package.Dialogs?.Lines ?? new List<DialogLine>()).Where(l => l != null))
+            foreach (var check in GoldChecks(line.When))
+                yield return (check.Who, $"Line '{line.Id}' hasGold");
         foreach (var conversation in package.Conversations)
         {
             var name = conversation.Id ?? "(no id)";

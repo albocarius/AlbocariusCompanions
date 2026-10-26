@@ -118,21 +118,27 @@ public static class ConversationConditions
 
     /// <summary>
     /// Whether the sentence for <paramref name="edge"/> may be said: the node's own condition and implied conditions,
-    /// plus, for a start sentence, the conversation's condition and "once"; a greeting also needs a met companion (the
-    /// first meeting belongs to the intro).
+    /// plus, for a start sentence, <see cref="IsOffered"/>. Selection between NPC alternatives is separate
+    /// (<see cref="ConversationSelection"/>).
     /// </summary>
     public static bool CanSay(ConversationDefinition conversation, ConversationEdge edge, IConversationContext context,
-        bool alreadyStarted)
+        bool alreadyStarted) =>
+        (!edge.IsStart || IsOffered(conversation, context, alreadyStarted)) && NodeHolds(edge.Node, context);
+
+    /// <summary>
+    /// The conversation-level checks of its start: its condition and "once"; a greeting also needs a met companion (the
+    /// first meeting belongs to the intro).
+    /// </summary>
+    public static bool IsOffered(ConversationDefinition conversation, IConversationContext context, bool alreadyStarted)
     {
-        if (edge.IsStart)
-        {
-            if (conversation.Once && alreadyStarted)
-                return false;
-            if (conversation.Entry == ConversationRules.EntryGreeting && !context.HasMet)
-                return false;
-            if (!Holds(conversation.When, context))
-                return false;
-        }
-        return Holds(edge.Node.When, context) && EffectsCanApply(edge.Node.Effects, context);
+        if (conversation.Once && alreadyStarted)
+            return false;
+        if (conversation.Entry == ConversationRules.EntryGreeting && !context.HasMet)
+            return false;
+        return Holds(conversation.When, context);
     }
+
+    /// <summary>A node's own condition and the conditions its effects imply.</summary>
+    public static bool NodeHolds(ConversationNode node, IConversationContext context) =>
+        Holds(node.When, context) && EffectsCanApply(node.Effects, context);
 }

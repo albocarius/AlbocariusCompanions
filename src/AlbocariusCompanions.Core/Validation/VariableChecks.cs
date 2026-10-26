@@ -123,6 +123,9 @@ public static class VariableChecks
     /// <summary>Every use in the companion's conversations, with a location for messages.</summary>
     private static IEnumerable<(VariableUse Use, string Where)> Uses(CompanionPackage package)
     {
+        foreach (var line in (package.Dialogs?.Lines ?? new List<DialogLine>()).Where(l => l != null))
+            foreach (var use in VariableUses.InCondition(line.When))
+                yield return (use, $"Line '{line.Id}'");
         foreach (var conversation in package.Conversations)
         {
             var name = $"Conversation '{conversation.Id ?? "(no id)"}'";

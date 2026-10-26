@@ -52,6 +52,10 @@ public static class IssueCodes
     public const string RepeatableReward = "repeatable_reward";
     /// <summary>Warning: a transfer whose source is not "world" and no condition on its path checks that source for (I5).</summary>
     public const string TransferNotChecked = "transfer_not_checked";
+    /// <summary>Warning: 'priority' on a player node; player options are never selected, all passing ones are shown (M9).</summary>
+    public const string PriorityIgnored = "priority_ignored";
+    /// <summary>Warning: every line of a slot has a condition, so at some moment the slot may have no line (M9 F4).</summary>
+    public const string SlotMayHaveNoLine = "slot_may_have_no_line";
 
     // dialogs.json variables (M7)
     public const string InvalidVariable = "invalid_variable";

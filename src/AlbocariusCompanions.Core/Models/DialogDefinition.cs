@@ -32,6 +32,10 @@ public sealed class DialogLine : ISpokenLine
     /// <summary>Local id, unique within the companion (e.g. intro_01); key of the line in the lang files.</summary>
     [JsonProperty("id")] public string? Id { get; set; }
     [JsonProperty("slot")] public string? Slot { get; set; }
+    /// <summary>The line is a candidate only while this holds (same conditions as conversations).</summary>
+    [JsonProperty("when")] public ConditionSet? When { get; set; }
+    /// <summary>Among the slot's passing lines the highest priority wins, ties at random. Absent = 0.</summary>
+    [JsonProperty("priority")] public int? Priority { get; set; }
     [JsonProperty("voiced")] public bool Voiced { get; set; }
     /// <summary>Path relative to the companion folder; default audio/&lt;local id&gt;.ogg.</summary>
     [JsonProperty("audio")] public string? Audio { get; set; }
