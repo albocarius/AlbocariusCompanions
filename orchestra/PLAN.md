@@ -266,7 +266,7 @@ Decisions taken here (change at the gate if wrong):
 Tasks:
 - [ ] 82-v1-relation-removal (self) — E1: GAME_MAP Q21 addendum (patch target, why not KillCharacterAction), API row,
   prefix + log; checklist item.
-- [ ] 83-gm-q33-grievances (worker → self verifies) — V2 research: CompanionGrievanceBehavior (triggers, conversation
+- [x] 83-gm-q33-grievances (worker → self verifies) — V2 research: CompanionGrievanceBehavior (triggers, conversation
   opening — Q25 — texts, consequences: relation, leaving, removal) → GAME_MAP Q33.
 - [ ] 84-v2-grievance-exclusion (self, after 83) — mod companions never get grievances or their consequences; log.
 - [ ] 85-gm-q34-companion-audit (worker → self verifies; split by area if it times out) — V3: every vanilla behavior /

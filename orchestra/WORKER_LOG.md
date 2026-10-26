@@ -53,3 +53,4 @@
 | 64-gm-q27-time | 1 | PASS, verified | CampaignTime.Now/ElapsedDaysUntilNow/Days + vanilla SyncData of CampaignTime fields spot-checked |
 | 65-gm-q28-location | 1 | PASS, verified | CurrentSettlement/BesiegerCamp/IsTown-IsCastle, SettlementHelper.FindNearest*, VillageType.PrimaryProduction spot-checked |
 | 68-gm-q31-misc | 1 | PASS, verified | Clan.Tier, IsAtWarWith/FactionManager.IsAtWarAgainstFaction spot-checked |
+| 83-gm-q33-grievances | 1 | PASS, verified | excellent; private members, field names, consequence lines spot-checked; Q33 test entry added after the run (sed miss) |
