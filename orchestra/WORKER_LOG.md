@@ -54,3 +54,4 @@
 | 65-gm-q28-location | 1 | PASS, verified | CurrentSettlement/BesiegerCamp/IsTown-IsCastle, SettlementHelper.FindNearest*, VillageType.PrimaryProduction spot-checked |
 | 68-gm-q31-misc | 1 | PASS, verified | Clan.Tier, IsAtWarWith/FactionManager.IsAtWarAgainstFaction spot-checked |
 | 83-gm-q33-grievances | 1 | PASS, verified | excellent; private members, field names, consequence lines spot-checked; Q33 test entry added after the run (sed miss) |
+| 85-gm-q34-companion-audit | 1 | PASS, verified | 106 rows; every exclude row re-verified by orchestrator (table in Q34): 1 new exclusion, 6 already covered, 2 covered by slots, 6 reclassified keep, 1 decide |

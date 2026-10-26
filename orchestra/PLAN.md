@@ -269,7 +269,7 @@ Tasks:
 - [x] 83-gm-q33-grievances (worker → self verifies) — V2 research: CompanionGrievanceBehavior (triggers, conversation
   opening — Q25 — texts, consequences: relation, leaving, removal) → GAME_MAP Q33.
 - [ ] 84-v2-grievance-exclusion (self, after 83) — mod companions never get grievances or their consequences; log.
-- [ ] 85-gm-q34-companion-audit (worker → self verifies; split by area if it times out) — V3: every vanilla behavior /
+- [x] 85-gm-q34-companion-audit (worker → self verifies; split by area if it times out) — V3: every vanilla behavior /
   action / model targeting player companions or wanderers (IsPlayerCompanion, Occupation.Wanderer, CompanionOf, clan
   companions) → table: what, trigger, consequence, keep / exclude / decide → GAME_MAP Q34. Non-DLC sources only.
 - [ ] 86-v3-exclusions (self, after 85) — prefixes only for "exclude" rows; nothing for "decide".
