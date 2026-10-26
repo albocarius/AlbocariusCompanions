@@ -72,13 +72,13 @@ None open.
 Before testing: build, copy `dist/AlbocariusCompanions/` to `<game>\Modules\` (keep your `audio/`). Your own companion
 folders must declare every flag they use under `"variables"` and replace `"gold"` effects with `"transfer"` (run
 `dotnet run --project tools/AlbocariusCompanions.Cli -- validate <your Companions folder>` first).
-1. [ ] Existing companions still load, talk, hire, voice + lipsync (no regression); no red/yellow message at start.
-2. [ ] test_companion: hire, ask about the scar ("That must have been hard…" → relation +2, `told_scar`), then
+1. [ ] Existing companions still load, talk, hire, voice + lipsync (no regression); no red/yellow message at start. MY notes, mod never released anyway so unnecessary
+2. [x] test_companion: hire, ask about the scar ("That must have been hard…" → relation +2, `told_scar`), then
    `spare_coin`: pay 100 (needs 100 gold; the companion's gold goes up) **or** ask at relation ≥ 21 for 50 — either way
    the offer is gone afterwards and never comes back.
-3. [ ] Console (if it opens, Q30): `albocarius.list`, `albocarius.get test_companion.got_coin`,
+3. [x] Console (if it opens, Q30): `albocarius.list`, `albocarius.get test_companion.got_coin`,
    `albocarius.set test_companion.got_coin false` → the coin offer is back; `albocarius.reset test_companion`.
-4. [ ] CLI: `validate module/ModuleData/Companions` → `0 error(s), 0 warning(s).`; `mermaid
+4. [x] CLI: `validate module/ModuleData/Companions` → `0 error(s), 0 warning(s).`; `mermaid
    module/ModuleData/Companions/test_companion` output renders (e.g. mermaid.live).
-5. [ ] Save → load keeps variable values (e.g. after `spare_coin` the offer stays gone; log line "Conversation variables
+5. [x] Save → load keeps variable values (e.g. after `spare_coin` the offer stays gone; log line "Conversation variables
    loaded: N"). Loading an M6 save converts its flags ("imported from old flags").
