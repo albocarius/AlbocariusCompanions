@@ -3882,6 +3882,17 @@ All 37 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 - `BeforeMissionOpenedEvent` — the game-layer caller of `OnMissionIsStarting` lives in TaleWorlds.Engine, which is not decompiled; only the Campaign.cs body (already gated on `PlayingInCampaignMode`) was verified.
 - Tick rows — "once per party/settlement/town per hour or day, staggered" is read from the `PeriodicTicker` usage; the exact distribution phase inside the day (which fraction of the day each item gets its slot) was not traced.
 
+## Q38 — Campaign events catalog 4 (party, troops, missions, ships)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
