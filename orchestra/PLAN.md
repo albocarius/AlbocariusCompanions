@@ -1,7 +1,7 @@
-Active milestone: **M7 behavior foundation** — source of truth `orchestra/SPEC_BEHAVIOR_FOUNDATION.md` (section M7 below).
-Previous: M6 conversations (no spec file), M5 core gaps (`orchestra/SPEC_CORE_GAPS.md`); SPEC §1 rules and
+Active milestone: **M8 vanilla guards** — source of truth `orchestra/SPEC_VANILLA_GUARDS.md` (section M8 below).
+Previous: M7 behavior foundation (`orchestra/SPEC_BEHAVIOR_FOUNDATION.md`), M6 conversations (no spec file), M5 core gaps (`orchestra/SPEC_CORE_GAPS.md`); SPEC §1 rules and
 `orchestra/HARD_RULES.md` still apply. The foundation run (M1–M4) is archived at the end of this file.
-Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone behavior-foundation: <summary>`.
+Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone vanilla-guards: <summary>`.
 Stop condition (SPEC rule 5): 3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
 
 Owner legend: `self` = orchestrator, `worker` = local model via orchestra/worker.sh.
@@ -15,7 +15,8 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - M6 done 2026-10-25 (docs/RUN_REPORT_CONVERSATIONS.md): per-companion player lines, conversations. Core.Tests 215,
   Acceptance 359. Not tested in game.
 - M7 done 2026-10-26 (docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md): variables, conditions, transfers, authoring warnings, CLI,
-  console commands, GAME_MAP Q21–Q32. Core.Tests 264, Acceptance 620. Not tested in game.
+  console commands, GAME_MAP Q21–Q32. Core.Tests 264, Acceptance 620. In-game checklist 2–5 passed (user, 2026-10-26).
+- M8 planned 2026-10-26 (section M8); waiting for plan approval (PLAN_GATE).
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -240,6 +241,42 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
   review fixes on 71 (nested hasGold actor warning) and 78 (CLI Newtonsoft runtime dependency).
 - Not verified: everything in game (checklist in the report); console availability in retail (Q30 UNCERTAIN).
 - Open questions: none blocking; see "Decisions to confirm" in the report.
+
+## M8 — Vanilla guards (SPEC_VANILLA_GUARDS)
+Rules: no new features; every exclusion only for mod companions (registry ids, `ModRuntime.IsModHero`), vanilla heroes
+unchanged; each prevented action logged once per occurrence (what was prevented, companion id); every patched/used game
+member gets a GAME_MAP section + API index row first; Harmony prefixes fall back to vanilla on exceptions (existing style).
+Version: SubModule.xml + Game assembly `0.1.0` → **`0.2.1`** at the end (user: middle +1 for the M7 release, rightmost +1
+for this spec), SubModuleXmlTests updated.
+
+Decisions taken here (change at the gate if wrong):
+- E1 V1 target: prefix on `CompanionRolesCampaignBehavior.OnHeroRelationChanged` (private, the only caller of the removal,
+  Q21): for a pair where the companion side is a mod hero, skip the method (it only does the removal check) and log when the
+  vanilla condition would have removed it (new relation < −10 after a negative change). `KillCharacterAction` itself is not
+  patched (death and other removals stay vanilla).
+- E2 V3 "exclude" items are implemented one Harmony prefix each, in the same style; "decide" items are only listed.
+- E3 V4 raw relation: read `CharacterRelationManager.GetHeroRelation` / `Hero.GetBaseHeroRelation`, write
+  `Hero.SetPersonalRelation` (clamped, silent) — per Q21; console `albocarius.relation <a> <b> [value]` with the text side in
+  Core (like DebugCommands).
+
+Tasks:
+- [ ] 82-v1-relation-removal (self) — E1: GAME_MAP Q21 addendum (patch target, why not KillCharacterAction), API row,
+  prefix + log; checklist item.
+- [ ] 83-gm-q33-grievances (worker → self verifies) — V2 research: CompanionGrievanceBehavior (triggers, conversation
+  opening — Q25 — texts, consequences: relation, leaving, removal) → GAME_MAP Q33.
+- [ ] 84-v2-grievance-exclusion (self, after 83) — mod companions never get grievances or their consequences; log.
+- [ ] 85-gm-q34-companion-audit (worker → self verifies; split by area if it times out) — V3: every vanilla behavior /
+  action / model targeting player companions or wanderers (IsPlayerCompanion, Occupation.Wanderer, CompanionOf, clan
+  companions) → table: what, trigger, consequence, keep / exclude / decide → GAME_MAP Q34. Non-DLC sources only.
+- [ ] 86-v3-exclusions (self, after 85) — prefixes only for "exclude" rows; nothing for "decide".
+- [ ] 87-v4-relation-helper (self) — E3: GAME_MAP Q21 addendum (raw vs effective for two companions of the player clan),
+  Game helper `CompanionRelations` (raw get / silent set) used for every companion↔companion access, console
+  `albocarius.relation`; Core text side unit-tested.
+- [ ] 88-v5-dismissal-check (self, after 82/84/86) — confirm the T4 dismissal patch (`companion_fire_on_consequence` →
+  `RemoveCompanionAction.ApplyByFire` + tavern placement) is not hit by any new exclusion and vice versa; GAME_MAP Q19
+  addendum; fix if needed.
+- [ ] 89-report (self) — version 0.2.1, `docs/RUN_REPORT_VANILLA_GUARDS.md` (per task, V3 table with the *decide* list
+  highlighted, UNCERTAIN, BLOCKERS, 5-item checklist), milestone commit, deploy only if asked.
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
