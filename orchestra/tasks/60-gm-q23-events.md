@@ -6,7 +6,7 @@
 - JSON is the single source of truth; generated XML only in dist/, never committed.
 - Done = `dotnet build AlbocariusCompanions.sln && dotnet test AlbocariusCompanions.sln --no-build` passes.
 
-# Task 60-gm-q23-events: GAME_MAP question Q23
+# Task 60-gm-q23-events: GAME_MAP question Q23 (events part 1: combat and war)
 
 ## Goal
 Answer Q23 by reading the decompiled game source and write it into the `## Q23 — Game events` section of `docs/GAME_MAP.md`. Research only, no code.
@@ -15,7 +15,9 @@ Background: the mod (AlbocariusCompanions) adds data-driven companions with auth
 
 The question:
 
-**For each event below give: the `CampaignEvents` member (or other hook), its arguments (types), how to tell whether the player's party / clan is the subject, and when it fires relative to the outcome (before/after the state change). Events: battle won / lost / player fled or retreated; companion wounded in battle; village raided (looted, burned); caravan or villager party attacked; town/castle sacked; prisoner lord executed / released; wages unpaid; food ran out / starvation; party morale changed; settlement entered / left; siege started / ended; player joined / left a kingdom; hero joined / left the player's clan; hero died. Present as one table (event | member | args | player check | timing) plus evidence bullets.**
+**For each event below give: the `CampaignEvents` member (or other hook), its arguments (types), how to tell whether the player's party / clan is the subject, and when it fires relative to the outcome (before/after the state change). Events (part 1 of 2 — combat and war only): battle won / lost / player fled or retreated; companion wounded in battle; village raided (looted, burned); caravan or villager party attacked; town/castle sacked; prisoner lord executed / released. Present as one table (event | member | args | player check | timing) plus evidence bullets.**
+
+**Work incrementally: after researching the first two events, write the section with what you have (Status: DRAFT, table rows so far, evidence) and run the check; then add rows one event at a time. A partial table that passes the check is far better than nothing when the time limit hits. Keep each event short: member, args, player check, timing — no long prose.**
 
 Where to start: `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` (the member list), `CampaignEventDispatcher.cs`, and the call sites (grep `CampaignEventDispatcher.Instance.On<Name>`) to learn timing. If an event does not exist, say so and name the closest hook.
 

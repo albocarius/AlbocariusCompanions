@@ -2298,6 +2298,10 @@ summary line and echo progress with `MBDebug.EchoCommandWindow`.
 
 Status: TODO
 
+## Q32 — Game events (part 2)
+
+Status: TODO
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
