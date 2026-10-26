@@ -44,3 +44,4 @@
 | 77-mermaid-core | 1 | PASS | matches golden; known edge: a node named "entry" collides with <c>__entry (noted, format kept) |
 | 78-cli | 1 | PASS, review fix | good; found that the CLI cannot run standalone (Core Newtonsoft PrivateAssets) → Newtonsoft 13.0.1 PackageReference added to the CLI csproj; worker's BLOCKERS entry dropped as resolved |
 | 58-gm-q21-relations | 1 | PASS, verified | thorough; checked Hero.Clan, SetPersonalRelation (silent), companion leaves at < -10 on negative change. Mod impact: our negative relation effect can remove a hired companion |
+| 59-gm-q22-morale | 1 | PASS, verified | party-level only; base 50, RecentEventsMorale 10%/day decay, model override for labelled factor - spot-checked |
