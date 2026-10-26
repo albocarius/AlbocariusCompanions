@@ -1,7 +1,7 @@
-Active milestone: **M8 vanilla guards** — source of truth `orchestra/SPEC_VANILLA_GUARDS.md` (section M8 below).
-Previous: M7 behavior foundation (`orchestra/SPEC_BEHAVIOR_FOUNDATION.md`), M6 conversations (no spec file), M5 core gaps (`orchestra/SPEC_CORE_GAPS.md`); SPEC §1 rules and
+Active milestone: **M9 selection + event research** — source of truth `orchestra/SPEC_SELECTION_AND_EVENTS.md` (section M9 below).
+Previous: M8 vanilla guards (`orchestra/SPEC_VANILLA_GUARDS.md`), M7 behavior foundation, M6 conversations (no spec file), M5 core gaps; SPEC §1 rules and
 `orchestra/HARD_RULES.md` still apply. The foundation run (M1–M4) is archived at the end of this file.
-Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone vanilla-guards: <summary>`.
+Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone selection-and-events: <summary>`.
 Stop condition (SPEC rule 5): 3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
 
 Owner legend: `self` = orchestrator, `worker` = local model via orchestra/worker.sh.
@@ -16,8 +16,91 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   Acceptance 359. Not tested in game.
 - M7 done 2026-10-26 (docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md): variables, conditions, transfers, authoring warnings, CLI,
   console commands, GAME_MAP Q21–Q32. Core.Tests 264, Acceptance 620. In-game checklist 2–5 passed (user, 2026-10-26).
-- M8 done 2026-10-26 (docs/RUN_REPORT_VANILLA_GUARDS.md): V1–V5, version 0.2.1. Core.Tests 273, Acceptance 631. Not tested in game.
+- M8 done 2026-10-26 (docs/RUN_REPORT_VANILLA_GUARDS.md): V1–V5, version 0.2.1. Core.Tests 273, Acceptance 631. In-game checklist 1–5 passed (user).
+- After M8 (outside the orchestra, 2026-10-26): all 46 vanilla dialog points are required slots (46c91af); vanilla text
+  fallback reported in log + game once per companion and sentence (ee30f89). Version 0.2.2, deployed.
+- M9 planned 2026-10-26, waiting at the plan gate.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
+
+## M9 — Selection rules + event research (SPEC_SELECTION_AND_EVENTS)
+Rules: spec §0 decisions are fixed; no trigger implementation. Every schema change updates models + loader + validation +
+test_companion + fixtures + scaffold template + `docs/SCHEMA.md` in the same task. Every new game API → GAME_MAP section +
+API index row before code uses it. Version `0.2.2` → **`0.3.0`** at the end (user), SubModuleXmlTests/GameAssemblyTests updated.
+Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 90; 95 after 94; 103 last.
+
+### Design decisions taken here (spec gaps; change at the gate if wrong)
+- F1 Selection sets (per companion): (a) **hub**: the conversations with entry `hub` that are offered (once/`when` pass and
+  at least one start player option passes) — one is chosen, only its start options are shown; (b) **greeting**: the
+  greeting conversations that are offered — one is chosen, then one of its start npc nodes (set c); (c) the **npc nodes**
+  of one `next` list (or of a greeting's `start`) whose `when` passes; (d) the **lines of one slot**. Rule in all four:
+  highest `priority` (absent = 0), ties uniform random through `IRandomSource`. Player options never selected.
+- F2 Hub choice is made once per talk (when the hub is first built) and kept while the chosen conversation is still
+  offered; it is re-chosen when it is no longer offered (e.g. `once` used). So "equal priority → both appear across
+  several talks", not a different option every time the menu is rebuilt.
+- F3 Game side (GAME_MAP Q7: first passing NPC line wins, player options all shown, equal priority keeps registration
+  order): our sentences keep fixed game priorities; each condition asks a Core `Selector` decision for its set. The set's
+  first registered sentence computes the decision in each evaluation round (the game evaluates a token's lines in list
+  order), the others read it. GAME_MAP Q20 addendum documents this. No new game API expected.
+- F4 Slot lines get `priority` but **no `when`** (spec I1 does not add conditions to lines). So a higher priority on a
+  line always shadows the others → the I2 warning fires for it. **Question for the user** at the gate: add `when` to slot
+  lines now (small: same ConditionSet), or keep line priority dormant?
+- F5 Sample: `coin_refuse` (maxRelation 20) and `coin_fine` (no condition) both pass for relation 10–20 → today first
+  match (refuse), under the new rule random. Give `coin_refuse` `priority: 1` → behavior unchanged, no shadow warning
+  (it has a condition). the_scar / spare_coin never pass together (told_scar), so hub behavior is unchanged.
+- F6 Simulator state = exactly what conditions and effects read (met, hired, inParty, relation, player gold, each
+  companion's gold, clanIsFull, party items, variables incl. other companions' shared ones, once/started markers).
+  Clan tier etc. are not read by any condition today → not in the state yet (the protocol doc says how fields get added).
+  Relation effects are applied raw (vanilla scales positive changes, Q21 — noted in the protocol doc as a known
+  difference). Missing state fields → documented defaults (met false, hired false, gold 0, relation 0, variables = declared default).
+- F7 `serve` protocol: one JSON object per line, request `{ "id", "op", ... }` → response `{ "id", "ok", ... | "error" }`.
+  Ops: `load` (companions root), `start` (companion, entry hub|greeting, state, seed?) → session, `step` (session,
+  choose: player node id | null for npc) , `state` (session), `close`. Each step returns candidates, per-candidate
+  condition results (per field), the winning priority group, the winner, applied effects and the new state. Exact
+  shapes are fixed in `docs/SIMULATOR_PROTOCOL.md` in task 94 before 95 starts.
+- F8 I5 is already done in 0.2.2 (ee30f89: log + game warning, once per companion and sentence per session). Task 96
+  only checks it against the spec wording (per slot) and adds a Core test if missing.
+- F9 I6 remaining decide items (from the M8 list, not covered by §0): rescue / prison break lines (5), quest-created
+  companions (8), kingdom expels the player clan (9). Listed in the report, nothing changed.
+- F10 Track R lands in a new GAME_MAP part "Triggers & roles", questions Q35–Q42; R1 split by theme into 4 tasks
+  (the M7 events task timed out once when unsplit). Q23/Q32 are reused, not repeated.
+
+### Track I — implementation
+- [ ] 90-selection-core (self) — Core `Selection` (F1 rule, `IRandomSource`), `priority` on conversations / lines / npc
+  nodes (model, loader, validation: player node with `priority` → warning "ignored"), `LinePicker` → priority-aware,
+  SCHEMA.md + example, sample F5, template. Accept: Acceptance tests (priority wins, absent = 0, seeded ties both seen,
+  player options all returned, hub/greeting/npc-reply/slot sets).
+- [ ] 91-selection-game (self) — F2/F3 in CompanionDialogs/DialogText; GAME_MAP Q20 addendum. Build-only; in-game
+  checklist item 2.
+- [ ] 92-shadowing-validation (worker; self writes acceptance tests) — I2: in each set of F1, a candidate with no
+  conditions and a strictly higher priority than another → warning naming both. Equal → nothing. Hub/greeting: the
+  conversation's `when` and its start nodes' conditions count as conditions.
+- [ ] 93-noble-field (worker; self writes acceptance tests) — I4: `noble` bool default false in companion.json model,
+  validation (non-bool → error), SCHEMA.md, template, test_companion unchanged (default).
+- [ ] 94-sim-engine (self) — I3 Core: `Simulation` (state model F6, step → candidates + per-field condition results +
+  winning group + winner + effects + new state), reusing ConversationConditions / Selection / ConversationEffects /
+  Transfers (refactor Game to the same entry points where it computes them itself). `docs/SIMULATOR_PROTOCOL.md` (F7).
+  Accept: engine tests incl. the hire → the_scar → spare_coin sequence.
+- [ ] 95-cli-serve (worker; self writes acceptance tests incl. one integration test over stdin/stdout) — `serve` command:
+  line loop, JSON in/out per SIMULATOR_PROTOCOL.md, errors as responses (never exit on a bad line), exit on EOF/`close`.
+- [ ] 96-fallback-check (self) — F8.
+- [ ] 97-decide-list (self) — F9 text for the report.
+
+### Track R — research → GAME_MAP "Triggers & roles" (worker drafts, self verifies every claim against decomp)
+Acceptance per task: GameMapTests section-present test (heading + Status/Answer/Evidence/Uncertain).
+- [ ] 98-gm-q35-events-battle (worker) — R1 part 1: battle, crime, prisoners (incl. usefulness + trigger name per member).
+- [ ] 99-gm-q36-events-party (worker) — R1 part 2: party, settlement.
+- [ ] 100-gm-q37-events-politics (worker) — R1 part 3: kingdom/diplomacy, clan/heroes, family.
+- [ ] 101-gm-q38-events-misc (worker) — R1 part 4: economy, quests/issues, time, everything not yet covered (a coverage
+  check against the full `CampaignEvents` member list) + polling-only signals.
+- [ ] 102a-gm-q39-proximity (worker) — R2.
+- [ ] 102b-gm-q40-lord-flow (worker) — R3.
+- [ ] 102c-gm-q41-roles (worker) — R4.
+- [ ] 102d-gm-q42-marriage (worker) — R5.
+
+### Finish
+- [ ] 103-report (self) — version 0.3.0; `docs/RUN_REPORT_SELECTION_AND_EVENTS.md` (Track I per task, Track R summary
+  with the R1 table event → trigger → usefulness, UNCERTAINs, BLOCKERS, F9 list, 4-item checklist); milestone commit.
+  Deploy only if asked.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
 - **No new features.** Out of scope: likes/dislikes/relations behavior, flags/conditions/priority/triggers, author dialog

@@ -65,13 +65,13 @@ None.
 
 ## Test checklist (human)
 Deploy 0.2.1 (DLLs + SubModule.xml; companion data unchanged in this milestone).
-1. [ ] No regression: load, talk, hire, voice + lipsync, conversations (`the_scar`, `spare_coin`), transfers, console.
-2. [ ] Hire test_companion; in the console (cheat mode on) `campaign.add_hero_relation <its name> | -60` — the vanilla
+1. [x] No regression: load, talk, hire, voice + lipsync, conversations (`the_scar`, `spare_coin`), transfers, console.
+2. [x] Hire test_companion; in the console (cheat mode on) `campaign.add_hero_relation <its name> | -60` — the vanilla
    cheat goes through `ChangeRelationAction`, i.e. the real removal path. It stays in the party; log `vanilla removal
    prevented`. (Same with a vanilla companion → it disappears, as in vanilla.)
-3. [ ] Grievance: have test_companion (Valor 1) and a vanilla companion with Valor > 0 in the party, start a fight and
+3. [x] Grievance: have test_companion (Valor 1) and a vanilla companion with Valor > 0 in the party, start a fight and
    pick **"Try to get away"** (leave soldiers behind). Within an in-game hour the vanilla companion complains on the map;
    test_companion stays silent; log `vanilla grievance prevented`.
-4. [ ] With two mod companions hired: `albocarius.relation <a> <b>` → 0; `albocarius.relation <a> <b> -40` → −40; change
+4. [x] With two mod companions hired: `albocarius.relation <a> <b>` → 0; `albocarius.relation <a> <b> -40` → −40; change
    your own relation with either (conversation) → `albocarius.relation <a> <b>` still −40.
-5. [ ] Dismiss test_companion → it roams taverns again; rehire works.
+5. [x] Dismiss test_companion → it roams taverns again; rehire works.
