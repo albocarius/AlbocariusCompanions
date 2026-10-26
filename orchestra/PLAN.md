@@ -14,7 +14,8 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   in-game checklist in the report, incl. renaming the audio files to local ids.
 - M6 done 2026-10-25 (docs/RUN_REPORT_CONVERSATIONS.md): per-companion player lines, conversations. Core.Tests 215,
   Acceptance 359. Not tested in game.
-- M7 approved 2026-10-25 with changes (D2 missing-companion rule, 71 to the worker). In progress.
+- M7 done 2026-10-26 (docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md): variables, conditions, transfers, authoring warnings, CLI,
+  console commands, GAME_MAP Q21–Q32. Core.Tests 264, Acceptance 620. Not tested in game.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -228,8 +229,17 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
   noted); each wrapped in `Safe.Run`; parsing/formatting in Core and unit-tested.
 - [x] 80-sample-content (self) — I8 rest: `spare_coin` exploit fixed (both paths set `got_coin`), explicit hasGold, sample on
   `transfer`; `validate` on `module/ModuleData/Companions` → zero errors/warnings (acceptance test); scaffold template updated.
-- [ ] 81-report (self) — `docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md` (Track R summary + UNCERTAINs, Track I per task,
+- [x] 81-report (self) — `docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md` (Track R summary + UNCERTAINs, Track I per task,
   BLOCKERS, the 5-item checklist); milestone commit. No push.
+
+### M7 Report
+- Built: Track I complete (69–80, D1–D8, D2 as changed by the user; `gold` key removed); Track R Q21–Q32 verified
+  (R3 split into Q23 + Q32 after a timeout).
+- Tests: Core.Tests 264/264, Acceptance 620/620.
+- Worker: 15 tasks (11 research incl. the split, 4 implementation), all PASS on the first attempt after the split;
+  review fixes on 71 (nested hasGold actor warning) and 78 (CLI Newtonsoft runtime dependency).
+- Not verified: everything in game (checklist in the report); console availability in retail (Q30 UNCERTAIN).
+- Open questions: none blocking; see "Decisions to confirm" in the report.
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
