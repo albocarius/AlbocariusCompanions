@@ -74,7 +74,7 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
 - [x] 92-shadowing-validation (self — worker queue busy with Track R) — I2: in each set of F1, a candidate with no
   conditions and a strictly higher priority than another → warning naming both. Equal → nothing. Hub/greeting: the
   conversation's `when` and its start nodes' conditions count as conditions.
-- [ ] 93-noble-field (worker; self writes acceptance tests) — I4: `noble` bool default false in companion.json model,
+- [x] 93-noble-field (self — worker queue busy) — I4: `noble` bool default false in companion.json model,
   validation (non-bool → error), SCHEMA.md, template, test_companion unchanged (default).
 - [ ] 94-sim-engine (self) — I3 Core: `Simulation` (state model F6, step → candidates + per-field condition results +
   winning group + winner + effects + new state), reusing ConversationConditions / Selection / ConversationEffects /

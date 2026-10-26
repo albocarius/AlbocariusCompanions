@@ -22,6 +22,11 @@ public sealed class CompanionDefinition
     [JsonProperty("traits")] public Dictionary<string, int>? Traits { get; set; }
     [JsonProperty("equipment")] public EquipmentDefinition? Equipment { get; set; }
     [JsonProperty("hireCost")] public int? HireCost { get; set; }
+    /// <summary>
+    /// Noble birth (M9 I4). Planned meaning: making a non-noble companion a lord costs relation with other lords, a noble
+    /// one does not. No behavior yet.
+    /// </summary>
+    [JsonProperty("noble")] public bool Noble { get; set; }
     [JsonProperty("voiceProfile")] public VoiceProfileDefinition? VoiceProfile { get; set; }
     [JsonProperty("likes")] public List<ReactionDefinition>? Likes { get; set; }
     [JsonProperty("dislikes")] public List<ReactionDefinition>? Dislikes { get; set; }

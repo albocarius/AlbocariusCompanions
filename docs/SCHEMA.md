@@ -32,6 +32,7 @@ The companion id is the folder name; there is no `id` field.
 | `traits` | object | no | game trait id → level | `{ "Valor": 1 }` |
 | `equipment` | object | yes | see below | |
 | `hireCost` | int | yes | ≥ 0; hireable with exactly this much gold | `500` |
+| `noble` | bool | no | default `false`. Noble birth: making a non-noble companion a lord will cost relation with other lords, a noble one not (planned, no effect yet) | `false` |
 | `voiceProfile` | object | no | `{ "reference": string\|null, "style": string\|null }` (authoring notes, unused in game) | |
 | `likes` | array | no | `{ "event", "reaction", "slot" }` — shape-validated only, no effect yet | `[]` |
 | `dislikes` | array | no | same as `likes` | `[]` |
