@@ -3759,6 +3759,17 @@ All 29 members are `public static IMbEvent<…>` on `TaleWorlds.CampaignSystem.C
 - `OnHideoutDeactivatedEvent` — whether the hideout had ever been spotted is not checked by the raiser, so the event can fire for hideouts the player never knew about; the row's pairing advice (gate with a player-won `MapEventEnded` at that settlement) is the mitigation but is not something vanilla enforces.
 - `OnMapEventContinuityNeedsUpdateEvent` — I read the two raiser families and the consuming behavior, but did not trace whether other stance mutations (e.g. war-end mediation paths) also flip `StanceLink.StanceType`; "any war↔peace flip" describes the two sites verified.
 
+## Q37 — Campaign events catalog 3 (party, army, settlement, tournaments)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
