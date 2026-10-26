@@ -4252,6 +4252,17 @@ All 34 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 - `OnPeaceOfferResolvedEvent` being fully dead is based on grep over all decompiled game code (DLCs included); only genuinely non-decompiled engine code could fire it unseen — confirm with a logging listener before assuming a "peace resolved" hook exists.
 - Listener order inside the `DailyTickClanEvent` / `HourlyTickClanEvent` fan-out is behavior-registration order (same caveat as Q32) — unresolved whether a mod's daily-clan handler runs before `ClanVariablesCampaignBehavior`'s finance pass or `AllianceCampaignBehavior`'s expiry sweep.
 
+## Q42 — Campaign events catalog 8 (economy, crafting, save) + polling-only signals
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
