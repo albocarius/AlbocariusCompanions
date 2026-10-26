@@ -1670,6 +1670,19 @@ prefixes this method and skips it when either hero of the pair is a mod companio
 `ChangeRelationAction` before the event, so it is unaffected. `KillCharacterAction` is not patched: it also serves deaths,
 executions and other removals, which stay vanilla.
 
+**Raw companion ↔ companion relation (SPEC_VANILLA_GUARDS V4).** The mod reads with **one** API:
+`public static int CharacterRelationManager.GetHeroRelation(Hero hero1, Hero hero2)` — the stored row itself (0 when unset).
+Reason: `Hero.GetBaseHeroRelation` returns the same number today but goes through the replaceable
+`DiplomacyModel.GetBaseRelation` (the default model's private `GetBaseRelationBetweenHeroes` just calls `GetHeroRelation`),
+so another mod's diplomacy model could change it; `Hero.GetRelation` is the *effective* value. For two companions of the
+player clan `GetHeroesForEffectiveRelation` maps both to the clan leader (the main hero), sees the same hero and falls back to
+the two companions themselves, so `GetRelation` = stored row **plus** `GetPersonalityEffects` (Honor/Valor/Mercy ±1/±2),
+clamped — not the personal value, and possibly different in each direction. Writes use `public void
+Hero.SetPersonalRelation(Hero otherHero, int value)`: it clamps to `DiplomacyModel.MinRelationLimit..MaxRelationLimit` and
+calls `CharacterRelationManager.SetHeroRelation`, which writes the row (`HeroRelations.SetRelation`) and **fires no event**:
+no `HeroRelationChanged`, no notification, no Charm XP, no vanilla removal check (verified: neither method dispatches
+anything). Only `ChangeRelationAction` fires the event.
+
 ### Evidence
 
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterRelationManager.cs` — `CharacterRelationManager.GetHeroRelation(Hero hero1, Hero hero2)` — public static read of the stored row; 0 when the pair has no entry.
@@ -3171,6 +3184,8 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `CompanionRolesCampaignBehavior` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` | Q19 | Harmony target: companion_fire_on_consequence (player dismissal) |
 | `CompanionRolesCampaignBehavior.OnHeroRelationChanged` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` | Q21 | Harmony target: skip the low-relation removal for mod companions |
 | `Hero.GetRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q21 | log the relation that would have removed a mod companion |
+| `CharacterRelationManager.GetHeroRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterRelationManager.cs` | Q21 | raw companion ↔ companion relation (read) |
+| `Hero.SetPersonalRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q21 | raw companion ↔ companion relation (silent write) |
 | `RemoveCompanionAction.ApplyByFire` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/RemoveCompanionAction.cs` | Q19 | vanilla fire step of a dismissal |
 | `Hero.ChangeState` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q19 | fugitive → active before the tavern |
 | `Hero.CharacterStates` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q19 | Active state |
