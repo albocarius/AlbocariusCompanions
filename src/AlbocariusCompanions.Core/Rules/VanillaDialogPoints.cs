@@ -97,7 +97,26 @@ public static class VanillaDialogPoints
 
     public static IReadOnlyList<string> Slots { get; } = All.Select(p => p.Slot).ToArray();
 
+    /// <summary>Sentence ids the mod registers itself start with this ("albocarius_…" fixed lines, "albocarius:…" conversations).</summary>
+    public const string OwnSentencePrefix = "albocarius";
+
+    /// <summary>
+    /// What an NPC sentence said by a mod companion is: one of the mod's own, a vanilla point covered by a slot, or a vanilla
+    /// (or other mod's) line no slot covers — the last one shows text the mod did not write and must be reported.
+    /// </summary>
+    public static SentenceKind Classify(string? sentenceId) =>
+        sentenceId != null && sentenceId.StartsWith(OwnSentencePrefix, StringComparison.Ordinal) ? SentenceKind.Own
+        : ForSentence(sentenceId) != null ? SentenceKind.Slot
+        : SentenceKind.Unmapped;
+
     /// <summary>The point that replaces a vanilla sentence id, or null.</summary>
     public static VanillaDialogPoint? ForSentence(string? sentenceId) =>
         sentenceId != null && BySentence.TryGetValue(sentenceId, out var point) ? point : null;
+}
+
+public enum SentenceKind
+{
+    Own,
+    Slot,
+    Unmapped,
 }

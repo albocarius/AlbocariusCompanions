@@ -16,7 +16,7 @@ public class SubModuleXmlTests
         Assert.Equal("Module", Module.Name.LocalName);
         Assert.Equal("AlbocariusCompanions", Value(Module, "Id"));
         Assert.False(string.IsNullOrWhiteSpace(Value(Module, "Name")));
-        Assert.Equal("v0.2.1", Value(Module, "Version"));
+        Assert.Equal("v0.2.2", Value(Module, "Version"));
     }
 
     [Fact]

@@ -162,3 +162,17 @@ public class VanillaDialogPointsTests
         Assert.Null(VanillaDialogPoints.ForSentence(null));
     }
 }
+
+public class SentenceKindTests
+{
+    [Theory]
+    [InlineData("albocarius_jeremus_intro", SentenceKind.Own)]
+    [InlineData("albocarius:jeremus:the_scar:start:p_scar_ask", SentenceKind.Own)]
+    [InlineData("companion_fire", SentenceKind.Slot)]
+    [InlineData("prison_break_start_2", SentenceKind.Slot)]
+    [InlineData("some_quest_line_spoken_by_any_hero", SentenceKind.Unmapped)]
+    [InlineData(null, SentenceKind.Unmapped)]
+    public void Npc_sentences_of_mod_companions_are_classified(string? sentenceId, SentenceKind expected) =>
+        Assert.Equal(expected, VanillaDialogPoints.Classify(sentenceId));
+}
+

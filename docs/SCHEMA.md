@@ -86,7 +86,9 @@ Every vanilla point where a wanderer/companion speaks (GAME_MAP Q18) is a **requ
 companion overrides everything vanilla would make it say. It says one of its lines instead of the vanilla text; the vanilla
 condition, consequence and tokens (`{SALUTATION}`, `{TITLE}`, `{SETTLEMENT_NAME}`, …) still apply. A companion missing any
 slot fails validation: the log lists every missing slot in one line, the game shows "Companion '<id>' is not valid and was
-not loaded; details in the log." The vanilla line remains only as a runtime safety net. The full
+not loaded; details in the log." The vanilla line remains only as a runtime safety net, and it is never silent: when a mod companion
+shows vanilla text — a slot without usable text, or a vanilla/quest/DLC/other-mod line that no slot covers — a warning
+goes to the log and the game (once per companion and line per session) naming the sentence id, so it can become a slot. The full
 list with the vanilla English text is `src/AlbocariusCompanions.Core/Rules/VanillaDialogPoints.cs`; the companion template
 (`tools/companion-template/`) has one line per slot, pre-filled with that text:
 greetings and hub (`greet_recent`, `greet`, `main_hub`, `anything_else`, `farewell`, `job_status`), roles and missions

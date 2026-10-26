@@ -311,6 +311,9 @@ internal static class KeepModCompanionsOverTheLimit
 /// Vanilla dialog points as companion slots (SPEC_CORE_GAPS T4.0, GAME_MAP Q18 note): when a mod companion speaks a vanilla
 /// NPC sentence whose slot it has lines for, the text shown and voiced is one of its own lines. The vanilla condition already
 /// ran (its variables are set) and the consequence and tokens are unchanged; an empty slot keeps the vanilla text.
+/// Every other NPC line a mod companion says is checked too: a vanilla line no slot covers, or a slot without usable text,
+/// shows vanilla text — that breaks the "no vanilla dialog" rule, so it is logged and shown in game as a warning (once per
+/// companion and sentence per session).
 /// </summary>
 [HarmonyPatch(typeof(ConversationManager), nameof(ConversationManager.UpdateCurrentSentenceText))]
 internal static class ReplaceVanillaTextForModCompanions
@@ -326,21 +329,42 @@ internal static class ReplaceVanillaTextForModCompanions
             if (sentence == null || sentence.IsPlayer)
                 return;
 
-            var point = VanillaDialogPoints.ForSentence(sentence.Id);
-            if (point == null)
-                return;
-
             var hero = __instance.OneToOneConversationHero;
             if (!ModRuntime.IsModHero(hero) || !ModRuntime.Registry.TryGet(hero.Template.StringId, out var package) || package == null)
                 return;
 
+            var id = hero.Template.StringId;
+            switch (VanillaDialogPoints.Classify(sentence.Id))
+            {
+                case SentenceKind.Own:
+                    return;
+                case SentenceKind.Unmapped:
+                    // "No vanilla dialog" rule broken: a line no slot covers (unmapped vanilla point, quest, DLC, other mod).
+                    WarnOnce(id, sentence.Id, $"Companion '{id}' said a vanilla line that no slot covers (sentence '{sentence.Id}'); " +
+                        "the vanilla text was shown. Report it so the line can become a slot.");
+                    return;
+            }
+
+            var point = VanillaDialogPoints.ForSentence(sentence.Id)!;
             var text = DialogText.PickText(package, point.Slot);
             if (text != null)
                 ____currentSentenceText = text;
+            else
+                WarnOnce(id, sentence.Id, $"Companion '{id}' has no usable text for slot '{point.Slot}' (sentence '{sentence.Id}'); " +
+                    "the vanilla text was shown.");
         }
         catch (Exception ex)
         {
             ModRuntime.Log.Error("vanilla text replacement failed; showing the vanilla text", ex);
         }
+    }
+
+    /// <summary>Companion + sentence pairs already reported this session: one warning (log + game) per line, not per repeat.</summary>
+    private static readonly HashSet<string> Reported = new HashSet<string>(StringComparer.Ordinal);
+
+    private static void WarnOnce(string companionId, string sentenceId, string message)
+    {
+        if (Reported.Add(companionId + "|" + sentenceId))
+            ModRuntime.Log.Warning(message);
     }
 }
