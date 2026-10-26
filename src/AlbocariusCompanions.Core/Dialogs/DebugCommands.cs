@@ -14,6 +14,35 @@ public static class DebugCommands
     public const string UsageGet = "Usage: albocarius.get <companion>.<variable>";
     public const string UsageSet = "Usage: albocarius.set <companion>.<variable> <true|false|number>";
     public const string UsageReset = "Usage: albocarius.reset <companion>";
+    public const string UsageRelation = "Usage: albocarius.relation <companion> <companion> [value -100..100]";
+
+    /// <summary>
+    /// Raw personal relation between two loaded companions (M8 V4): read, or set when a value is given.
+    /// <paramref name="get"/>/<paramref name="set"/> are the game's raw read/silent write; null from get = no hero.
+    /// </summary>
+    public static string Relation(IReadOnlyList<string> args, Func<string, bool> isLoaded, Func<string, string, int?> get,
+        Action<string, string, int> set)
+    {
+        if (args.Count != 2 && args.Count != 3)
+            return UsageRelation;
+        var (a, b) = (args[0], args[1]);
+        foreach (var id in new[] { a, b })
+            if (!isLoaded(id))
+                return $"Error: no loaded companion '{id}'.";
+        if (a == b)
+            return "Error: a relation needs two different companions.";
+        if (args.Count == 3)
+        {
+            if (!int.TryParse(args[2], System.Globalization.NumberStyles.AllowLeadingSign, System.Globalization.CultureInfo.InvariantCulture, out var value)
+                || value < ConversationRules.MinRelation || value > ConversationRules.MaxRelation)
+                return $"Error: '{args[2]}' is not a whole number in {ConversationRules.MinRelation}..{ConversationRules.MaxRelation}.";
+            if (get(a, b) == null)
+                return $"Error: '{a}' or '{b}' has no hero in this campaign.";
+            set(a, b, value);
+        }
+        var current = get(a, b);
+        return current == null ? $"Error: '{a}' or '{b}' has no hero in this campaign." : $"{a} <-> {b}: {current}";
+    }
 
     /// <summary>One line per loaded companion: its state (from <paramref name="describe"/>) and every variable's value.</summary>
     public static string List(VariableStore store, Func<string, string> describe)

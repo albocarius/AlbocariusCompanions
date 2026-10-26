@@ -42,6 +42,18 @@ internal static class ConsoleCommands
             return result;
         });
 
+    [CommandLineFunctionality.CommandLineArgumentFunction("relation", Group)]
+    public static string Relation(List<string> args) =>
+        InCampaign("albocarius.relation", () =>
+        {
+            var result = DebugCommands.Relation(args, ModRuntime.Registry.Contains,
+                (a, b) => ModRuntime.HeroOf(a) is { } heroA && ModRuntime.HeroOf(b) is { } heroB ? CompanionRelations.Get(heroA, heroB) : (int?)null,
+                (a, b, value) => CompanionRelations.Set(ModRuntime.HeroOf(a)!, ModRuntime.HeroOf(b)!, value));
+            if (args.Count == 3)
+                ModRuntime.Log.Info($"Console albocarius.relation {string.Join(" ", args)} -> {result}");
+            return result;
+        });
+
     /// <summary>Variables exist per campaign, so every command needs a running one.</summary>
     private static string InCampaign(string context, System.Func<string> command) =>
         Safe.Run(ModRuntime.Log, "console " + context,

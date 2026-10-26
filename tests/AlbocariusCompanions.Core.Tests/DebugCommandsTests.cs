@@ -74,3 +74,41 @@ public class DebugCommandsTests
         Assert.StartsWith("Error: ", DebugCommands.Reset(store, new[] { "bora" }));
     }
 }
+
+public class RelationCommandTests
+{
+    private readonly Dictionary<(string, string), int> _relations = new();
+
+    private string Run(params string[] args) => DebugCommands.Relation(args,
+        id => id is "jeremus" or "ahmet" or "nohero",
+        (a, b) => a == "nohero" || b == "nohero" ? null : _relations.TryGetValue(Key(a, b), out var v) ? v : 0,
+        (a, b, v) => _relations[Key(a, b)] = v);
+
+    private static (string, string) Key(string a, string b) => string.CompareOrdinal(a, b) < 0 ? (a, b) : (b, a);
+
+    [Fact]
+    public void Get_and_set_are_symmetric()
+    {
+        Assert.Equal("jeremus <-> ahmet: 0", Run("jeremus", "ahmet"));
+        Assert.Equal("jeremus <-> ahmet: -50", Run("jeremus", "ahmet", "-50"));
+        Assert.Equal("ahmet <-> jeremus: -50", Run("ahmet", "jeremus"));
+    }
+
+    [Theory]
+    [InlineData("jeremus")]
+    [InlineData("jeremus", "ahmet", "5", "x")]
+    public void Wrong_argument_count_prints_usage(params string[] args) => Assert.Equal(DebugCommands.UsageRelation, Run(args));
+
+    [Theory]
+    [InlineData("jeremus", "bora")]
+    [InlineData("jeremus", "jeremus")]
+    [InlineData("jeremus", "ahmet", "101")]
+    [InlineData("jeremus", "ahmet", "lots")]
+    [InlineData("jeremus", "nohero", "5")]
+    [InlineData("jeremus", "nohero")]
+    public void Bad_input_is_an_error_and_writes_nothing(params string[] args)
+    {
+        Assert.StartsWith("Error: ", Run(args));
+        Assert.Empty(_relations);
+    }
+}
