@@ -189,7 +189,7 @@ One task per question, numbered GAME_MAP Q21–Q31; each claim cites decomp path
 what would resolve it. No code. Acceptance per task: GameMapTests section-present test (heading + Answer/Evidence/Uncertain).
 - [x] 58-gm-q21-relations (worker) — R1 hero↔hero relations.
 - [x] 59-gm-q22-morale (worker) — R2 party morale / per-hero mood.
-- [ ] 60-gm-q23-events (worker) — R3 part 1 (combat, war). First attempt timed out with nothing written → split.
+- [x] 60-gm-q23-events (worker) — R3 part 1 (combat, war). First attempt timed out with nothing written → split.
 - [ ] 60b-gm-q32-events (worker) — R3 part 2 (wages, food, morale, settlements, sieges, kingdom, clan, death) → GAME_MAP Q32.
 - [ ] 61-gm-q24-traits (worker) — R4 player traits.
 - [ ] 62-gm-q25-open-conversation (worker) — R5 programmatic conversation on the map.
