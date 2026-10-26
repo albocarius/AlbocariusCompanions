@@ -48,3 +48,4 @@
 | 60-gm-q23-events | 1 | PASS, verified | 2nd attempt after split; 8 members + reverse listener order spot-checked; no battle-won/lost or retreat member (closest hooks named) |
 | 60b-gm-q32-events | 1 | PASS, verified | 9 members spot-checked; no wage/morale events (poll daily ticks) |
 | 61-gm-q24-traits | 1 | PASS, verified | single funnel AddPlayerTraitXPAndLogEntry -> PlayerTraitChangedEvent on level change, spot-checked |
+| 62-gm-q25-open-conversation | 1 | PASS, verified | CampaignMapConversation.OpenConversation + vanilla grievance guards spot-checked; pause UNCERTAIN |
