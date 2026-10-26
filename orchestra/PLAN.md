@@ -198,7 +198,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [x] 65-gm-q28-location (worker) — R8 location & surroundings.
 - [x] 66-gm-q29-items-gold (worker, **first in queue**) — R9 items, inventory, gold between heroes, companion inventories.
 - [x] 67-gm-q30-console (worker, **second in queue**) — R10 console commands.
-- [ ] 68-gm-q31-misc (worker) — R11 clan tier, war state, hero in party.
+- [x] 68-gm-q31-misc (worker) — R11 clan tier, war state, hero in party.
 
 ### Track I — implementation (self unless noted; worker research runs in parallel)
 - [x] 69-variables-core (self) — I1 + I2 in Core: `variables` block (types/scopes/defaults, built-in `mood`), D1 effects,

@@ -52,3 +52,4 @@
 | 63-gm-q26-inquiry | 1 | PASS, verified | ShowInquiry(InquiryData, pauseGameActiveState, prioritize) + InquiryData ctor spot-checked; 2 buttons max, MultiSelection for N |
 | 64-gm-q27-time | 1 | PASS, verified | CampaignTime.Now/ElapsedDaysUntilNow/Days + vanilla SyncData of CampaignTime fields spot-checked |
 | 65-gm-q28-location | 1 | PASS, verified | CurrentSettlement/BesiegerCamp/IsTown-IsCastle, SettlementHelper.FindNearest*, VillageType.PrimaryProduction spot-checked |
+| 68-gm-q31-misc | 1 | PASS, verified | Clan.Tier, IsAtWarWith/FactionManager.IsAtWarAgainstFaction spot-checked |
