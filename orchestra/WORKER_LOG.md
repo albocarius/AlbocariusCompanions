@@ -46,3 +46,4 @@
 | 58-gm-q21-relations | 1 | PASS, verified | thorough; checked Hero.Clan, SetPersonalRelation (silent), companion leaves at < -10 on negative change. Mod impact: our negative relation effect can remove a hired companion |
 | 59-gm-q22-morale | 1 | PASS, verified | party-level only; base 50, RecentEventsMorale 10%/day decay, model override for labelled factor - spot-checked |
 | 60-gm-q23-events | 1 | PASS, verified | 2nd attempt after split; 8 members + reverse listener order spot-checked; no battle-won/lost or retreat member (closest hooks named) |
+| 60b-gm-q32-events | 1 | PASS, verified | 9 members spot-checked; no wage/morale events (poll daily ticks) |
