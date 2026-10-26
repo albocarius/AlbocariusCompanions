@@ -3512,6 +3512,21 @@ companion another day. With only mod companions above the limit nobody is remove
 - **UNCERTAIN**: whether the "ApplicapleCompanion" overlay highlight (misspelling included) is reachable at all, since it depends on a caller passing that exact condition string; `SettlementMenuOverlayVM` sets `IsHighlightEnabled` and no other file was confirmed to supply the string. Resolve by grepping the VM collection and the `SandBox.GauntletUI` layer for it (Q15/Q17).
 - **UNCERTAIN**: whether the prisoner-release pass also reaches a mod companion that owns no caravan — `ReleasePrisonersForClan` iterates `clan.Companions` but only acts through `companion.OwnedCaravans`, and it is unproven whether vanilla ever gives a mod companion a caravan (the `companion_is_caravan_leader_on_condition` path in Q34 Table 1 suggests it can). Resolve in-game by making a mod companion a caravan leader, starting a war and signing peace, then checking the caravan's prisoner list (Q23/Q30).
 
+## Triggers & roles (SPEC_SELECTION_AND_EVENTS Track R)
+
+Q35–Q46 answer the research questions R1–R5 (R1 = Q35–Q42). Nothing here is used in mod code until it has an API index row.
+
+## Q35 — Campaign events catalog 1 (battle, siege, crime, prisoners)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
