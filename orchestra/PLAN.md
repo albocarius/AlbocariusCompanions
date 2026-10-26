@@ -19,31 +19,31 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - M8 done 2026-10-26 (docs/RUN_REPORT_VANILLA_GUARDS.md): V1–V5, version 0.2.1. Core.Tests 273, Acceptance 631. In-game checklist 1–5 passed (user).
 - After M8 (outside the orchestra, 2026-10-26): all 46 vanilla dialog points are required slots (46c91af); vanilla text
   fallback reported in log + game once per companion and sentence (ee30f89). Version 0.2.2, deployed.
-- M9 planned 2026-10-26, waiting at the plan gate.
+- M9 plan approved 2026-10-26 with changes (F1/F2/F4/F9 as amended).
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M9 — Selection rules + event research (SPEC_SELECTION_AND_EVENTS)
 Rules: spec §0 decisions are fixed; no trigger implementation. Every schema change updates models + loader + validation +
 test_companion + fixtures + scaffold template + `docs/SCHEMA.md` in the same task. Every new game API → GAME_MAP section +
 API index row before code uses it. Version `0.2.2` → **`0.3.0`** at the end (user), SubModuleXmlTests/GameAssemblyTests updated.
-Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 90; 95 after 94; 103 last.
+Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 90; 95 after 94; 110 last.
 
 ### Design decisions taken here (spec gaps; change at the gate if wrong)
-- F1 Selection sets (per companion): (a) **hub**: the conversations with entry `hub` that are offered (once/`when` pass and
-  at least one start player option passes) — one is chosen, only its start options are shown; (b) **greeting**: the
-  greeting conversations that are offered — one is chosen, then one of its start npc nodes (set c); (c) the **npc nodes**
-  of one `next` list (or of a greeting's `start`) whose `when` passes; (d) the **lines of one slot**. Rule in all four:
-  highest `priority` (absent = 0), ties uniform random through `IRandomSource`. Player options never selected.
-- F2 Hub choice is made once per talk (when the hub is first built) and kept while the chosen conversation is still
-  offered; it is re-chosen when it is no longer offered (e.g. `once` used). So "equal priority → both appear across
-  several talks", not a different option every time the menu is rebuilt.
+- F1 (changed by the user at the gate) Player-started vs NPC-started. **Hub** conversations (player-started topics): every
+  offered one is listed; `priority` only orders them in the menu (higher first, ties in a stable order = file order).
+  The **selection rule** (highest `priority`, absent = 0, ties uniform random through `IRandomSource`) applies to the
+  NPC side: (a) **greeting** conversations that are offered — one wins, then one of its start npc nodes (set b);
+  (b) the **npc nodes** of one `next` list / greeting `start` whose `when` passes; (c) the **lines of one slot** whose
+  `when` passes. Player options are never selected.
+- F2 (user) A pick is kept for the whole talk: each NPC-side set is decided once per talk and re-decided only when the
+  kept winner no longer passes.
 - F3 Game side (GAME_MAP Q7: first passing NPC line wins, player options all shown, equal priority keeps registration
-  order): our sentences keep fixed game priorities; each condition asks a Core `Selector` decision for its set. The set's
-  first registered sentence computes the decision in each evaluation round (the game evaluates a token's lines in list
-  order), the others read it. GAME_MAP Q20 addendum documents this. No new game API expected.
-- F4 Slot lines get `priority` but **no `when`** (spec I1 does not add conditions to lines). So a higher priority on a
-  line always shadows the others → the I2 warning fires for it. **Question for the user** at the gate: add `when` to slot
-  lines now (small: same ConditionSet), or keep line priority dormant?
+  order): our sentences keep fixed game priorities; each NPC-side condition asks the Core decision for its set (cached per
+  talk, F2). Hub order: a companion's hub start sentences are registered in priority order (stable) at the same game
+  priority 105, so the game's stable sort shows them in that order. GAME_MAP Q20 addendum.
+- F4 (user) Slot lines get `priority` **and `when`** (same ConditionSet as conversations; the slot's lines are then
+  filtered by `when`, then selected). A slot whose lines can all fail at runtime → validation warning (no line → the
+  vanilla fallback warning, I5). Required-slot check unchanged (at least one line).
 - F5 Sample: `coin_refuse` (maxRelation 20) and `coin_fine` (no condition) both pass for relation 10–20 → today first
   match (refuse), under the new rule random. Give `coin_refuse` `priority: 1` → behavior unchanged, no shadow warning
   (it has a condition). the_scar / spare_coin never pass together (told_scar), so hub behavior is unchanged.
@@ -59,14 +59,14 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
   shapes are fixed in `docs/SIMULATOR_PROTOCOL.md` in task 94 before 95 starts.
 - F8 I5 is already done in 0.2.2 (ee30f89: log + game warning, once per companion and sentence per session). Task 96
   only checks it against the spec wording (per slot) and adds a Core test if missing.
-- F9 I6 remaining decide items (from the M8 list, not covered by §0): rescue / prison break lines (5), quest-created
-  companions (8), kingdom expels the player clan (9). Listed in the report, nothing changed.
+- F9 (user) Rescue / prison-break lines: if the companion itself speaks them, they become template slots (no vanilla
+  text in our companions' mouths); quest-created companions and the kingdom expelling the clan stay vanilla (report).
 - F10 Track R lands in a new GAME_MAP part "Triggers & roles", questions Q35–Q42; R1 split by theme into 4 tasks
   (the M7 events task timed out once when unsplit). Q23/Q32 are reused, not repeated.
 
 ### Track I — implementation
 - [ ] 90-selection-core (self) — Core `Selection` (F1 rule, `IRandomSource`), `priority` on conversations / lines / npc
-  nodes (model, loader, validation: player node with `priority` → warning "ignored"), `LinePicker` → priority-aware,
+  nodes, `when` on slot lines (F4) (model, loader, validation: player node with `priority` → warning "ignored"), `LinePicker` → priority-aware,
   SCHEMA.md + example, sample F5, template. Accept: Acceptance tests (priority wins, absent = 0, seeded ties both seen,
   player options all returned, hub/greeting/npc-reply/slot sets).
 - [ ] 91-selection-game (self) — F2/F3 in CompanionDialogs/DialogText; GAME_MAP Q20 addendum. Build-only; in-game
@@ -83,23 +83,35 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
 - [ ] 95-cli-serve (worker; self writes acceptance tests incl. one integration test over stdin/stdout) — `serve` command:
   line loop, JSON in/out per SIMULATOR_PROTOCOL.md, errors as responses (never exit on a bad line), exit on EOF/`close`.
 - [ ] 96-fallback-check (self) — F8.
-- [ ] 97-decide-list (self) — F9 text for the report.
+- [ ] 97-rescue-slots (self) — F9: verify in decomp which rescue / prison-break lines the companion speaks; add those as
+  vanilla dialog points / required slots (VanillaDialogPoints, DialogSlots, template, test_companion en/tr, SCHEMA.md,
+  GAME_MAP Q18 addendum + API row if new members are used).
 
 ### Track R — research → GAME_MAP "Triggers & roles" (worker drafts, self verifies every claim against decomp)
-Acceptance per task: GameMapTests section-present test (heading + Status/Answer/Evidence/Uncertain).
-- [ ] 98-gm-q35-events-battle (worker) — R1 part 1: battle, crime, prisoners (incl. usefulness + trigger name per member).
-- [ ] 99-gm-q36-events-party (worker) — R1 part 2: party, settlement.
-- [ ] 100-gm-q37-events-politics (worker) — R1 part 3: kingdom/diplomacy, clan/heroes, family.
-- [ ] 101-gm-q38-events-misc (worker) — R1 part 4: economy, quests/issues, time, everything not yet covered (a coverage
-  check against the full `CampaignEvents` member list) + polling-only signals.
-- [ ] 102a-gm-q39-proximity (worker) — R2.
-- [ ] 102b-gm-q40-lord-flow (worker) — R3.
-- [ ] 102c-gm-q41-roles (worker) — R4.
-- [ ] 102d-gm-q42-marriage (worker) — R5.
+Acceptance per task: GameMapTests section-present test (Status/Answer/Evidence/Uncertain), question added to the test
+and a placeholder section committed right before each run. R1 = all 263 `CampaignEvents` members, split into 8 lists of
+~30 (themed by name; sub-headed by theme in the answer). Runs as a sequential queue (scratchpad `research_queue.sh`):
+PASS → committed as `docs(NN): draft` (Status DRAFT), FAIL → discarded, diff kept, retried later. I verify each draft
+(spot-check every raising call site / claim), set VERIFIED and log it in WORKER_LOG.
+- [ ] 98-gm-q35-events-1 (worker) — R1 list 1.
+- [ ] 99-gm-q36-events-2 (worker) — R1 list 2.
+- [ ] 100-gm-q37-events-3 (worker) — R1 list 3.
+- [ ] 101-gm-q38-events-4 (worker) — R1 list 4.
+- [ ] 102-gm-q39-events-5 (worker) — R1 list 5.
+- [ ] 103-gm-q40-events-6 (worker) — R1 list 6.
+- [ ] 104-gm-q41-events-7 (worker) — R1 list 7.
+- [ ] 105-gm-q42-events-8 (worker) — R1 list 8 + polling-only signals.
+- [ ] 106-gm-q43-proximity (worker) — R2.
+- [ ] 107-gm-q44-lord-flow (worker) — R3.
+- [ ] 108-gm-q45-roles (worker) — R4.
+- [ ] 109-gm-q46-marriage (worker) — R5.
+- Track I runs in a separate git worktree (`../AlbocariusCompanionsSource-m9`, branch `orchestra/m9-track-i`) so the
+  worker queue keeps a clean tree; merged back between queue runs.
 
 ### Finish
-- [ ] 103-report (self) — version 0.3.0; `docs/RUN_REPORT_SELECTION_AND_EVENTS.md` (Track I per task, Track R summary
-  with the R1 table event → trigger → usefulness, UNCERTAINs, BLOCKERS, F9 list, 4-item checklist); milestone commit.
+- [ ] 110-report (self) — version 0.3.0; `docs/RUN_REPORT_SELECTION_AND_EVENTS.md` (Track I per task, Track R summary
+  with the R1 table event → trigger → usefulness, UNCERTAINs, BLOCKERS, F9 list, 4-item checklist — item 2 per F1: hub
+  conversations all listed in priority order; two greetings → higher always opens, equal → both across talks); milestone commit.
   Deploy only if asked.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
