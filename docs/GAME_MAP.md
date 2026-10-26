@@ -1629,7 +1629,20 @@ a gold check. Joining uses the hire actions of Q6 (`AddCompanionAction.Apply`, `
 is registered by `SaveableBasicTypeDefiner`, so no `SaveableTypeDefiner` of our own is needed. A save without the key leaves
 the field untouched (Q9), so it starts empty.
 
+**Addendum (M9, selection rule).** The game itself picks the first passing NPC line on a token and lists every passing
+player line in priority order (Q7). The mod keeps fixed game priorities and makes the choice in its own conditions: every
+npc sentence of a companion asks the Core decision for its set (the greeting that opens the talk, then its start node; or
+the reply among the parent node's `next`) and passes only if it is the chosen node, so the game's first-match pass finds
+exactly that one whatever order it evaluates them in. Slot lines are chosen the same way when their text is set. Picks are
+kept for the talk and dropped when the conversation ends: `ConversationManager.EndConversation` raises
+`CampaignEventDispatcher.Instance.OnConversationEnded(ConversationCharacters)` → `CampaignEvents.ConversationEnded`
+(`IMbEvent<IEnumerable<CharacterObject>>`, public) after every conversation, map or mission. Hub conversations are all
+listed; their start options share game priority 105, and because equal priorities keep registration order (Q7
+`SortLastSentence`, stable `Build` sort) they are registered in the authored priority order.
+
 ### Evidence
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` — `ConversationManager.EndConversation` — raises `CampaignEventDispatcher.Instance.OnConversationEnded(ConversationCharacters)` at the end of every conversation.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` — `CampaignEvents.ConversationEnded` — public `IMbEvent<IEnumerable<CharacterObject>>`, invoked from the `OnConversationEnded` receiver override.
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/LordConversationsCampaignBehavior.cs` — `hero_pretalk_2` — `lord_pretalk` → `hero_main_options`, "{=DQBaaC0e}Is there anything else?", no condition.
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` — `ConversationManager.SortLastSentence` — equal priority keeps registration order.
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` — `ConversationManager.ProcessPartnerSentence` — first passing NPC line wins.
@@ -3565,6 +3578,7 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `CampaignEvents.OnNewGameCreatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | spawn pass on a new campaign |
 | `CampaignEvents.OnGameLoadFinishedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | spawn pass after loading a save |
 | `CampaignEvents.OnSessionLaunchedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | dialog registration per session |
+| `CampaignEvents.ConversationEnded` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q20 | drop the selection picks of a finished talk (M9) |
 | `CampaignEvents` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | static campaign event receivers |
 | `IMbEvent.AddNonSerializedListener` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IMbEvent.cs` | Q8 | subscribe handlers (owner = this behavior) |
 | `IDataStore.SyncData` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IDataStore.cs` | Q8 | save/load of the companion id → hero map |

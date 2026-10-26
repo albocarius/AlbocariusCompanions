@@ -36,13 +36,13 @@ public static class ConversationGraph
         foreach (var id in conversation.Start ?? new List<string>())
             if (id != null && nodes.TryGetValue(id, out var node))
                 edges.Add(new ConversationEdge(sentencePrefix + "start:" + id, entryToken, OutputToken(companionId, node), node,
-                    isStart: true));
+                    isStart: true, parentId: null));
 
         foreach (var parent in nodes.Values)
             foreach (var id in parent.Next ?? new List<string>())
                 if (id != null && nodes.TryGetValue(id, out var child))
                     edges.Add(new ConversationEdge(sentencePrefix + parent.Id + ":" + id, NodeToken(companionId, parent.Id!),
-                        OutputToken(companionId, child), child, isStart: false));
+                        OutputToken(companionId, child), child, isStart: false, parentId: parent.Id));
 
         return edges;
     }
@@ -69,8 +69,10 @@ public static class ConversationGraph
 /// <summary>One sentence to register: <see cref="Node"/> said when the active token is <see cref="InputToken"/>.</summary>
 public sealed class ConversationEdge
 {
-    public ConversationEdge(string sentenceId, string inputToken, string outputToken, ConversationNode node, bool isStart)
+    public ConversationEdge(string sentenceId, string inputToken, string outputToken, ConversationNode node, bool isStart,
+        string? parentId = null)
     {
+        ParentId = parentId;
         SentenceId = sentenceId;
         InputToken = inputToken;
         OutputToken = outputToken;
@@ -84,5 +86,7 @@ public sealed class ConversationEdge
     public ConversationNode Node { get; }
     /// <summary>True for the conversation's entry sentences: they also check the conversation's "when" and "once".</summary>
     public bool IsStart { get; }
+    /// <summary>The node whose "next" lists <see cref="Node"/>; null for a start sentence.</summary>
+    public string? ParentId { get; }
     public bool IsPlayer => Node.Speaker == ConversationRules.SpeakerPlayer;
 }

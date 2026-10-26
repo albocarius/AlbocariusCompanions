@@ -69,7 +69,7 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
   nodes, `when` on slot lines (F4) (model, loader, validation: player node with `priority` → warning "ignored"), `LinePicker` → priority-aware,
   SCHEMA.md + example, sample F5, template. Accept: Acceptance tests (priority wins, absent = 0, seeded ties both seen,
   player options all returned, hub/greeting/npc-reply/slot sets).
-- [ ] 91-selection-game (self) — F2/F3 in CompanionDialogs/DialogText; GAME_MAP Q20 addendum. Build-only; in-game
+- [x] 91-selection-game (self) — F2/F3 in CompanionDialogs/DialogText; GAME_MAP Q20 addendum. Build-only; in-game
   checklist item 2.
 - [ ] 92-shadowing-validation (worker; self writes acceptance tests) — I2: in each set of F1, a candidate with no
   conditions and a strictly higher priority than another → warning naming both. Equal → nothing. Hub/greeting: the

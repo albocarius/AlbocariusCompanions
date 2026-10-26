@@ -151,7 +151,10 @@ internal static class CompanionDialogs
             Condition("hire_decline", () => SetText(Variable("hire_decline"), DialogSlots.HireDecline)), null);
         registered += 2;
 
-        foreach (var conversation in package.Conversations)
+        // Hub start options share one game priority, and equal priorities keep registration order (Q7): registering the
+        // hub conversations in priority order is what orders them in the menu (M9 F1/F3).
+        foreach (var conversation in ConversationSelection.HubOrder(package)
+                     .Concat(package.Conversations.Where(c => c.Entry != ConversationRules.EntryHub)))
             registered += RegisterConversation(starter, package, conversation, IsThisCompanion);
 
         ModRuntime.Log.Info($"Dialogs: registered {registered} lines for '{id}' (hire cost {hireCost}, " +
@@ -183,6 +186,8 @@ internal static class CompanionDialogs
                 var state = new HeroConversationContext(Hero.OneToOneConversationHero, id);
                 if (!ConversationConditions.CanSay(conversation, current, state, ModRuntime.Flags.HasStarted(id, conversation.Id!)))
                     return false;
+                if (!current.IsPlayer && !IsSelected(package, conversation, current, state))
+                    return false;
                 var line = DialogText.TextOf(package, current.Node);
                 if (line == null)
                     return false;
@@ -205,6 +210,23 @@ internal static class CompanionDialogs
                     current.IsStart ? GreetingPriority : 100);
         }
         return edges.Count;
+    }
+
+    /// <summary>
+    /// The selection rule on the NPC side (M9 F1–F3): of the npc sentences on one token only the chosen one passes — the
+    /// greeting that opens the talk and its start node, or the reply among the parent's "next". Picks are kept for the
+    /// talk (<see cref="ModRuntime.Selections"/>, cleared when a conversation ends), so the game's own first-match pass
+    /// over the alternatives finds exactly that one, whatever order it evaluates them in.
+    /// </summary>
+    private static bool IsSelected(CompanionPackage package, ConversationDefinition conversation, ConversationEdge edge,
+        IConversationContext state)
+    {
+        var id = package.Id;
+        if (edge.IsStart && ConversationSelection.Greeting(package, state, c => ModRuntime.Flags.HasStarted(id, c),
+                ModRuntime.Selections, DialogText.Random) != conversation)
+            return false;
+        return ConversationSelection.NpcReply(id, conversation, edge.ParentId, state, ModRuntime.Selections, DialogText.Random)
+            == edge.Node;
     }
 
     /// <summary>Node effects (GAME_MAP Q20): variables first, then relation, gold and joining, each logged.</summary>
@@ -286,42 +308,8 @@ internal static class CompanionDialogs
         return hero != null || actor == Transfers.World;
     }
 
-    /// <summary>The live values conversation conditions read, over the hero being talked to.</summary>
-    private sealed class HeroConversationContext : IConversationContext
-    {
-        private readonly Hero _hero;
-        private readonly string _companionId;
-
-        public HeroConversationContext(Hero hero, string companionId)
-        {
-            _hero = hero;
-            _companionId = companionId;
-        }
-
-        public bool HasMet => _hero.HasMet;
-        public bool IsHired => _hero.IsPlayerCompanion;
-        public bool IsInPlayerParty => _hero.PartyBelongedTo == MobileParty.MainParty;
-        public int Relation => (int)Math.Round(_hero.GetRelationWithPlayer());
-        public int PlayerGold => Hero.MainHero.Gold;
-        public bool ClanIsFull => TooManyCompanions();
-        public int? GetVariable(string reference) => ModRuntime.Variables.Get(_companionId, reference);
-
-        public int? GoldOf(string actor) => actor switch
-        {
-            "player" => Hero.MainHero.Gold,
-            "self" => _hero.Gold,
-            _ => ModRuntime.Registry.Contains(actor) ? ModRuntime.HeroOf(actor)?.Gold : null,
-        };
-
-        public int PlayerItemCount(string itemId)
-        {
-            var item = MBObjectManager.Instance.GetObject<ItemObject>(itemId);
-            return item == null ? 0 : MobileParty.MainParty.ItemRoster.GetItemNumber(item);
-        }
-    }
-
     /// <summary>Vanilla limit check (Q6): the hire option is refused once the clan is at its companion limit.</summary>
-    private static bool TooManyCompanions() =>
+    internal static bool TooManyCompanions() =>
         Clan.PlayerClan.Companions.Count >= Clan.PlayerClan.CompanionLimit;
 
     /// <summary>Vanilla hire order (Q6): pay, join the clan, join the main party.</summary>
