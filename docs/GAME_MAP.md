@@ -2132,7 +2132,148 @@ Status: VERIFIED
 
 ## Q26 — Inquiry pop-ups
 
-Status: TODO
+Status: VERIFIED
+
+### Answer
+
+**The pop-up ("query") system is a fire-and-forget static event plus a plain data object — there is no screen or GameState to open and no campaign/mission precondition. The two entry points R6 needs are `InformationManager.ShowInquiry` (title + text + at most **two** buttons) and `MBInformationManager.ShowMultiSelectionInquiry` (title + text + **N** selectable rows + one confirm/cancel pair). Both are `public static void` on public static classes in `TaleWorlds.Library` / `TaleWorlds.Core`, both are used by vanilla campaign behaviors, mission UIs, fullscreen panels and the launcher/main-menu path alike, and vanilla ships the prefabs (`SingleQueryPopup`, `MultiSelectionQueryPopup`, `TextQueryPopup`) — a mod needs no XML of its own.**
+
+**1. Two-option pop-up — `TaleWorlds.Library.InformationManager` (public static class).**
+
+```csharp
+public static void ShowInquiry(InquiryData data, bool pauseGameActiveState = false, bool prioritize = false)
+public static void ShowTextInquiry(TextInquiryData textData, bool pauseGameActiveState = false, bool prioritize = false)
+public static void HideInquiry()
+public static bool IsAnyInquiryActive()
+```
+
+`ShowInquiry` is literally `OnShowInquiry?.Invoke(data, pauseGameActiveState, prioritize)` for a `public static event Action<InquiryData, bool, bool>`; the only subscriber in the shipped game is `GauntletQueryManager` (item 4). With no subscriber the call is a **silent no-op** — no exception, nothing drawn. `HideInquiry()` closes the current pop-up **and immediately shows the next queued one**; `IsAnyInquiryActive()` reports only the *displayed* pop-up (`_activeDataSource != null`), never queued ones.
+
+Payload — `TaleWorlds.Library.InquiryData` (public class, single 13-parameter ctor):
+
+```csharp
+new InquiryData(string titleText, string text, bool isAffirmativeOptionShown, bool isNegativeOptionShown,
+  string affirmativeText, string negativeText, Action affirmativeAction, Action negativeAction,
+  string soundEventPath = "", float expireTime = 0f, Action timeoutAction = null,
+  Func<(bool, string)> isAffirmativeOptionEnabled = null, Func<(bool, string)> isNegativeOptionEnabled = null)
+```
+
+- **At most two options.** There are exactly two button slots (`…OptionShown` + `Action`); the dominant vanilla form for one-button notices is `isNegativeOptionShown: false` with null negative text/action. A three-way choice cannot be expressed here — vanilla either chains pop-ups (they queue, item 6) or uses item 2.
+- Optional `Func<(bool, string)>` getters are re-evaluated **every frame** while the pop-up is open; the returned string becomes the disabled button's hover hint (`ButtonOkHint` / `ButtonCancelHint` in the prefab).
+- `expireTime > 0` shows a draining bar and at expiry runs `timeoutAction` and closes by itself; `soundEventPath` is a 2D FMOD path played on show.
+- Only `TitleText` and `Text` are writable (plus `SetText`/`SetTitleText`); every callback/flag/timer field is `readonly`, so a pop-up's behaviour cannot be mutated after construction, and since the view copies the strings at `SetData`, mutating `Text` after the pop-up is on screen changes nothing.
+- An empty `titleText` auto-hides the title block; the body is rich text inside a scrollable region clipped to 480 px, so `{newline}` and markup work.
+
+**2. N-option pop-up — `TaleWorlds.Core.MBInformationManager` (public static class).**
+
+```csharp
+public static void ShowMultiSelectionInquiry(MultiSelectionInquiryData data, bool pauseGameActiveState = false, bool prioritize = false)
+```
+
+```csharp
+new MultiSelectionInquiryData(string titleText, string descriptionText, List<InquiryElement> inquiryElements,
+  bool isExitShown, int minSelectableOptionCount, int maxSelectableOptionCount, string affirmativeText,
+  string negativeText, Action<List<InquiryElement>> affirmativeAction, Action<List<InquiryElement>> negativeAction,
+  string soundEventPath = "", bool isSeachAvailable = false) // the shipped parameter/property really is misspelled
+```
+
+- Rows are `new InquiryElement(object identifier, string title, ImageIdentifier imageIdentifier)` or the 5-arg overload `…, bool isEnabled, string hint`. `Identifier` is `object` and is the natural payload carrier (vanilla passes a string key, a `CharacterObject`, or a `TroopObject`); `ImageIdentifier` may be `null` for a text-only row, portraits use `new CharacterImageIdentifier(CharacterCode.CreateFrom(obj))`; a greyed-out row puts its reason in `hint`.
+- There is **one** affirmative `Action<List<InquiryElement>>` receiving every selected row — no per-row callbacks, no timer/timeout on this type. For a mutually exclusive N-way choice use `min = max = 1`: the view clears the other rows on selection (radio behaviour) and OK is enabled only when `MinSelectableOptionCount <= selected` and (`MaxSelectableOptionCount <= 0` — unlimited — `|| selected <= Max`); dispatch on `selected[0].Identifier`.
+- `isExitShown` gates the cancel/Esc affordance, `isSeachAvailable` adds a search field for long lists. The element list is snapshotted into view-model rows at `SetData`, so mutating the `List<InquiryElement>` afterwards does nothing.
+
+**3. Text-entry variant.** `ShowTextInquiry(TextInquiryData)` mirrors item 1 but takes `Action<string> affirmativeAction`, `bool shouldInputBeObfuscated`, a `Func<string, Tuple<bool, string>> textCondition` validator re-run per frame (its string is the rejection hint) and `defaultInputText`; vanilla uses it for naming a save file.
+
+**4. Who renders it, hence where it may be shown.** The single subscriber for all three kinds is `GauntletQueryManager : GlobalLayer` (`TaleWorlds.MountAndBlade.GauntletUI`), constructed once from `GauntletUISubModule.OnBeforeInitialModuleScreenSetAsRoot` (`Initialize()` + `InitializeKeyVisuals()`; the whole block is skipped only under `--VisualTests`). `Initialize()` subscribes `OnShowInquiry`/`OnShowTextInquiry`/`MBInformationManager.OnShowMultiSelectionInquiry`/`OnHideInquiry`, supplies `IsAnyInquiryActiveInternal`, builds the three pop-up VMs, creates `new GauntletLayer("QueryManager", 19501, false)`, `ScreenManager.AddGlobalLayer(this, true)` and then `ScreenManager.SetSuspendLayer(Layer, true)` — idle until a pop-up arrives. Consequences:
+ - It is a **global layer, not a GameState or a screen**, so it is available in the main menu, on the campaign map, over a map conversation, over the map escape menu, over fullscreen panels and inside missions; the decompiled layer orders put it at 19501, above `ClanScreen` (1), `MapConversation` (205), `MapMenuView` (100), `MapEscapeMenu` (4400), `ChatLog` (15300), `FullScreenNotice` (15010) and `GameNotification` (19007), below `SceneNotification` (19600), `Tooltip` (115000) and `LoadingWindow` (115003).
+ - It starts suspended and unfocused; on show `SetLayerFocus(true)` unsuspends it, `TrySetFocus`es it and calls `InputRestrictions.SetInputRestrictions(true, (InputUsageMask)7)` — `All` = mouse buttons + wheels + keyboard — so the pop-up is **input-modal**; the screen underneath keeps ticking and rendering but receives no input. `OnEarlyTick` re-grabs focus whenever a layer of order ≤ 19501 takes it.
+ - Keyboard/gamepad come from `GenericPanelGameKeyCategory`: `Confirm` runs the affirmative action only when the OK button is shown **and** enabled, `Exit` the negative action only when the cancel button is shown; the same commands are wired to the prefab buttons `SingleQueryOkButton` / `SingleQueryCancelButton` / `DoneButtonWidget`.
+ - Guard your own UI with `InformationManager.IsAnyInquiryActive()` the way vanilla does (`MapScreen.OnFocusChangeOnGameWindow` skips the auto escape-menu/pause, `HeirSelectionPopupVM` hides its hotkeys).
+
+**5. Does it pause the game? Only if you ask.** Both Show calls default to `pauseGameActiveState: false` and time keeps running. With `true`, `HandleQueryCreated` does **two** things, both undone by `CloseQuery`: `GameStateManager.Current.RegisterActiveStateDisableRequest(this)` and `MBCommon.PauseGameEngine()`.
+ - Active-state half: `GameStateManager.OnTick` calls `ActiveState.OnIdleTick(dt)` instead of `OnTick(dt)` while any request is registered (`ActiveStateDisabledByUser`; requests are `WeakReference`s of the requesting instance, cleaned only when dead, and they are not cleared by state push/pop or by save-load). On the map that means `MapState.OnIdleTick` runs and `OnMapModeTick` is skipped, so `Campaign.RealTick`/`Tick` never advance (see Q7/Q27): hourly/daily ticks, movement and schedules all stop.
+ - Engine half: `MBCommon.PauseGameEngine()` → `MBAPI.IMBWorld.PauseGame()`; `MissionState.OnTick` zeroes its dt when `MBCommon.IsPaused`, and while the disable request stands, `MissionState.OnIdleTick` only calls `CurrentMission.IdleTick(dt)` (mission flow, no simulation). So a pop-up over a battle with the flag freezes the battle too.
+ - Vanilla map pop-ups usually *also* write `Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;` on the line before `ShowInquiry(…, pauseGameActiveState: true)` — that stops the player's own time control (Q7/Q27) while the flag is the hard freeze. Mission UIs instead pass `false, false` (the escape menu's "abandon mission?" confirmation does not freeze the fight).
+ - The pop-up's own tick is independent of all of that: `EngineScreenManager.Tick(dt)` (engine callback) → `ScreenManager.Tick` → global-layer `LateTick` → `GauntletQueryManager.OnLateTick` → `_activeDataSource.OnTick(dt)`, i.e. the `expireTime` bar keeps draining on frame time even while campaign time and the mission are frozen.
+
+**6. One at a time, with a FIFO queue and a silent dedupe.** `CreateQuery`: when a pop-up is already active the new request is either enqueued (`_inquiryQueue`, FIFO, popped by `CloseQuery`) or, with `prioritize: true`, pushed to the front by `QueueAndShowNewData`, which re-queues the current pop-up (with `prioritize: false`) and closes it — so what you cut in front of comes back afterwards. Before enqueuing, the request is compared against the active **and** every queued item by `HasSameContentWith`, which compares all fields including the delegate references: two pop-ups built from the same method group or the same lambda variable are "equal", two with identical strings but distinct lambdas are not. A duplicate is dropped with nothing but a `Debug.FailedAssert("Trying to create query but it is already present! Title: …")`, and the shipping `Debug.DebugManager` is `MBDebugManager`, whose `Assert` body is empty — **in retail a duplicate inquiry simply vanishes, no exception**. When nothing is active no dedupe check happens at all.
+
+**7. Where the callbacks run.** Affirmative/negative/timeout actions are invoked from the pop-up view-model during the QueryManager's tick (UI frame), *not* inside `Campaign.Tick()`; `ExecuteAffirmativeAction` calls the action and then `CloseQuery()`. Vanilla mutates campaign state directly from those callbacks (accepting a ransom, leaving a kingdom), which is the shape R6 should copy, subject to the tick-context rules of Q7/Q25.
+
+**8. Vanilla usage examples.** (a) Two-option, campaign map, hard-paused: `RansomOfferCampaignBehavior.OnRansomOffered` (listener on `CampaignEvents.OnRansomOfferedToPlayerEvent`) writes `Campaign.Current.TimeControlMode = CampaignTimeControlMode.Stop;` then calls `ShowInquiry(new InquiryData(…, true, true, …Yes…, …No…, () => AcceptRansomOffer(ransomPrice), DeclineRansomOffer, "", 0f, null, () => IsAffirmativeOptionEnabled(ransomPayer, ransomPrice)), pauseGameActiveState: true)` — note the enable-callback that greys out *Yes* with a reason. (b) One-option tick pop-up: `AgingCampaignBehavior.IsItTimeOfDeath` (from `DailyTickHero`) shows a "Close"-only inquiry with sound `event:/ui/notification/quest_fail` and default pause flags. (c) N-option radio in campaign code: `AlleyHelper.CreateMultiSelectionInquiryForSelectingClanMemberToAlley` builds one `InquiryElement` per clan member (portrait, availability gate, disabled reason as `hint`) and shows it with `isExitShown: true, 1, 1` and `pauseGameActiveState: true`, handing the picked row to the caller's callback; `KingdomManagementVM` uses `"keep"`/`"dontkeep"` string identifiers switched on inside `OnConfirmLeaveKingdomWithOption`; `PrisonBreakCampaignBehavior` lists prisoners with `(1, 1)` and `false, false`; `EncounterGameMenuBehavior`'s "abandon the siege?" confirm runs in menu mode with the default flags, and `Module.cs` shows pop-ups before any campaign exists at all.
+
+**For R6:** `InformationManager.ShowInquiry` for confirm/decline, `MBInformationManager.ShowMultiSelectionInquiry` with `(min, max) = (1, 1)` and `Identifier` dispatch for anything with more than two outcomes; pass `pauseGameActiveState: true` (plus `TimeControlMode.Stop`) for map-time decisions; build a fresh `InquiryData`/`MultiSelectionInquiryData` per request so the dedupe never swallows one; and do not use `IsAnyInquiryActive()` to detect a pop-up you only queued.
+
+### Evidence
+
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `ShowInquiry` — `public static void ShowInquiry(InquiryData data, bool pauseGameActiveState = false, bool prioritize = false)`, body is `OnShowInquiry?.Invoke(...)`.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `OnShowInquiry` — `public static event Action<InquiryData, bool, bool>`; unsubscribed ⇒ the call does nothing.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `ShowTextInquiry` — third variant, same two optional flags.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `HideInquiry` — raises `OnHideInquiry`, handled by `GauntletQueryManager.CloseQuery`.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `IsAnyInquiryActive` — returns `IsAnyInquiryActiveInternal()` when wired, else `false`.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` — `Clear` — nulls all inquiry events; called from `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs` at module finalize.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InquiryData.cs` — `InquiryData` — the single 13-parameter constructor quoted above.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InquiryData.cs` — `AffirmativeAction` — `public readonly Action` (same for `NegativeAction`, `TimeoutAction`, `GetIsAffirmativeOptionEnabled`, `ExpireTime`); only `TitleText`/`Text` are writable fields.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InquiryData.cs` — `SetText` — the only post-construction text mutation hook.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InquiryData.cs` — `HasSameContentWith` — field-by-field comparison including the action and `Func` delegates; the dedupe basis.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/TextInquiryData.cs` — `TextInquiryData` — `Action<string>` affirmative action, `shouldInputBeObfuscated`, `Func<string, Tuple<bool, string>> textCondition`, `defaultInputText`.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/InputUsageMask.cs` — `All` — `MouseButtons | MouseWheels | Keyboardkeys` = 7, the mask passed by the pop-up layer.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/MBInformationManager.cs` — `ShowMultiSelectionInquiry` — `public static void …(MultiSelectionInquiryData data, bool pauseGameActiveState = false, bool prioritize = false)` behind `public static event Action<MultiSelectionInquiryData, bool, bool>`.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/MultiSelectionInquiryData.cs` — `MultiSelectionInquiryData` — the 12-parameter constructor, last parameter spelled `isSeachAvailable`.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/MultiSelectionInquiryData.cs` — `MaxSelectableOptionCount` — one of the `readonly` fields (with `MinSelectableOptionCount`, `InquiryElements`, `IsExitShown`, `IsSeachAvailable`); no expire/timeout fields exist on this type.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/InquiryElement.cs` — `InquiryElement` — both constructors; `Identifier` is `object`, `ImageIdentifier` is nullable, the 5-arg form adds `isEnabled` + `hint`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `CreateQuery` — active-query branch: dedupe check against active + queue, `prioritize` branch, else `_inquiryQueue.Enqueue`; otherwise load the `SingleQueryPopup` movie.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `QueueAndShowNewData` — puts the new request first, re-queues the current one with `prioritize: false`, then `CloseQuery()`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `CheckIfQueryDataIsEqual` — duplicate detection helper.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `HandleQueryCreated` — `InformationManager.HideTooltip()`, `SetLayerFocus(isFocused: true)`, `RegisterActiveStateDisableRequest((object)this)` + `MBCommon.PauseGameEngine()` when asked, then `SoundEvent.PlaySound2D`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `CloseQuery` — `UnregisterActiveStateDisableRequest` + `UnPauseGameEngine`, release movie, then dequeue and re-dispatch the next request.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `SetLayerFocus` — `InputRestrictions.SetInputRestrictions(true, (InputUsageMask)7)` on focus, `ResetInputRestrictions` + `SetSuspendLayer(true)` on blur.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `Initialize` — event subscriptions, `new GauntletLayer("QueryManager", 19501, false)`, `ScreenManager.AddGlobalLayer(this, true)`, `Input.RegisterHotKeyCategory(HotKeyManager.GetCategory("GenericPanelGameKeyCategory"))`, ends suspended.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `OnEarlyTick` — re-asserts focus if a layer of order ≤ 19501 stole it; `Confirm` fires the affirmative only when `IsButtonOkShown && IsButtonOkEnabled`, `Exit` the negative when `IsButtonCancelShown`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `OnLateTick` — `_activeDataSource.OnTick(dt)` each rendered frame.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletQueryManager.cs` — `OnIsAnyInquiryActiveQuery` — `_activeDataSource != null`, so queued pop-ups are invisible to `IsAnyInquiryActive()`.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI/GauntletUISubModule.cs` — `OnBeforeInitialModuleScreenSetAsRoot` — the one-time `new GauntletQueryManager(); Initialize(); InitializeKeyVisuals();` (skipped under `--VisualTests`), hence the layer exists in menu, map and mission.
+- `decomp/TaleWorlds.MountAndBlade.GauntletUI/TaleWorlds.MountAndBlade.GauntletUI.Mission.Singleplayer/MissionGauntletSingleplayerEscapeMenu.cs` — `OnExitToMainMenu` — a pop-up raised from inside a mission with `…, false, false)`, and `HideInquiry()` on the leave path.
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Inquiries/SingleQueryPopUpVM.cs` — `OnTick` — `_queryTimer` vs `ExpireTime`, then `TimeoutAction?.Invoke()` + `CloseQuery()`.
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Inquiries/SingleQueryPopUpVM.cs` — `UpdateButtonEnabledStates` — calls `GetIsAffirmativeOptionEnabled()` per tick and publishes the hint string.
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Inquiries/SingleQueryPopUpVM.cs` — `ExecuteAffirmativeAction` — action first, then `CloseQuery()`; `IsTimerShown` drives the countdown bar.
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Inquiries/MultiSelectionQueryPopUpVM.cs` — `OnInquiryElementSelected` — when `MaxSelectableOptionCount == 1` every other row is deselected (radio).
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Inquiries/MultiSelectionQueryPopUpVM.cs` — `RefreshIsButtonOkEnabled` — `(Max <= 0 || selected <= Max) && selected >= Min`.
+- `decomp/TaleWorlds.MountAndBlade.ViewModelCollection/TaleWorlds.MountAndBlade.ViewModelCollection.Inquiries/MultiSelectionQueryPopUpVM.cs` — `SetData` — snapshots `InquiryElements` into `InquiryElementVM`s with the element's `Hint` and `IsEnabled`.
+- `~/bannerlord/moduledata_win/Native/GUI/Prefabs/Information/Inquiries/SingleQueryPopup.xml` — `SingleQueryOkButton` — exactly two buttons (`SingleQueryCancelButton` is the other), each with `IsVisible="@IsButton…Shown"`, `IsEnabled="@IsButton…Enabled"` and a `HintWidget`.
+- `~/bannerlord/moduledata_win/Native/GUI/Prefabs/Information/Inquiries/SingleQueryPopup.xml` — `IsTimerShown` — countdown bar bound to `@RemainingQueryTime` / `@TotalQueryTime`.
+- `~/bannerlord/moduledata_win/Native/GUI/Prefabs/Information/Inquiries/SingleQueryPopup.xml` — `ScrollablePanel` — description area with `ClipRect … MaxHeight="480"` and a `VerticalScrollbar`; the title block carries `WidgetToHideIfEmpty`.
+- `~/bannerlord/moduledata_win/Native/GUI/Prefabs/Information/Inquiries/MultiSelectionQueryPopup.xml` — `InquiryElementsList` — `NavigatableListPanel` of toggle `ButtonWidget`s (`IsEnabled="@IsEnabled"`, `IsSelected="@IsSelected"`) with `ImageIdentifierWidget` and `HintWidget`, plus `DoneButtonWidget` gated on `@IsButtonOkEnabled`.
+- `decomp/SandBox.GauntletUI/SandBox.GauntletUI.Map/GauntletMapConversationView.cs` — `GauntletLayer` — `new GauntletLayer("MapConversation", 205, false)`: the Q25 map-conversation layer sits far below the pop-up layer's 19501.
+- `~/bannerlord/dlls/bin/TaleWorlds.ScreenSystem.dll` — `AddGlobalLayer` — global layers are inserted sorted by `InputRestrictions.Order`; `SetSuspendLayer` maps to `HandleActivate`/`HandleDeactivate`; `Tick(dt)` early/late-ticks every global layer (not part of `decomp/`, read from the assembly).
+- `decomp/TaleWorlds.Engine/TaleWorlds.Engine/EngineScreenManager.cs` — `Tick` — `[EngineCallback(null, false)]` forwards the engine frame dt to `ScreenManager.Tick(dt)`.
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/GameStateManager.cs` — `RegisterActiveStateDisableRequest` — appends a `WeakReference` of the requester (`UnregisterActiveStateDisableRequest` removes it; `CleanRequests` drops dead ones).
+- `decomp/TaleWorlds.Core/TaleWorlds.Core/GameStateManager.cs` — `OnTick` — `ActiveStateDisabledByUser ? ActiveState.OnIdleTick(dt) : ActiveState.OnTick(dt)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameState/MapState.cs` — `OnIdleTick` — the `protected override` used while disabled; it never reaches `OnMapModeTick`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameState/MapState.cs` — `OnMapModeTick` — the path that advances `Campaign.RealTick`/`Tick` (see Q7/Q27).
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MissionState.cs` — `OnIdleTick` — only `CurrentMission.IdleTick(dt)` while the active state is disabled.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MissionState.cs` — `IsPaused` — `if (Paused || MBCommon.IsPaused) { num = 0f; }` zeroes the mission dt.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBCommon.cs` — `PauseGameEngine` — `PauseGameEngine`/`UnPauseGameEngine`/`IsPaused` over `MBAPI.IMBWorld`.
+- `decomp/TaleWorlds.Library/TaleWorlds.Library/Debug.cs` — `FailedAssert` — forwards to `Debug.DebugManager.Assert(false, …)`, the only reaction the duplicate/queue warnings produce.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/MBDebugManager.cs` — `Assert` — empty body: in the shipping build the duplicate-inquiry warning is a silent drop.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/CoreManaged.cs` — `DebugManager` — assigns `Debug.DebugManager = new MBDebugManager()`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/RansomOfferCampaignBehavior.cs` — `OnRansomOffered` — `CampaignTimeControlMode.Stop` + two-button inquiry with `pauseGameActiveState: true` and a `Func<(bool, string)>` gate.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/AgingCampaignBehavior.cs` — `IsItTimeOfDeath` — one-button inquiry raised from a daily tick, default pause flags, `soundEventPath` set.
+- `decomp/TaleWorlds.CampaignSystem/Helpers/AlleyHelper.cs` — `CreateMultiSelectionInquiryForSelectingClanMemberToAlley` — campaign-side helper: per-candidate `InquiryElement`s with disabled reasons, `1, 1`, `pauseGameActiveState: true`, caller-supplied callbacks.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.KingdomManagement/KingdomManagementVM.cs` — `OnConfirmLeaveKingdomWithOption` — dispatches on `Identifier as string` (`"keep"` / `"dontkeep"`) from the `isExitShown: true, 1, 1` list.
+- `decomp/SandBox/SandBox.CampaignBehaviors/PrisonBreakCampaignBehavior.cs` — `StartPrisonBreak` — prisoner list built as `InquiryElement`s keyed on the troop object, shown with `(1, 1)` and `false, false`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/EncounterGameMenuBehavior.cs` — `EncounterLeaveConsequence` — "abandon the siege?" yes/no raised from a game-menu callback with default pause flags.
+- `decomp/TaleWorlds.MountAndBlade/TaleWorlds.MountAndBlade/Module.cs` — `OnConfirmReturnToMainMenu` — pop-ups raised with no campaign and no map screen in existence.
+- `decomp/SandBox.View/SandBox.View.Map/MapScreen.cs` — `OnFocusChangeOnGameWindow` — vanilla guard `!InformationManager.IsAnyInquiryActive()`; its `OnExitToMainMenu` calls `InformationManager.HideInquiry()` before leaving the map.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.Map.HeirSelectionPopup/HeirSelectionPopupVM.cs` — `IsAnyInquiryActive` — a panel VM hiding its own hotkeys while a pop-up is up.
+- `decomp/SandBox.ViewModelCollection/SandBox.ViewModelCollection.SaveLoad/SaveLoadVM.cs` — `IsSaveGameNameApplicable` — `Func<string, Tuple<bool, string>>` validator handed to `ShowTextInquiry`.
+
+### Uncertain
+
+- **UNCERTAIN**: the exact compositing/focus rules that decide what a pop-up actually draws *over* when two high-order layers are live at once (e.g. a pop-up above a map conversation above a fullscreen panel). The order constants and `AddGlobalLayer`/`TrySetFocus` were read from `~/bannerlord/dlls/bin/TaleWorlds.ScreenSystem.dll` and the call sites, but the screen-layer compositor itself is engine-native. Resolve by an in-game test mod that opens a map conversation (Q25) and then raises an inquiry, screenshotting and reading `FocusedLayer`.
+- **UNCERTAIN**: whether the `dt` fed to `ExpireTime` is ever scaled or clamped by the engine (the `[EngineCallback]` dt source is native code; loading screens and slow-motion may feed a different value), so a 5-second `expireTime` is only *probably* 5 wall-clock seconds. Resolve by logging `_queryTimer` growth in a test mod while paused, during slow-motion and behind a loading window.
+- **UNCERTAIN**: whether a queued (not-yet-displayed) inquiry survives a save/load, a `PushState`/`PopState` or a game-type switch. `_inquiryQueue` and `_activeQueryData` are plain fields of the once-per-process `GauntletQueryManager`, nothing in `InquiryData` is serializable (the callbacks are delegates), and vanilla only ever calls `HideInquiry()` on its own exit paths — no engine-side clearing was found. Resolve by queueing two inquiries, saving and loading, and observing whether the second appears.
+- **UNCERTAIN**: whether the duplicate-inquiry `FailedAssert` is surfaced in any non-retail configuration — `DiamondDebugManager.Assert` throws, but `CoreManaged` installs `MBDebugManager`, and the editor/debug manager wiring was not traced. Resolve by running the shipped editor (`EditorGame`) build and firing two identical inquiries back to back.
+- **UNCERTAIN**: multiplayer behaviour (input restrictions, `MBCommon.UnPauseGameEngine` interaction with networked state, and whether MP modules raise inquiries at all) — only singleplayer paths were read, which is all the mod needs today. Resolve with `ilspycmd` over the Multiplayer/NavalDLC assemblies under `~/bannerlord/dlls/bin`.
 
 ## Q27 — Campaign time
 

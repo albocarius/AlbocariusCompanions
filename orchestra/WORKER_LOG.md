@@ -49,3 +49,4 @@
 | 60b-gm-q32-events | 1 | PASS, verified | 9 members spot-checked; no wage/morale events (poll daily ticks) |
 | 61-gm-q24-traits | 1 | PASS, verified | single funnel AddPlayerTraitXPAndLogEntry -> PlayerTraitChangedEvent on level change, spot-checked |
 | 62-gm-q25-open-conversation | 1 | PASS, verified | CampaignMapConversation.OpenConversation + vanilla grievance guards spot-checked; pause UNCERTAIN |
+| 63-gm-q26-inquiry | 1 | PASS, verified | ShowInquiry(InquiryData, pauseGameActiveState, prioritize) + InquiryData ctor spot-checked; 2 buttons max, MultiSelection for N |

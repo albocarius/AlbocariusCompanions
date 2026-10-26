@@ -193,7 +193,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [x] 60b-gm-q32-events (worker) — R3 part 2 (wages, food, morale, settlements, sieges, kingdom, clan, death) → GAME_MAP Q32.
 - [x] 61-gm-q24-traits (worker) — R4 player traits.
 - [x] 62-gm-q25-open-conversation (worker) — R5 programmatic conversation on the map.
-- [ ] 63-gm-q26-inquiry (worker) — R6 inquiry pop-ups.
+- [x] 63-gm-q26-inquiry (worker) — R6 inquiry pop-ups.
 - [ ] 64-gm-q27-time (worker) — R7 campaign time + save timestamps.
 - [ ] 65-gm-q28-location (worker) — R8 location & surroundings.
 - [x] 66-gm-q29-items-gold (worker, **first in queue**) — R9 items, inventory, gold between heroes, companion inventories.
