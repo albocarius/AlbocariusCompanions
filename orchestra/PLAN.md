@@ -191,7 +191,7 @@ what would resolve it. No code. Acceptance per task: GameMapTests section-presen
 - [x] 59-gm-q22-morale (worker) — R2 party morale / per-hero mood.
 - [x] 60-gm-q23-events (worker) — R3 part 1 (combat, war). First attempt timed out with nothing written → split.
 - [x] 60b-gm-q32-events (worker) — R3 part 2 (wages, food, morale, settlements, sieges, kingdom, clan, death) → GAME_MAP Q32.
-- [ ] 61-gm-q24-traits (worker) — R4 player traits.
+- [x] 61-gm-q24-traits (worker) — R4 player traits.
 - [ ] 62-gm-q25-open-conversation (worker) — R5 programmatic conversation on the map.
 - [ ] 63-gm-q26-inquiry (worker) — R6 inquiry pop-ups.
 - [ ] 64-gm-q27-time (worker) — R7 campaign time + save timestamps.
