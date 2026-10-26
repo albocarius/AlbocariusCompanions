@@ -174,5 +174,13 @@ public class SentenceKindTests
     [InlineData(null, SentenceKind.Unmapped)]
     public void Npc_sentences_of_mod_companions_are_classified(string? sentenceId, SentenceKind expected) =>
         Assert.Equal(expected, VanillaDialogPoints.Classify(sentenceId));
+
+    [Fact]
+    public void Vanilla_text_warnings_are_keyed_by_slot_when_a_slot_covers_the_sentence()
+    {
+        var shared = VanillaDialogPoints.All.First(p => p.SentenceIds.Count > 1);
+        Assert.All(shared.SentenceIds, id => Assert.Equal("slot:" + shared.Slot, VanillaDialogPoints.WarningKey(id)));
+        Assert.Equal("sentence:some_quest_line", VanillaDialogPoints.WarningKey("some_quest_line"));
+    }
 }
 

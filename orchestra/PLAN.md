@@ -82,8 +82,15 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
   Accept: engine tests incl. the hire → the_scar → spare_coin sequence.
 - [x] 95-cli-serve (self — the protocol lives in Core (SimulatorProtocol), so serve is a 20-line loop; worker queue busy) — `serve` command:
   line loop, JSON in/out per SIMULATOR_PROTOCOL.md, errors as responses (never exit on a bad line), exit on EOF/`close`.
-- [ ] 96-fallback-check (self) — F8.
-- [ ] 97-rescue-slots (self) — F9: verify in decomp which rescue / prison-break lines the companion speaks; add those as
+- [x] 96-fallback-check (self) — F8. Was once per companion+sentence; now once per companion+slot (sentence when no
+  slot covers it), key in Core `VanillaDialogPoints.WarningKey` (tested); message says "no line … that holds now" since
+  slot lines can have `when`.
+- [x] 97-rescue-slots (self) — verified in decomp: every NPC line the rescued companion says
+  (CompanionRolesCampaignBehavior rescue_companion_* ×8; PrisonBreakCampaignBehavior prison_break_start_1/_2,
+  prison_break_next_companion) is already a required slot since M5 T4.0 / Q18. The other prison-break lines
+  (start_3 unmet, next_commander/noble/notable/other) are said only by a prisoner who is not a player companion (unmet,
+  lord, notable, wanderer) — a mod companion is never one while unhired (no party to be captured with); a lord keeps
+  vanilla (§0). Nothing to add; any such line said at runtime is reported by I5. Originally planned: — F9: verify in decomp which rescue / prison-break lines the companion speaks; add those as
   vanilla dialog points / required slots (VanillaDialogPoints, DialogSlots, template, test_companion en/tr, SCHEMA.md,
   GAME_MAP Q18 addendum + API row if new members are used).
 
