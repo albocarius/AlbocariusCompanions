@@ -135,6 +135,49 @@ internal static class ReturnDismissedModCompanionToTavern
 }
 
 /// <summary>
+/// SPEC_VANILLA_GUARDS V1 (GAME_MAP Q21 "Mod guard"): vanilla removes a hired companion whose relation with the player drops
+/// below −10 after a negative change (KillCharacterAction.ApplyByRemove — the hero vanishes, no "left" message). For a pair
+/// where the companion is a mod hero the check is skipped; the relation change itself has already happened. The method does
+/// nothing else, so skipping it for mod heroes only removes the removal. Vanilla companions keep the vanilla behavior.
+/// </summary>
+[HarmonyPatch(typeof(CompanionRolesCampaignBehavior), "OnHeroRelationChanged")]
+internal static class KeepModCompanionsOnLowRelation
+{
+    // Original: private void OnHeroRelationChanged(Hero effectiveHero, Hero effectiveHeroGainedRelationWith, int relationChange,
+    //   bool showNotification, ChangeRelationAction.ChangeRelationDetail detail, Hero originalHero, Hero originalGainedRelationWith)
+    private static bool Prefix(Hero effectiveHero, Hero effectiveHeroGainedRelationWith, int relationChange)
+    {
+        try
+        {
+            var companion = ModRuntime.IsModHero(effectiveHero) ? effectiveHero
+                : ModRuntime.IsModHero(effectiveHeroGainedRelationWith) ? effectiveHeroGainedRelationWith : null;
+            if (companion == null)
+                return true;
+
+            var other = companion == effectiveHero ? effectiveHeroGainedRelationWith : effectiveHero;
+            // Same condition as vanilla's removal: logged only when vanilla would actually have removed the companion.
+            if (other == Hero.MainHero && companion.IsPlayerCompanion && relationChange < 0)
+            {
+                var relation = effectiveHero.GetRelation(effectiveHeroGainedRelationWith);
+                if (relation < VanillaCompanionRelationLimit)
+                    ModRuntime.Log.Info($"Companion '{companion.Template.StringId}': relation with the player is now {relation} " +
+                        $"(change {relationChange}); vanilla removal prevented.");
+            }
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // Falling back to vanilla could remove a mod companion for good; the check has no other effect, so skip it.
+            ModRuntime.Log.Error("low-relation guard failed; vanilla removal check skipped", ex);
+            return false;
+        }
+    }
+
+    /// <summary>CompanionRolesCampaignBehavior.CompanionRelationLimit (−10, Q21); private in vanilla.</summary>
+    private const int VanillaCompanionRelationLimit = -10;
+}
+
+/// <summary>
 /// Vanilla dialog points as companion slots (SPEC_CORE_GAPS T4.0, GAME_MAP Q18 note): when a mod companion speaks a vanilla
 /// NPC sentence whose slot it has lines for, the text shown and voiced is one of its own lines. The vanilla condition already
 /// ran (its variables are set) and the consequence and tokens are unchanged; an empty slot keeps the vanilla text.

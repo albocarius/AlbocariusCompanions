@@ -40,6 +40,8 @@ public class GameAssemblyTests
     [Theory]
     [InlineData("ExcludeModCompanionsFromWandererCount")]
     [InlineData("HideVanillaHireOptionForModCompanions")]
+    [InlineData("ReturnDismissedModCompanionToTavern")]
+    [InlineData("KeepModCompanionsOnLowRelation")] // M8 V1
     public void Harmony_patch_classes_exist(string name) => Assert.Contains(Types(), x => x.Name == name);
 
     [Fact]
