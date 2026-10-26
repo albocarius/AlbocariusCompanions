@@ -97,6 +97,7 @@ public static class DialogChecks
                 ValidateAudio(node, folder, issues);
         }
 
+        SelectionChecks.Validate(package, issues);
         LangChecks.Validate(folder, textLines, package.Languages, issues);
     }
 

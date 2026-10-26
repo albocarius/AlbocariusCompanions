@@ -195,7 +195,7 @@ public static class ConversationChecks
                 $"Conversation '{name}': every node of {where} has a condition; if none holds the conversation gets stuck. Add one without a condition."));
     }
 
-    private static bool HasCondition(ConversationNode node) =>
+    internal static bool HasCondition(ConversationNode node) =>
         IsSet(node.When) || node.Effects?.Join == true || TransferNeedsSource(node.Effects);
 
     /// <summary>A transfer whose source is not "world" needs that source to hold: an implied hasGold/hasItem condition.</summary>

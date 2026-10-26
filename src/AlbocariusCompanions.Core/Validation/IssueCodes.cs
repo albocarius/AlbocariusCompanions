@@ -56,6 +56,8 @@ public static class IssueCodes
     public const string PriorityIgnored = "priority_ignored";
     /// <summary>Warning: every line of a slot has a condition, so at some moment the slot may have no line (M9 F4).</summary>
     public const string SlotMayHaveNoLine = "slot_may_have_no_line";
+    /// <summary>Warning: an unconditioned candidate with a strictly higher priority hides another one of its selection set (M9 I2).</summary>
+    public const string ShadowedCandidate = "shadowed_candidate";
 
     // dialogs.json variables (M7)
     public const string InvalidVariable = "invalid_variable";

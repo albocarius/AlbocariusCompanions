@@ -71,7 +71,7 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
   player options all returned, hub/greeting/npc-reply/slot sets).
 - [x] 91-selection-game (self) — F2/F3 in CompanionDialogs/DialogText; GAME_MAP Q20 addendum. Build-only; in-game
   checklist item 2.
-- [ ] 92-shadowing-validation (worker; self writes acceptance tests) — I2: in each set of F1, a candidate with no
+- [x] 92-shadowing-validation (self — worker queue busy with Track R) — I2: in each set of F1, a candidate with no
   conditions and a strictly higher priority than another → warning naming both. Equal → nothing. Hub/greeting: the
   conversation's `when` and its start nodes' conditions count as conditions.
 - [ ] 93-noble-field (worker; self writes acceptance tests) — I4: `noble` bool default false in companion.json model,
