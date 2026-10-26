@@ -16,7 +16,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   Acceptance 359. Not tested in game.
 - M7 done 2026-10-26 (docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md): variables, conditions, transfers, authoring warnings, CLI,
   console commands, GAME_MAP Q21–Q32. Core.Tests 264, Acceptance 620. In-game checklist 2–5 passed (user, 2026-10-26).
-- M8 planned 2026-10-26 (section M8); waiting for plan approval (PLAN_GATE).
+- M8 approved 2026-10-26 (E1, E2 as planned; E3 and V3 with the conditions below). In progress.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -258,6 +258,10 @@ Decisions taken here (change at the gate if wrong):
 - E3 V4 raw relation: read `CharacterRelationManager.GetHeroRelation` / `Hero.GetBaseHeroRelation`, write
   `Hero.SetPersonalRelation` (clamped, silent) — per Q21; console `albocarius.relation <a> <b> [value]` with the text side in
   Core (like DebugCommands).
+  User at the gate: pick **one** read API for the raw value and justify it in GAME_MAP; verify and note whether
+  `SetPersonalRelation` fires the relation-changed event.
+- V3 (user at the gate): every "exclude" classification is verified by the orchestrator in decomp, and the report gives a
+  one-line reason next to each.
 
 Tasks:
 - [ ] 82-v1-relation-removal (self) — E1: GAME_MAP Q21 addendum (patch target, why not KillCharacterAction), API row,

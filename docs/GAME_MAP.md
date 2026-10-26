@@ -3043,6 +3043,14 @@ All members below are `public static IMbEvent<…>` properties on `TaleWorlds.Ca
 - **UNCERTAIN**: the order of `DailyTickClanEvent` listeners — `MbEvent` fan-out follows behavior registration order, so it is not documented whether a mod's own daily-clan handler sees `HasUnpaidWages` before or after `ClanVariablesCampaignBehavior.DailyTickClan` runs the finance pass — resolve by reading the daily-tick wiring in `CampaignEventDispatcher` / behavior registration list (Q8's lifecycle chain) and by logging both listeners in-game for one day.
 - **UNCERTAIN**: whether any vanilla code path kills the player with `isForced: true` (which would make `BeforeHeroKilledEvent`/`HeroKilledEvent` fire for `Hero.MainHero` too) — resolve with `grep -rn "KillCharacterAction.Apply" decomp/` checking every call site's `isForced` argument.
 
+## Q33 — Vanilla companion grievances
+
+Status: TODO
+
+## Q34 — Vanilla behaviors acting on companions (audit)
+
+Status: TODO
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
