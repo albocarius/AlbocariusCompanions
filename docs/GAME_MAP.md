@@ -4425,6 +4425,17 @@ gold/item APIs are per Q29, morale per Q22, location primitives per Q28, clock p
 - Crafting-order completer: `WeaponDesignVM._getCurrentCraftingHero().Hero` is passed as `completerHero`; whether the UI hero selector allows companions (not just `Hero.MainHero`) was not confirmed from the VM code — treat `completerHero` as "player-side hero".
 - Persuasion partner identity: no explicit argument names the conversation partner; using `ConversationManager.OneToOneConversationHero` as the persuasion target is inferred from the sole caller chain, not asserted by the event args.
 
+## Q43 — Proximity trigger
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
