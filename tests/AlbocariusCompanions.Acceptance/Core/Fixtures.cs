@@ -1,3 +1,4 @@
+using AlbocariusCompanions.Core.Rules;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Validation;
 using Newtonsoft.Json;
@@ -23,7 +24,21 @@ public static class Fixtures
     """);
 
     /// <summary>dialogs.json with local line ids; full ids are &lt;folder&gt;_&lt;local id&gt;.</summary>
-    public static JObject Dialogs(string id) => JObject.Parse("""
+    /// <summary>
+    /// A valid dialogs.json: the mod's flow lines plus one unvoiced line per vanilla dialog point (all slots are required,
+    /// 2026-10-26); their ids are <see cref="VanillaLineId"/>.
+    /// </summary>
+    public static JObject Dialogs(string id)
+    {
+        var dialogs = FlowDialogs();
+        foreach (var slot in VanillaDialogPoints.Slots)
+            Lines(dialogs).Add(Line(VanillaLineId(slot), slot, voiced: false));
+        return dialogs;
+    }
+
+    public static string VanillaLineId(string slot) => "v_" + slot;
+
+    static JObject FlowDialogs() => JObject.Parse("""
     {
       "schemaVersion": 1,
       "lines": [
@@ -42,7 +57,15 @@ public static class Fixtures
     """);
 
     /// <summary>lang/en.json for <see cref="Dialogs"/>: complete.</summary>
-    public static JObject En() => JObject.Parse("""
+    public static JObject En()
+    {
+        var en = FlowEn();
+        foreach (var slot in VanillaDialogPoints.Slots)
+            LangLines(en)[VanillaLineId(slot)] = "Line for " + slot + ".";
+        return en;
+    }
+
+    static JObject FlowEn() => JObject.Parse("""
     {
       "schemaVersion": 1,
       "lines": {

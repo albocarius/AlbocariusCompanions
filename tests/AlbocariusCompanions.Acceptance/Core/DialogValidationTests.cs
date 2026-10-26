@@ -1,3 +1,4 @@
+using AlbocariusCompanions.Core.Rules;
 using AlbocariusCompanions.Core.Validation;
 using Newtonsoft.Json.Linq;
 
@@ -139,7 +140,10 @@ public class DialogValidationTests
     public void No_lines_at_all_reports_every_required_slot()
     {
         var issues = Validate(d => d.Remove("lines"), langs => EnLines(langs).RemoveAll());
-        Assert.Equal(10, issues.Errors().Count(i => i.Code == IssueCodes.MissingRequiredSlot)); // 5 companion + 5 player slots
+        // One error lists every missing slot: 5 companion + 5 player + every vanilla dialog point (2026-10-26).
+        var error = Assert.Single(issues.Errors(), i => i.Code == IssueCodes.MissingRequiredSlot);
+        Assert.Contains($"{DialogSlots.Required.Count} required dialog slot(s)", error.Message);
+        Assert.All(DialogSlots.Required, slot => Assert.Contains(slot, error.Message));
     }
 
     [Fact]
@@ -168,8 +172,9 @@ public class DialogValidationTests
     public void No_en_file_reports_every_line()
     {
         var issues = ValidateLangs(langs => langs.Remove("en"));
-        Assert.Equal(10, issues.Errors().Count(i => i.Code == IssueCodes.MissingEnglishText));
-        Assert.Equal(10, issues.Count);
+        var lines = DialogSlots.Required.Count; // one fixture line per required slot
+        Assert.Equal(lines, issues.Errors().Count(i => i.Code == IssueCodes.MissingEnglishText));
+        Assert.Equal(lines, issues.Count);
     }
 
     [Fact]
@@ -178,8 +183,8 @@ public class DialogValidationTests
         var issues = ValidateLangs(langs => langs["tr"] = Fixtures.Tr());
         Assert.Empty(issues.Errors());
         var warnings = issues.Where(i => i.Code == IssueCodes.MissingTranslation).ToList();
-        Assert.Equal(9, warnings.Count); // tr has only intro_01
-        Assert.Equal(9, issues.Count);
+        Assert.Equal(DialogSlots.Required.Count - 1, warnings.Count); // tr has only intro_01
+        Assert.Equal(DialogSlots.Required.Count - 1, issues.Count);
         Assert.All(warnings, w => Assert.Equal(IssueSeverity.Warning, w.Severity));
         Assert.Contains(warnings, w => w.Message.Contains("backstory_01") && w.Message.Contains("tr"));
     }

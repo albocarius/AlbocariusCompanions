@@ -212,3 +212,30 @@ public class ModLoggerTests
         }
     }
 }
+
+public class ModLoggerFileOnlyTests
+{
+    [Fact]
+    public void File_only_writes_the_line_without_notifying()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "albocarius-log-" + Guid.NewGuid());
+        try
+        {
+            var log = new ModLogger(Path.Combine(dir, "test.log"));
+            var notified = new List<string>();
+            log.Notify = (_, text) => notified.Add(text);
+
+            log.FileOnly(LogLevel.Error, "detail line");
+            log.Error("summary line");
+
+            Assert.Equal(new[] { "summary line" }, notified);
+            var text = File.ReadAllText(log.LogFilePath);
+            Assert.Contains("detail line", text);
+            Assert.Contains("summary line", text);
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, true);
+        }
+    }
+}

@@ -21,15 +21,15 @@ public static class DialogSlots
     /// <summary>The companion's slots of the mod's meeting/hire flow.</summary>
     public static readonly IReadOnlyList<string> RequiredCompanion = new[] { Intro, Backstory, HireOffer, HireAccept, HireDecline };
 
-    /// <summary>Slots every companion must have at least one line for: its own and the player's side of the flow.</summary>
-    public static readonly IReadOnlyList<string> Required = RequiredCompanion.Concat(PlayerSlots.All).ToArray();
-
     /// <summary>
-    /// Optional slots: reserved ones without effect yet, then every vanilla dialog point (<see cref="VanillaDialogPoints"/>,
-    /// GAME_MAP Q18) — a point with lines replaces the vanilla text for this companion, an empty one keeps vanilla.
+    /// Slots every companion must have at least one line for: its own and the player's side of the mod's flow, and every
+    /// vanilla dialog point (<see cref="VanillaDialogPoints"/>, GAME_MAP Q18) — a mod companion overrides everything vanilla
+    /// would make it say (user, 2026-10-26). The scaffold template has a line for each.
     /// </summary>
-    public static readonly IReadOnlyList<string> Optional =
-        new[] { LeaveThreat, RelationComplaint, LikeReaction, DislikeReaction, Idle }.Concat(VanillaDialogPoints.Slots).ToArray();
+    public static readonly IReadOnlyList<string> Required = RequiredCompanion.Concat(PlayerSlots.All).Concat(VanillaDialogPoints.Slots).ToArray();
+
+    /// <summary>Reserved slots without effect yet.</summary>
+    public static readonly IReadOnlyList<string> Optional = new[] { LeaveThreat, RelationComplaint, LikeReaction, DislikeReaction, Idle };
 
     public static readonly IReadOnlyList<string> All = Required.Concat(Optional).ToArray();
 

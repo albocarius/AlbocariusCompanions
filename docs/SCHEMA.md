@@ -64,7 +64,7 @@ The companion id is the folder name; there is no `id` field.
 | `schemaVersion` | int | yes | `1` |
 | `lines` | array | yes | |
 | `lines[].id` | string | yes | local id `[a-z0-9_]+`, unique within the companion (lines and conversation nodes share one namespace). The full id `<companionId>_<id>` (e.g. `jeremus_intro_01`) is the localization key, voice-over id and log name, and must be unique across all companions |
-| `lines[].slot` | string | yes | required companion slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; required player slots (the player says these lines): `player_ask_about`, `player_ask_hire`, `player_hire_pay`, `player_hire_full`, `player_hire_later`; optional vanilla dialog points (see below); reserved, no effect yet: `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is picked at random each time |
+| `lines[].slot` | string | yes | required companion slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; required player slots (the player says these lines): `player_ask_about`, `player_ask_hire`, `player_hire_pay`, `player_hire_full`, `player_hire_later`; required vanilla dialog points (see below); reserved, no effect yet: `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is picked at random each time |
 | `lines[].voiced` | bool | no | default `false`; a player slot line must not be voiced (error) |
 | `lines[].audio` | string | no | relative to the companion folder, no `..`, must end in `.ogg` (any case) — anything else is an error; default `audio/<local id>.ogg`; not allowed on player slot lines |
 | `conversations` | array | no | authored conversations, see below |
@@ -82,9 +82,11 @@ its own way. Player lines are never voiced, so name tokens are allowed; `player_
 
 ### Vanilla dialog point slots
 
-Every vanilla point where a wanderer/companion speaks (GAME_MAP Q18) is an optional slot. A companion with lines in such a
-slot says one of them instead of the vanilla text; the vanilla condition, consequence and tokens (`{SALUTATION}`, `{TITLE}`,
-`{SETTLEMENT_NAME}`, …) still apply. An absent or empty slot keeps the vanilla line (vanilla translations included). The full
+Every vanilla point where a wanderer/companion speaks (GAME_MAP Q18) is a **required** slot (since 2026-10-26): a mod
+companion overrides everything vanilla would make it say. It says one of its lines instead of the vanilla text; the vanilla
+condition, consequence and tokens (`{SALUTATION}`, `{TITLE}`, `{SETTLEMENT_NAME}`, …) still apply. A companion missing any
+slot fails validation: the log lists every missing slot in one line, the game shows "Companion '<id>' is not valid and was
+not loaded; details in the log." The vanilla line remains only as a runtime safety net. The full
 list with the vanilla English text is `src/AlbocariusCompanions.Core/Rules/VanillaDialogPoints.cs`; the companion template
 (`tools/companion-template/`) has one line per slot, pre-filled with that text:
 greetings and hub (`greet_recent`, `greet`, `main_hub`, `anything_else`, `farewell`, `job_status`), roles and missions

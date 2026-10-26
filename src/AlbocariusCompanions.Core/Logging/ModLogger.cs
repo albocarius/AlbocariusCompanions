@@ -62,6 +62,9 @@ public sealed class ModLogger
     public void Warning(string message) => Append(LogLevel.Warning, message);
     public void Error(string message) => Append(LogLevel.Error, message);
 
+    /// <summary>Writes to the log file only: <see cref="Notify"/> is not raised (details that a summary line announces).</summary>
+    public void FileOnly(LogLevel level, string message) => Append(level, message, notify: false);
+
     public void Error(string message, Exception exception)
     {
         RaiseNotify(LogLevel.Error, message);
@@ -101,9 +104,9 @@ public sealed class ModLogger
         }
     }
 
-    private void Append(LogLevel level, string message)
+    private void Append(LogLevel level, string message, bool notify = true)
     {
-        if (level != LogLevel.Info)
+        if (notify && level != LogLevel.Info)
             RaiseNotify(level, message);
         lock (_gate)
         {

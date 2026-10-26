@@ -39,8 +39,10 @@ public sealed class SubModule : MBSubModuleBase
         {
             var root = ModuleHelper.GetModuleFullPath(ModRuntime.ModuleId) + "ModuleData/Companions";
             var catalog = CompanionCatalog.Load(root, ModuleHelper.IsModuleActive);
+            // Validation errors can be many lines per companion: the details go to the log file, the game shows one line
+            // per companion that was not loaded (below).
             foreach (var issue in catalog.Issues)
-                CompanionTemplates.LogIssue(log, issue);
+                CompanionTemplates.LogIssue(log, issue, errorsInGame: false);
             foreach (var package in catalog.Registry.All)
                 log.Info($"Companion loaded: {package.Id} ({package.Dialogs.Lines?.Count ?? 0} dialog lines, " +
                     $"{package.Conversations.Count} conversation(s)).");
@@ -48,8 +50,8 @@ public sealed class SubModule : MBSubModuleBase
                 log.Info($"Missing translations in '{language.Key}': {language.Value} line(s) fall back to English.");
             var skipped = catalog.Issues.Where(i => i.IsError)
                 .Select(i => i.Folder).Distinct().ToList();
-            if (skipped.Count > 0)
-                log.Warning($"Companions skipped because of errors: {string.Join(", ", skipped)}.");
+            foreach (var folder in skipped)
+                log.Error($"Companion '{folder}' is not valid and was not loaded; details in the log.");
 
             // requiredModules (SPEC_CORE_GAPS T2.3): a companion whose module is not loaded is skipped, the rest stay.
             foreach (var skip in catalog.ModuleSkips)

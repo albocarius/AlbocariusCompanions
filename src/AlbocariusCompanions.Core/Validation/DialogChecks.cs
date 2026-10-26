@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Rules;
 
@@ -72,10 +73,12 @@ public static class DialogChecks
                 ValidateAudio(line, folder, issues);
         }
 
-        foreach (var slot in DialogSlots.Required)
-            if (!slotsPresent.Contains(slot))
-                issues.Add(ValidationIssue.Error(IssueCodes.MissingRequiredSlot, folder,
-                    $"Required dialog slot '{slot}' has no lines in dialogs.json."));
+        // One error listing every missing slot, so a companion made before a slot existed gives one readable log line.
+        var missing = DialogSlots.Required.Where(slot => !slotsPresent.Contains(slot)).ToList();
+        if (missing.Count > 0)
+            issues.Add(ValidationIssue.Error(IssueCodes.MissingRequiredSlot, folder,
+                $"dialogs.json has no lines for {missing.Count} required dialog slot(s): {string.Join(", ", missing)}. " +
+                "Every slot of tools/companion-template/dialogs.json is required."));
 
         foreach (var node in ConversationChecks.Validate(package, localIds, seenFullIds, issues))
         {

@@ -11,7 +11,8 @@ public class DialogSlotsTests
     {
         Assert.Equal(new[] { "intro", "backstory", "hire_offer", "hire_accept", "hire_decline" }, DialogSlots.RequiredCompanion);
         Assert.Equal(DialogSlots.RequiredCompanion.Concat(new[] { "player_ask_about", "player_ask_hire", "player_hire_pay",
-            "player_hire_full", "player_hire_later" }), DialogSlots.Required);
+            "player_hire_full", "player_hire_later" }).Concat(VanillaDialogPoints.Slots), DialogSlots.Required);
+        Assert.Equal(new[] { "leave_threat", "relation_complaint", "like_reaction", "dislike_reaction", "idle" }, DialogSlots.Optional);
     }
 
     [Fact]
@@ -134,9 +135,9 @@ public class VanillaDialogPointsTests
     }
 
     [Fact]
-    public void Vanilla_slots_are_optional_companion_slots_and_not_player_slots()
+    public void Vanilla_slots_are_required_companion_slots_and_not_player_slots()
     {
-        Assert.All(VanillaDialogPoints.Slots, s => Assert.True(DialogSlots.IsKnown(s) && !DialogSlots.IsRequired(s)));
+        Assert.All(VanillaDialogPoints.Slots, s => Assert.True(DialogSlots.IsKnown(s) && DialogSlots.IsRequired(s)));
         Assert.All(VanillaDialogPoints.Slots, s => Assert.False(PlayerSlots.IsKnown(s)));
     }
 

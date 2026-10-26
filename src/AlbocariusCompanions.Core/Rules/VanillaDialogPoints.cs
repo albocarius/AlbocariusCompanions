@@ -5,9 +5,9 @@ using System.Linq;
 namespace AlbocariusCompanions.Core.Rules;
 
 /// <summary>
-/// A vanilla dialog point where a wanderer or companion speaks (GAME_MAP Q18), offered as an optional companion slot
-/// (SPEC_CORE_GAPS T4.0). A companion with lines in the slot says one of them instead of the vanilla text; the vanilla
-/// condition, consequence and tokens still run. No lines → vanilla behavior.
+/// A vanilla dialog point where a wanderer or companion speaks (GAME_MAP Q18), a required companion slot (SPEC_CORE_GAPS
+/// T4.0; required since 2026-10-26). The companion says one of its lines instead of the vanilla text; the vanilla condition,
+/// consequence and tokens still run. The vanilla text only remains as a safety net (a slot without a usable text at runtime).
 /// </summary>
 public sealed class VanillaDialogPoint
 {

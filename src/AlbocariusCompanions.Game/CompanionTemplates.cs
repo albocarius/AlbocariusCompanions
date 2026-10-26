@@ -66,10 +66,13 @@ internal static class CompanionTemplates
         return templates;
     }
 
-    internal static void LogIssue(ModLogger log, ValidationIssue issue)
+    /// <param name="errorsInGame">False: errors go to the log file only (a per-companion summary line is shown instead).</param>
+    internal static void LogIssue(ModLogger log, ValidationIssue issue, bool errorsInGame = true)
     {
         var line = $"[{issue.Folder}] {issue.Code}: {issue.Message}";
-        if (issue.IsError)
+        if (issue.IsError && !errorsInGame)
+            log.FileOnly(LogLevel.Error, line);
+        else if (issue.IsError)
             log.Error(line);
         else if (issue.Code == IssueCodes.MissingTranslation)
             log.Info(line); // expected while translations are partial: file only, counted per language at load

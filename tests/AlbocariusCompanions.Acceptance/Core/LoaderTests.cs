@@ -19,7 +19,7 @@ public class LoaderTests
         Assert.Equal("test_companion", pkg.FolderName);
         Assert.Equal(Path.Combine(tmp.Path, "test_companion"), pkg.FolderPath);
         Assert.Equal("test_companion", pkg.Id);
-        Assert.Equal(10, pkg.Dialogs.Lines!.Count);
+        Assert.Equal(AlbocariusCompanions.Core.Rules.DialogSlots.Required.Count, pkg.Dialogs.Lines!.Count);
         Assert.Equal("intro_01", pkg.Dialogs.Lines[0].Id);
         Assert.Equal("test_companion_intro_01", pkg.Dialogs.Lines[0].FullId);
         Assert.Equal("Greetings, Captain.", pkg.Text("intro_01", "en"));
