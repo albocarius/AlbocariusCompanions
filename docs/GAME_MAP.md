@@ -4011,6 +4011,17 @@ All 36 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 - Whether `OnMissionEndedEvent` fires for conversation/arena fake missions — only real campaign missions were traced (`CampaignMissionComponent`); `MapConversationMission` is a different `ICampaignMission` shim without that component, presumed silent but not proven.
 - `OnQuarterDailyPartyTick` — "≈4× per in-game day, staggered" follows the PeriodicTicker interval pattern (same caveat as Q27/Q37 tick rows: exact intra-day phase not traced).
 
+## Q39 — Campaign events catalog 5 (heroes, clan, kingdom)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
