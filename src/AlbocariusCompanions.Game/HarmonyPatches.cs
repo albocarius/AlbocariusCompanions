@@ -1,5 +1,8 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using AlbocariusCompanions.Core.Audio;
 using AlbocariusCompanions.Core.Rules;
 using HarmonyLib;
@@ -175,6 +178,93 @@ internal static class KeepModCompanionsOnLowRelation
 
     /// <summary>CompanionRolesCampaignBehavior.CompanionRelationLimit (−10, Q21); private in vanilla.</summary>
     private const int VanillaCompanionRelationLimit = -10;
+}
+
+/// <summary>
+/// SPEC_VANILLA_GUARDS V2 (GAME_MAP Q33): mod companions never get vanilla grievances. Three layers, all scoped to mod heroes:
+/// no new grievance (the per-hero gate returns its default, GrievanceType.Invalid); rows that already exist (older saves)
+/// are dropped before the hourly tick can open a grievance conversation; and the two grievance openers never hold for a
+/// mod hero, so the consequences (relation changes) cannot be reached. Vanilla companions keep their grievances.
+/// </summary>
+[HarmonyPatch(typeof(CompanionGrievanceBehavior), "GetGrievanceTypeForCompanion")]
+internal static class NoGrievanceForModCompanions
+{
+    // Original: private GrievanceType GetGrievanceTypeForCompanion(Hero companionHero, GrievanceType type)
+    private static bool Prefix(Hero companionHero)
+    {
+        try
+        {
+            if (!ModRuntime.IsModHero(companionHero))
+                return true;
+            // Skipping leaves the enum result at its default, 0 = GrievanceType.Invalid ("no grievance").
+            ModRuntime.Log.Info($"Companion '{companionHero.Template.StringId}': vanilla grievance prevented.");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            ModRuntime.Log.Error("grievance guard failed; vanilla grievance check runs", ex);
+            return true;
+        }
+    }
+}
+
+[HarmonyPatch(typeof(CompanionGrievanceBehavior), "OnHourlyTick")]
+internal static class DropModCompanionGrievances
+{
+    // Original: private void OnHourlyTick() — opens the first pending grievance conversation of a hero in the main party.
+    private static void Prefix(CompanionGrievanceBehavior __instance, IDictionary ____heroGrievances)
+    {
+        try
+        {
+            var modHeroes = ____heroGrievances?.Keys.OfType<Hero>().Where(ModRuntime.IsModHero).ToList() ?? new List<Hero>();
+            foreach (var hero in modHeroes)
+            {
+                ____heroGrievances!.Remove(hero);
+                ModRuntime.Log.Info($"Companion '{hero.Template.StringId}': saved vanilla grievance removed.");
+            }
+
+            // A grievance already in flight for a mod hero (older save) would keep the priority-120 opener alive.
+            var current = CurrentGrievance.GetValue(__instance);
+            if (current != null && ModRuntime.IsModHero(GrievingHero(current)))
+                CurrentGrievance.SetValue(__instance, null);
+        }
+        catch (Exception ex)
+        {
+            ModRuntime.Log.Error("grievance cleanup failed", ex);
+        }
+    }
+
+    private static readonly FieldInfo CurrentGrievance = AccessTools.Field(typeof(CompanionGrievanceBehavior), "_currentGrievance");
+
+    private static Hero? GrievingHero(object grievance) =>
+        AccessTools.Field(grievance.GetType(), "GrievingHero")?.GetValue(grievance) as Hero;
+}
+
+[HarmonyPatch(typeof(CompanionGrievanceBehavior))]
+internal static class SilenceGrievanceOpenersForModCompanions
+{
+    // Originals: private bool companion_start_grievance_condition(), private bool companion_repeat_grievance_condition()
+    private static IEnumerable<MethodBase> TargetMethods()
+    {
+        yield return AccessTools.Method(typeof(CompanionGrievanceBehavior), "companion_start_grievance_condition");
+        yield return AccessTools.Method(typeof(CompanionGrievanceBehavior), "companion_repeat_grievance_condition");
+    }
+
+    private static bool Prefix(ref bool __result)
+    {
+        try
+        {
+            if (!ModRuntime.IsModHero(Hero.OneToOneConversationHero))
+                return true;
+            __result = false;
+            return false;
+        }
+        catch (Exception ex)
+        {
+            ModRuntime.Log.Error("grievance opener guard failed; vanilla condition runs", ex);
+            return true;
+        }
+    }
 }
 
 /// <summary>

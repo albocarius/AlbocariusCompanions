@@ -42,6 +42,9 @@ public class GameAssemblyTests
     [InlineData("HideVanillaHireOptionForModCompanions")]
     [InlineData("ReturnDismissedModCompanionToTavern")]
     [InlineData("KeepModCompanionsOnLowRelation")] // M8 V1
+    [InlineData("NoGrievanceForModCompanions")] // M8 V2
+    [InlineData("DropModCompanionGrievances")]
+    [InlineData("SilenceGrievanceOpenersForModCompanions")]
     public void Harmony_patch_classes_exist(string name) => Assert.Contains(Types(), x => x.Name == name);
 
     [Fact]
