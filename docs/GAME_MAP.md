@@ -1568,6 +1568,16 @@ and repeating the vanilla spawn steps makes it an unhired wanderer in a tavern a
 `!IsPlayerCompanion && PartyBelongedTo == null`). The mod's prefix does exactly that for mod heroes only and returns
 `false` (original skipped); every other hero runs vanilla code.
 
+**Interaction with the M8 guards (SPEC_VANILLA_GUARDS V5, checked).** Player dismissal of a mod companion runs only the
+T4 prefix on `companion_fire_on_consequence`: `RemoveCompanionAction.ApplyByFire` (clan/party removal, fugitive, equipment
+reset, `CompanionRemoved` event) and the mod's tavern placement. It changes no relation, so the V1 guard on
+`OnHeroRelationChanged` is not involved; it calls no grievance member (V2); and it never reaches
+`KillCharacterAction.ApplyByRemove`, whose V3 guard is active only inside `PerkResetCampaignBehavior.RemoveACompanionFromPlayerParty`.
+The `CompanionRemoved` listeners stay vanilla: the "left your clan" toast (Q34: keep) and `PlayerTrackCompanionBehavior.CompanionRemoved`,
+which only drops the hero from its scattered-companions list. A grievance row the
+dismissed hero may still carry is dropped by the V2 hourly prefix. Conversely, none of the guards calls into the dismissal
+path. Result: dismissal → tavern → rehire is unchanged.
+
 ### Evidence
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` — `companion_fire_on_consequence` — `ApplyByFire`, then `KillCharacterAction.ApplyByRemove`, then `PlayerEncounter.LeaveEncounter = true`.
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` — `companion_talk_fire` — player line `companion_role` → `companion_fire`, "{=pRsCnGoo}I no longer have need of your services.".
