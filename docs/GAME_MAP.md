@@ -3377,6 +3377,9 @@ Classification key: **keep** = mechanical and neutral (movement, combat, party r
 | `PerkResetCampaignBehavior.DailyTick` / `RemoveACompanionFromPlayerParty` | **exclude — implemented** | over the companion limit for 6 days, a random clan companion is removed with `KillCharacterAction.ApplyByRemove`: autonomous permanent removal |
 | `PerkResetCampaignBehavior.WarnPlayerAboutCompanionLimit` | **keep** | generic quick info about the limit, names no hero and is not spoken by one |
 | `CompanionRolesCampaignBehavior.OnHeroRelationChanged` | exclude — done in V1 | |
+| `PerkResetCampaignBehavior.RemoveACompanionFromPlayerParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/PerkResetCampaignBehavior.cs` | Q34 | marks the over-limit removal window |
+| `KillCharacterAction.ApplyByRemove` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/KillCharacterAction.cs` | Q34 | skipped for mod companions only inside the over-limit window |
+| `Clan.CompanionLimit` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q6 | log line of the over-limit guard |
 | `CompanionGrievanceBehavior` | exclude — done in V2 | |
 | `companion_fire_on_consequence` | exclude — already covered | the T4 dismissal prefix (Q19); player-initiated |
 | `companion_agrees_to_leave_on_condition` | **keep (slot)** | the line is the `fire_farewell` slot: a companion's own line replaces it, only an empty slot shows vanilla text (user decision, SPEC_CORE_GAPS T6 #4) |
@@ -3387,6 +3390,11 @@ Classification key: **keep** = mechanical and neutral (movement, combat, party r
 | `TavernEmployeesCampaignBehavior.FindCompanionWithType` | **keep** | the tavernkeeper (not the companion) tells where a skilled unhired wanderer is; neutral |
 | `LordConversationsCampaignBehavior` hire option / consequence | exclude — already covered | Q7 prefix |
 | `conversation_wanderer_player_owned_on_condition` | **keep (slot)** | its only line is the `job_status` slot |
+
+**Mod guard (SPEC_VANILLA_GUARDS V3).** `RemoveACompanionFromPlayerParty` gets a prefix that opens a window (thread-static
+flag, closed by a finalizer) and `KillCharacterAction.ApplyByRemove` a prefix that skips a mod companion only while the
+window is open. Vanilla's loop then `break`s without removing anyone; the daily check retries and can pick a vanilla
+companion another day. With only mod companions above the limit nobody is removed (logged each day).
 
 ### Evidence
 

@@ -45,6 +45,8 @@ public class GameAssemblyTests
     [InlineData("NoGrievanceForModCompanions")] // M8 V2
     [InlineData("DropModCompanionGrievances")]
     [InlineData("SilenceGrievanceOpenersForModCompanions")]
+    [InlineData("MarkOverLimitRemoval")] // M8 V3
+    [InlineData("KeepModCompanionsOverTheLimit")]
     public void Harmony_patch_classes_exist(string name) => Assert.Contains(Types(), x => x.Name == name);
 
     [Fact]

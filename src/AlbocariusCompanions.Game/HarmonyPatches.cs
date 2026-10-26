@@ -268,6 +268,46 @@ internal static class SilenceGrievanceOpenersForModCompanions
 }
 
 /// <summary>
+/// SPEC_VANILLA_GUARDS V3 (GAME_MAP Q34): over the companion limit for six days, vanilla removes a random clan companion
+/// for good (PerkResetCampaignBehavior.RemoveACompanionFromPlayerParty → KillCharacterAction.ApplyByRemove). While that
+/// method runs, a removal of a mod companion is skipped; vanilla then retries on a later day and may pick a vanilla
+/// companion. KillCharacterAction is only guarded inside this window: deaths and every other removal stay vanilla.
+/// </summary>
+[HarmonyPatch(typeof(PerkResetCampaignBehavior), "RemoveACompanionFromPlayerParty")]
+internal static class MarkOverLimitRemoval
+{
+    [ThreadStatic] internal static bool Active;
+
+    // Original: private void RemoveACompanionFromPlayerParty()
+    private static void Prefix() => Active = true;
+
+    private static void Finalizer() => Active = false;
+}
+
+[HarmonyPatch(typeof(KillCharacterAction), nameof(KillCharacterAction.ApplyByRemove))]
+internal static class KeepModCompanionsOverTheLimit
+{
+    // Original: public static void ApplyByRemove(Hero victim, bool showNotification = false, bool isForced = true)
+    private static bool Prefix(Hero victim)
+    {
+        try
+        {
+            if (!MarkOverLimitRemoval.Active || !ModRuntime.IsModHero(victim))
+                return true;
+            ModRuntime.Log.Info($"Companion '{victim.Template.StringId}': vanilla over-limit removal prevented " +
+                $"({Clan.PlayerClan.Companions.Count} companions, limit {Clan.PlayerClan.CompanionLimit}).");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            // Inside the over-limit window a failure must not remove a mod companion for good.
+            ModRuntime.Log.Error("over-limit guard failed", ex);
+            return !MarkOverLimitRemoval.Active;
+        }
+    }
+}
+
+/// <summary>
 /// Vanilla dialog points as companion slots (SPEC_CORE_GAPS T4.0, GAME_MAP Q18 note): when a mod companion speaks a vanilla
 /// NPC sentence whose slot it has lines for, the text shown and voiced is one of its own lines. The vanilla condition already
 /// ran (its variables are set) and the consequence and tokens are unchanged; an empty slot keeps the vanilla text.
