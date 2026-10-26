@@ -4131,6 +4131,17 @@ All 34 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 - The full value list of `Romance.RomanceLevelEnum` was not transcribed (the action's payload enum); rows reference the levels only by the campaign-behavior call sites that use them.
 - Exact intra-day ordering of `DailyTickHero` vs other daily behavior ticks not traced (same class of caveat as the Q27/Q37 tick rows) — immaterial to the once-per-threshold firing claim.
 
+## Q40 — Campaign events catalog 6 (diplomacy, family, clan)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
