@@ -3640,6 +3640,17 @@ All 30 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 - `OnHeroCombatHitEvent`: traced as fed by live-hit reporting (PartyGroupAgentOrigin → PartyGroupTroopSupplier) and AI-simulated hits (MapEventSide:1042), but 100 % per-hit coverage of real-time player battles was not runtime-verified.
 - Q23's existing UNCERTAIN about whether `MapEventEnded` fires once per siege or once per assault round applies unchanged to that row; not re-litigated here.
 
+## Q36 — Campaign events catalog 2 (prisoners, raids, sieges, loot)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
