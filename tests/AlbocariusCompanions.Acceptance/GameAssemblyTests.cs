@@ -50,9 +50,9 @@ public class GameAssemblyTests
     public void Harmony_patch_classes_exist(string name) => Assert.Contains(Types(), x => x.Name == name);
 
     [Fact]
-    public void Assembly_version_is_0_1_0()
+    public void Assembly_version_is_0_2_1()
     {
         using var pe = new PEReader(File.OpenRead(Dll));
-        Assert.Equal(new Version(0, 1, 0, 0), pe.GetMetadataReader().GetAssemblyDefinition().Version);
+        Assert.Equal(new Version(0, 2, 1, 0), pe.GetMetadataReader().GetAssemblyDefinition().Version);
     }
 }

@@ -16,7 +16,7 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   Acceptance 359. Not tested in game.
 - M7 done 2026-10-26 (docs/RUN_REPORT_BEHAVIOR_FOUNDATION.md): variables, conditions, transfers, authoring warnings, CLI,
   console commands, GAME_MAP Q21–Q32. Core.Tests 264, Acceptance 620. In-game checklist 2–5 passed (user, 2026-10-26).
-- M8 approved 2026-10-26 (E1, E2 as planned; E3 and V3 with the conditions below). In progress.
+- M8 done 2026-10-26 (docs/RUN_REPORT_VANILLA_GUARDS.md): V1–V5, version 0.2.1. Core.Tests 273, Acceptance 631. Not tested in game.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
@@ -264,23 +264,30 @@ Decisions taken here (change at the gate if wrong):
   one-line reason next to each.
 
 Tasks:
-- [ ] 82-v1-relation-removal (self) — E1: GAME_MAP Q21 addendum (patch target, why not KillCharacterAction), API row,
+- [x] 82-v1-relation-removal (self) — E1: GAME_MAP Q21 addendum (patch target, why not KillCharacterAction), API row,
   prefix + log; checklist item.
 - [x] 83-gm-q33-grievances (worker → self verifies) — V2 research: CompanionGrievanceBehavior (triggers, conversation
   opening — Q25 — texts, consequences: relation, leaving, removal) → GAME_MAP Q33.
-- [ ] 84-v2-grievance-exclusion (self, after 83) — mod companions never get grievances or their consequences; log.
+- [x] 84-v2-grievance-exclusion (self, after 83) — mod companions never get grievances or their consequences; log.
 - [x] 85-gm-q34-companion-audit (worker → self verifies; split by area if it times out) — V3: every vanilla behavior /
   action / model targeting player companions or wanderers (IsPlayerCompanion, Occupation.Wanderer, CompanionOf, clan
   companions) → table: what, trigger, consequence, keep / exclude / decide → GAME_MAP Q34. Non-DLC sources only.
-- [ ] 86-v3-exclusions (self, after 85) — prefixes only for "exclude" rows; nothing for "decide".
-- [ ] 87-v4-relation-helper (self) — E3: GAME_MAP Q21 addendum (raw vs effective for two companions of the player clan),
+- [x] 86-v3-exclusions (self, after 85) — prefixes only for "exclude" rows; nothing for "decide".
+- [x] 87-v4-relation-helper (self) — E3: GAME_MAP Q21 addendum (raw vs effective for two companions of the player clan),
   Game helper `CompanionRelations` (raw get / silent set) used for every companion↔companion access, console
   `albocarius.relation`; Core text side unit-tested.
-- [ ] 88-v5-dismissal-check (self, after 82/84/86) — confirm the T4 dismissal patch (`companion_fire_on_consequence` →
+- [x] 88-v5-dismissal-check (self, after 82/84/86) — confirm the T4 dismissal patch (`companion_fire_on_consequence` →
   `RemoveCompanionAction.ApplyByFire` + tavern placement) is not hit by any new exclusion and vice versa; GAME_MAP Q19
   addendum; fix if needed.
-- [ ] 89-report (self) — version 0.2.1, `docs/RUN_REPORT_VANILLA_GUARDS.md` (per task, V3 table with the *decide* list
+- [x] 89-report (self) — version 0.2.1, `docs/RUN_REPORT_VANILLA_GUARDS.md` (per task, V3 table with the *decide* list
   highlighted, UNCERTAIN, BLOCKERS, 5-item checklist), milestone commit, deploy only if asked.
+
+### M8 Report
+- Built: guards against vanilla relation removal (V1), grievances (V2), over-limit removal (V3); raw companion relation
+  helper + `albocarius.relation` (V4); dismissal unaffected (V5); GAME_MAP Q33, Q34 (every exclude row re-verified).
+- Tests: Core.Tests 273/273, Acceptance 631/631. Version 0.2.1.
+- Worker: 2 research tasks, both PASS first attempt.
+- Open: the *decide* list in the report (9 items) is the user's call.
 
 ## Decisions already fixed
 - Character templates: generated from JSON at runtime in memory + debug copy on disk (user, 2026-10-24; SPEC rule 8 amendment).
