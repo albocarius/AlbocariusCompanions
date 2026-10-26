@@ -76,11 +76,11 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
   conversation's `when` and its start nodes' conditions count as conditions.
 - [x] 93-noble-field (self — worker queue busy) — I4: `noble` bool default false in companion.json model,
   validation (non-bool → error), SCHEMA.md, template, test_companion unchanged (default).
-- [ ] 94-sim-engine (self) — I3 Core: `Simulation` (state model F6, step → candidates + per-field condition results +
+- [x] 94-sim-engine (self) — I3 Core: `Simulation` (state model F6, step → candidates + per-field condition results +
   winning group + winner + effects + new state), reusing ConversationConditions / Selection / ConversationEffects /
   Transfers (refactor Game to the same entry points where it computes them itself). `docs/SIMULATOR_PROTOCOL.md` (F7).
   Accept: engine tests incl. the hire → the_scar → spare_coin sequence.
-- [ ] 95-cli-serve (worker; self writes acceptance tests incl. one integration test over stdin/stdout) — `serve` command:
+- [x] 95-cli-serve (self — the protocol lives in Core (SimulatorProtocol), so serve is a 20-line loop; worker queue busy) — `serve` command:
   line loop, JSON in/out per SIMULATOR_PROTOCOL.md, errors as responses (never exit on a bad line), exit on EOF/`close`.
 - [ ] 96-fallback-check (self) — F8.
 - [ ] 97-rescue-slots (self) — F9: verify in decomp which rescue / prison-break lines the companion speaks; add those as

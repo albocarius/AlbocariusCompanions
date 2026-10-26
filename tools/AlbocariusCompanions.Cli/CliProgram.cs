@@ -5,23 +5,30 @@ using System.Linq;
 using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Loading;
 using AlbocariusCompanions.Core.Registry;
+using AlbocariusCompanions.Core.Simulation;
 using AlbocariusCompanions.Core.Validation;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace AlbocariusCompanions.Cli;
 
 /// <summary>
 /// Authoring CLI (SPEC_BEHAVIOR_FOUNDATION I6): validate companion folders and export their conversations
-/// as Mermaid flowcharts. Only reads; nothing here writes or throws.
+/// as Mermaid flowcharts; "serve" runs the simulator for an editor (M9 I3). Only reads; nothing here writes or throws.
 /// </summary>
 public static class CliProgram
 {
-    public static int Run(string[] args, TextWriter stdout, TextWriter stderr)
+    public static int Run(string[] args, TextWriter stdout, TextWriter stderr) => Run(args, Console.In, stdout, stderr);
+
+    public static int Run(string[] args, TextReader stdin, TextWriter stdout, TextWriter stderr)
     {
         if (args.Length == 0)
             return Usage(stderr);
 
         switch (args[0])
         {
+            case "serve":
+                return Serve(args, stdin, stdout, stderr);
             case "validate":
                 return Validate(args, stdout, stderr);
             case "mermaid":
@@ -132,11 +139,37 @@ public static class CliProgram
         return 2;
     }
 
+    /// <summary>
+    /// <c>serve [companionsRoot]</c>: the simulator (docs/SIMULATOR_PROTOCOL.md). One JSON request per stdin line, one
+    /// JSON response per stdout line, until end of input or a "quit" request. A root given here is loaded first (as a
+    /// "load" request would); the server still answers requests when it fails.
+    /// </summary>
+    private static int Serve(string[] args, TextReader stdin, TextWriter stdout, TextWriter stderr)
+    {
+        if (args.Length > 2)
+            return Usage(stderr);
+
+        var protocol = new SimulatorProtocol();
+        if (args.Length == 2)
+            stderr.WriteLine(protocol.Handle(new JObject { ["id"] = "preload", ["op"] = "load", ["root"] = args[1] }.ToString(Formatting.None)));
+
+        string? line;
+        while (!protocol.Quit && (line = stdin.ReadLine()) != null)
+        {
+            if (line.Trim().Length == 0)
+                continue;
+            stdout.WriteLine(protocol.Handle(line));
+            stdout.Flush();
+        }
+        return 0;
+    }
+
     private static int Usage(TextWriter stderr)
     {
         stderr.WriteLine("Usage:");
         stderr.WriteLine("  validate <path>                            a companion folder, or a Companions directory");
         stderr.WriteLine("  mermaid <companionFolder> [conversationId] print the companion's Mermaid flowchart(s)");
+        stderr.WriteLine("  serve [companionsRoot]                     simulator: JSON lines on stdin/stdout (docs/SIMULATOR_PROTOCOL.md)");
         stderr.WriteLine("Exit codes: 0 ok, 1 validation errors, 2 usage, missing path or unknown conversation.");
         return 2;
     }

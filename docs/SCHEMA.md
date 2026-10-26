@@ -109,7 +109,8 @@ Author-time checks and exports (`tools/AlbocariusCompanions.Cli`; all the logic 
 `ERROR <code> [<folder>] <message>` / `WARNING …` — followed by `<E> error(s), <W> warning(s).`. A path that holds a
 `companion.json` is a single companion: only that folder's issues are printed (its parent is still loaded, so cross-companion
 checks run). `dotnet run --project tools/AlbocariusCompanions.Cli -- mermaid module/ModuleData/Companions/<id> [conversation]`
-writes that companion's `conversations` (SCHEMA "Conversations") as Mermaid flowcharts, or one of them by id. Exit codes:
+writes that companion's `conversations` (SCHEMA "Conversations") as Mermaid flowcharts, or one of them by id. `serve [companionsRoot]` runs the conversation simulator for an editor: JSON lines on stdin/stdout,
+see `docs/SIMULATOR_PROTOCOL.md`. Exit codes:
 0 clean or warnings only; 1 validation errors (`mermaid` prints the broken companion's issues on stderr); 2 usage, a path
 that does not exist, or an unknown conversation id. (As built, the standalone run crashes on a missing `Newtonsoft.Json`:
 Core hides its package with `PrivateAssets=all` and the CLI csproj is orchestrator-owned — see `docs/BLOCKERS.md`.)
