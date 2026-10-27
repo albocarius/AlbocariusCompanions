@@ -5540,3 +5540,32 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `MBInformationManager.ShowMultiSelectionInquiry` | `decomp/TaleWorlds.Core/TaleWorlds.Core/MBInformationManager.cs` | Q26 | inquiry delivery, 3+ options (M11) |
 | `MultiSelectionInquiryData` | `decomp/TaleWorlds.Core/TaleWorlds.Core/MultiSelectionInquiryData.cs` | Q26 | multi-choice pop-up data (M11) |
 | `InquiryElement` | `decomp/TaleWorlds.Core/TaleWorlds.Core/InquiryElement.cs` | Q26 | multi-choice pop-up rows (M11) |
+| `CampaignEvents.HeroWounded` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | heroWounded trigger (M11) |
+| `CampaignEvents.BattleStarted` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | battleStarted trigger (M11) |
+| `CampaignEvents.MapEventStarted` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | mapEventStarted trigger (M11) |
+| `CampaignEvents.MapEventEnded` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | mapEventEnded trigger (M11) |
+| `CampaignEvents.PlayerDesertedBattleEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | playerDesertedBattle trigger (M11) |
+| `CampaignEvents.OnHeroCombatHitEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | heroHitInCombat trigger (M11) |
+| `CampaignEvents.OnSiegeEventStartedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | siegeStarted trigger (M11) |
+| `CampaignEvents.OnPlayerSiegeStartedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | playerJoinedSiege trigger (M11) |
+| `CampaignEvents.CrimeRatingChanged` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | crimeRatingChanged trigger (M11) |
+| `CampaignEvents.CharacterBecameFugitiveEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | heroBecameFugitive trigger (M11) |
+| `CampaignEvents.BanditPartyRecruited` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | banditPartyRecruited trigger (M11) |
+| `CampaignEvents.TrackDetectedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | trackSpotted trigger (M11) |
+| `CampaignEvents.TrackLostEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | trackLost trigger (M11) |
+| `CampaignEvents.HeroPrisonerTaken` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | heroCaptured trigger (M11) |
+| `CampaignEvents.HeroPrisonerReleased` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | heroReleased trigger (M11) |
+| `CampaignEvents.PrisonersChangeInSettlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | prisonersChangedInSettlement trigger (M11) |
+| `CampaignEvents.OnRansomOfferCancelledEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | ransomOfferCancelled trigger (M11) |
+| `CampaignEvents.VillageBeingRaided` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | villageRaidStarted trigger (M11) |
+| `CampaignEvents.ItemsLooted` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | itemsLooted trigger (M11) |
+| `CampaignEvents.TownRebelliosStateChanged` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | townRebellionStateChanged trigger (M11) |
+| `CampaignEvents.RebellionFinished` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | rebellionSucceeded trigger (M11) |
+| `CampaignEvents.BeforeHeroKilledEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | heroAboutToBeKilled trigger (M11) |
+| `SiegeEvent.BesiegedSettlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Siege/SiegeEvent.cs` | Q35 | siegeStarted trigger (M11) |
+| `SiegeEvent.BesiegerCamp` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Siege/SiegeEvent.cs` | Q35 | siegeStarted trigger (M11) |
+| `BesiegerCamp.LeaderParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Siege/BesiegerCamp.cs` | Q35 | siegeStarted trigger (M11) |
+| `Track.PartyName` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Track.cs` | Q35 | trackSpotted and trackLost trigger (M11) |
+| `Track.PartyType` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Track.cs` | Q35 | trackSpotted and trackLost trigger (M11) |
+| `Track.NumberOfAllMembers` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Track.cs` | Q35 | trackSpotted and trackLost trigger (M11) |
+| `Track.IsEnemy` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Track.cs` | Q35 | trackSpotted and trackLost trigger (M11) |

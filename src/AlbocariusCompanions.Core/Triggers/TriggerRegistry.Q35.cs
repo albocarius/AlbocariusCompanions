@@ -100,7 +100,7 @@ public static partial class TriggerRegistry
             fields: new[]
             {
                 F("partyName", FieldKind.Text, "display name of the party that left the track", "track.PartyName"),
-                F("partyType", FieldKind.Text, "the game's PartyTypeEnum of the tracked party (Bandit, Caravan, …)", "track.PartyTypeEnum"),
+                F("partyType", FieldKind.Text, "the game's PartyTypeEnum of the tracked party (Bandit, Caravan, …)", "track.PartyType"),
                 F("men", FieldKind.Int, "the tracked party's total strength", "track.NumberOfAllMembers"),
                 F("isEnemy", FieldKind.Bool, "the track belongs to a hostile party", "track.IsEnemy"),
             },
@@ -111,7 +111,7 @@ public static partial class TriggerRegistry
             fields: new[]
             {
                 F("partyName", FieldKind.Text, "display name of the party that left the track", "track.PartyName"),
-                F("partyType", FieldKind.Text, "the game's PartyTypeEnum of the tracked party (Bandit, Caravan, …)", "track.PartyTypeEnum"),
+                F("partyType", FieldKind.Text, "the game's PartyTypeEnum of the tracked party (Bandit, Caravan, …)", "track.PartyType"),
                 F("men", FieldKind.Int, "the tracked party's total strength", "track.NumberOfAllMembers"),
                 F("isEnemy", FieldKind.Bool, "the track belongs to a hostile party", "track.IsEnemy"),
             },
