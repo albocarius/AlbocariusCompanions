@@ -1,7 +1,7 @@
-Active milestone: **M10 noble mechanic** — source of truth: the user request of 2026-10-27 (section M10 below; no spec file).
-Previous: M9 selection + event research (`orchestra/SPEC_SELECTION_AND_EVENTS.md`), M8 vanilla guards (`orchestra/SPEC_VANILLA_GUARDS.md`), M7 behavior foundation, M6 conversations (no spec file), M5 core gaps; SPEC §1 rules and
+Active milestone: **M11 triggers & delivery** — source of truth `orchestra/SPEC_TRIGGERS_DELIVERY.md` (section M11 below).
+Previous: M10 noble mechanic, M9 selection + event research, M8 vanilla guards (`orchestra/SPEC_VANILLA_GUARDS.md`), M7 behavior foundation, M6 conversations (no spec file), M5 core gaps; SPEC §1 rules and
 `orchestra/HARD_RULES.md` still apply. The foundation run (M1–M4) is archived at the end of this file.
-Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone selection-and-events: <summary>`.
+Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone triggers-delivery: <summary>`.
 Stop condition (SPEC rule 5): 3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
 
 Owner legend: `self` = orchestrator, `worker` = local model via orchestra/worker.sh.
@@ -23,6 +23,92 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   Q35–Q47 verified, Q34 correction. Version 0.3.0. Core.Tests 281, Acceptance 705. Not tested in game.
 - M10 done 2026-10-27 (docs/RUN_REPORT_NOBLE.md): noble mechanic. Version 0.3.1. Core.Tests 281, Acceptance 709. Not tested in game.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
+
+## M11 — Triggers & delivery (SPEC_TRIGGERS_DELIVERY)
+Rules: spec §0 decisions are fixed. Every schema change updates models + loader + validation + test_companion + fixtures +
+scaffold template + `docs/SCHEMA.md` in the same task. Every new game API → GAME_MAP section + API index row before code uses
+it. The trigger registry (Core) is the only list of triggers: validation, simulator, CLI docs and the Game adapters read it.
+Version `0.3.1` → **`0.4.0`** at the end (new feature set; change at the gate).
+
+### Design decisions taken here (spec gaps; change at the gate if wrong)
+- G1 Trigger set = Q35–Q42 rows marked *useful* or *niche* (~215; the 3 *marginal* rows count as niche). Excluded besides
+  *not useful*: (a) UI-raised on notification inspect, not exposed yet (§0): `OnRansomOfferedToPlayerEvent`,
+  `OnPeaceOfferedToPlayerEvent`, `OnVassalOrMercenaryServiceOfferedToPlayerEvent`, `OnMarriageOfferedToPlayerEvent` — each
+  with its in-game check in the report; (b) ticks dressed as events (`DailyTickClanEvent`, `HourlyTickClanEvent`,
+  `DailyTickTownEvent`, `DailyTickPartyEvent`) → internal, `daily` covers them; (c) lifecycle (`OnCharacterCreationIsOverEvent`)
+  → internal. Rows the table parser could not classify (`?`, ~17) are decided by hand in 112 and listed in the report.
+- G2 Payload model (Core, no TaleWorlds): a payload is field → value; a value is a primitive (int/bool/string) or an
+  **entity** of kind hero / settlement / clan / kingdom / party / item with fixed properties: all `id`, `name`; hero
+  `culture clan kingdom occupation isPlayer isCompanion companion` (mod companion id or empty); settlement `culture kind
+  (town|castle|village|hideout) owner clan kingdom`; clan `culture kingdom leader`; kingdom `culture leader`; party
+  `leader clan kingdom isMainParty`; item `type`. Faction args (`IFaction`) become clan or kingdom. `where` keys and
+  `event.<field>` paths are `<field>` or `<field>.<property>` and are validated against the registry entry's field kinds.
+- G3 Subject: each registry entry names the field(s) the subject is matched against (e.g. `heroKilled` → `victim`;
+  `villageLooted` → `village` and `raider`). `self` = the content's companion, `player` = main hero / main party,
+  `playerParty` = a hero in the main party (or the main party itself), `playerClan`, `companion:<id>`, `hero:<id>`,
+  `settlement:<id>`, `any`. Matching = any of the entry's subject fields matches. Default subject per entry; world-wide
+  events never default to `any`.
+- G4 `event.<field>` in conditions: `{ "var": "event.settlement.culture", "eq": "vlandia" }` (string/int/bool `eq`, int
+  `min`/`max`). Valid only inside content that has a `trigger` with that field; elsewhere → validation error. At delivery the
+  payload snapshot taken at fire time is used.
+- G5 Triggered conversations: `trigger` present → `entry` must be absent (never offered as hub/greeting), `start` = npc
+  nodes (selection rule picks one). `delivery: conversation` opens it on the map (Q25 A); `notification` shows the text of
+  the selected start npc node (its effects apply); `inquiry` needs exactly one start npc node whose `next` are 1..N player
+  nodes, each ending in `end`; the npc text is the pop-up body, the options are buttons (2 → `ShowInquiry`, 1 or 3+ →
+  `ShowMultiSelectionInquiry`), choosing applies that node's effects (and the npc node's at show time).
+- G6 Triggered slot lines: a `lines` entry with `trigger` has **no `slot`** (it is not a fixed-dialog line), delivery must be
+  `notification` (default for lines); it is never picked for a fixed dialog. Conversations default to `conversation`.
+- G7 Constants (Core `DeliveryRules`, documented in TRIGGERS.md + SCHEMA.md): interruption cooldown per companion **1 day**
+  (conversation + inquiry), global cap **3 interruptions/day**, **6 notifications/day**, `expiresAfterHours` default **24**,
+  `chance` default 1, `cooldownDays` default 0. Day = in-game day from `CampaignTime`. `partyMorale` range **−20..+20**
+  (validation; vanilla's own one-off morale events stay within that — confirmed in 120 against Q22).
+- G8 Queue order: selection rule over the deliverable items (priority = content `priority`, ties random); oldest first is
+  not a rule. `when` re-checked at delivery; failing → dropped (logged). `inMission` items wait until the map is active.
+- G9 Persistence: queue, per-item/per-companion cooldown stamps, daily counters, polling latches and last values saved as
+  `List<string>` keys (Q20-verified type; JSON per entry), times as `CampaignTime` ticks (Q27). Payload snapshot is
+  serialized as its Core values (ids + properties), so a reloaded item does not need the game objects.
+- G10 `varCrossed`: compared after every effect application and on the daily tick (variables change only by effects or
+  console). `nearSettlement` hourly with the Q43 latch; `roleStarted/Ended` polled hourly per Q45/Q47. `daily` fires on the
+  internal daily tick.
+- G11 Performance: the Game adapter for a trigger is subscribed only if some loaded content uses it (`.reload` re-subscribes
+  nothing; triggers are fixed per session).
+
+### Tasks (owner; worker tasks get acceptance tests first)
+- [ ] 112-trigger-names (self) — G1 list from Q35–Q42 + naming pass (unique, camelCase, past tense; fixes the spec's list:
+  `hideoutCleared` vs `alleyCleared`, `alley*` for alley events, `tournamentFinished`, village raid trio) →
+  `orchestra/triggers.tsv` (event, old name, new name, category, Q). Feeds 114 and the report table.
+- [ ] 113-trigger-core-model (self) — Core `Triggers/`: `TriggerDefinition`, field/entity kinds (G2), `TriggerPayload`,
+  subject matching (G3), `where` + `event.` path resolution, `TriggerRegistry` with 3 seed entries. Accept: Acceptance tests.
+- [ ] 114a–h-trigger-registry-<category> (worker ×8, one per Q35–Q42) — registry entries for that batch from
+  `triggers.tsv` + the GAME_MAP row (fields from the event signature, subject fields, default subject, `inMission`, common).
+  Accept (shared, staged): names = tsv, source member exists in `CampaignEvents.cs`, field count = signature arity, subject
+  defaults never `any` for world events, descriptions non-empty.
+- [ ] 115-trigger-docs (worker) — CLI `docs triggers` → `docs/TRIGGERS.md` (common section, per category, subjects, fields,
+  example, constants G7). Accept: golden test "committed file = generated".
+- [ ] 116-trigger-schema (self) — `trigger` on conversations and lines (T3 + G5/G6), loader, validation (unknown trigger,
+  subject, `where` field, chance range, delivery compatibility, hours/days ≥ 0, `allowAbsent`), SCHEMA.md, template.
+- [ ] 117-trigger-conditions (self) — G4 `event.` conditions; `role` condition (T4); validation.
+- [ ] 118-trigger-engine (self) — Core `TriggerEngine`: fire → candidates → subject/where/chance/when/inParty/cooldown →
+  queue; `NextDelivery(now, canInterrupt)` with G7 limits and G8 order; expiry; save encode/decode (G9). Unit + acceptance.
+- [ ] 119-polling-core (worker) — Core: `nearSettlement` latch (radius/rearmRadius), `varCrossed` (up/down), role
+  start/end diff, `daily`. Accept: staged tests.
+- [ ] 120-morale-effect (self) — `partyMorale` effect: Core model/validation (G7 range), Game via `RecentEventsMorale` (Q22),
+  GAME_MAP API rows.
+- [ ] 121-api-rows-events (worker) — GAME_MAP API index rows for every exposed `CampaignEvents` member + the payload
+  accessors the adapters use (list given in the task). Accept: ApiIndexTests + a test that every registry source has a row.
+- [ ] 122-game-payload-helper (self) — Game `PayloadBuilder` (Hero/Settlement/Clan/Kingdom/IFaction/MobileParty/Item →
+  Core entity) + adapter pattern + the battle category adapters as the worked example.
+- [ ] 122a–g-game-adapters-<category> (worker ×7) — one adapter per registry entry of the category, subscribed only when used
+  (G11). Accept: a metadata/source test that every registry entry has exactly one adapter and builds; review vs GAME_MAP.
+- [ ] 123-game-delivery (self) — engine host behavior: listeners, internal hourly/daily ticks, polling inputs (Q43/Q45/Q47),
+  delivery (Q25 map conversation with the triggered start, Q17 message, Q26 inquiries), SyncData (G9). Build-only.
+- [ ] 124-console (self) — `albocarius.fire <trigger> [k=v …]`, `.queue`, `.clearcooldowns`; parsing in Core, tested.
+- [ ] 125-serve-triggers (self) — protocol ops `fire`, `queue`, `deliver` (docs/SIMULATOR_PROTOCOL.md first); ServeTests.
+- [ ] 126-sample-content (self) — T8 items in test_companion; zero warnings (acceptance).
+- [ ] 127-report (self) — `docs/RUN_REPORT_TRIGGERS_DELIVERY.md` (naming table, excluded UI triggers + checks, constants,
+  UNCERTAINs, BLOCKERS, 8-item checklist), version 0.4.0, milestone commit.
+Order: 112 → 113 → (114a–h, 119, 121 on the worker queue) ∥ (116, 117, 118, 120 self) → 115 → 122 → 122a–g → 123 → 124,
+125 → 126 → 127.
 
 ## M10 — Noble mechanic (user request 2026-10-27)
 Decisions (user): affected = clan leaders of the player's kingdom, excluding the player's clan and the new companion clan;
