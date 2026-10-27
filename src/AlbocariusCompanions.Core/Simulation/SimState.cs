@@ -35,6 +35,8 @@ public sealed class SimCompanion
     [JsonProperty("relation")] public int Relation { get; set; }
     /// <summary>The hero's own gold.</summary>
     [JsonProperty("gold")] public int Gold { get; set; }
+    /// <summary>The companion's current role (governor, partyLeader, …) for the <c>role</c> condition; null = none.</summary>
+    [JsonProperty("role")] public string? Role { get; set; }
 }
 
 public sealed class SimPlayer
@@ -42,4 +44,6 @@ public sealed class SimPlayer
     [JsonProperty("gold")] public int Gold { get; set; }
     /// <summary>Item string id → count in the party inventory.</summary>
     [JsonProperty("items")] public Dictionary<string, int> Items { get; set; } = new Dictionary<string, int>();
+    /// <summary>Sum of the partyMorale effects applied (the game's Recent Events morale; no decay in the simulator).</summary>
+    [JsonProperty("partyMorale")] public int PartyMorale { get; set; }
 }

@@ -24,6 +24,8 @@ public sealed class ConversationDefinition
     /// <summary>Node ids the conversation starts with: player options (hub) or NPC alternatives (greeting).</summary>
     [JsonProperty("start")] public List<string>? Start { get; set; }
     [JsonProperty("nodes")] public List<ConversationNode>? Nodes { get; set; }
+    /// <summary>Started by a game event instead of the menu (M11): then no <see cref="Entry"/>, and <see cref="Start"/> holds npc nodes.</summary>
+    [JsonProperty("trigger")] public TriggerSpec? Trigger { get; set; }
 }
 
 public sealed class ConversationNode : ISpokenLine
@@ -72,7 +74,10 @@ public sealed class ConditionSet
     [JsonProperty("any")] public List<ConditionSet>? Any { get; set; }
     /// <summary>A nested condition object that must not hold.</summary>
     [JsonProperty("not")] public ConditionSet? Not { get; set; }
-    /// <summary>The variable compared by <see cref="Min"/>, <see cref="Max"/> or <see cref="Eq"/>.</summary>
+    /// <summary>
+    /// The variable compared by <see cref="Min"/>, <see cref="Max"/> or <see cref="Eq"/>; or <c>event.&lt;path&gt;</c>, a field
+    /// of the trigger that started this content (M11 G4; <c>eq</c> may then also be a string).
+    /// </summary>
     [JsonProperty("var")] public string? Var { get; set; }
     /// <summary>Int variable at least this.</summary>
     [JsonProperty("min")] public int? Min { get; set; }
@@ -80,6 +85,8 @@ public sealed class ConditionSet
     [JsonProperty("max")] public int? Max { get; set; }
     /// <summary>Variable equals this: a JSON bool for a bool variable, an integer for an int one.</summary>
     [JsonProperty("eq")] public JToken? Eq { get; set; }
+    /// <summary>The companion's current role (governor, partyLeader, caravanLeader, alleyLeader, questAlternative; M11 T4).</summary>
+    [JsonProperty("role")] public string? Role { get; set; }
 }
 
 /// <summary>A <c>hasGold</c> condition: one actor's own gold (actors and the game's gold rules: GAME_MAP Q29).</summary>
@@ -119,6 +126,11 @@ public sealed class EffectSet
     [JsonProperty("add")] public Dictionary<string, int>? Add { get; set; }
     /// <summary>The companion joins the player's clan and party (no payment; offered only while not hired and the clan has room).</summary>
     [JsonProperty("join")] public bool Join { get; set; }
+    /// <summary>
+    /// Change of the player's party morale, as a one-off "Recent Events" entry that decays 10 % a day (GAME_MAP Q22, M11 T6).
+    /// −20..+20, not 0.
+    /// </summary>
+    [JsonProperty("partyMorale")] public int? PartyMorale { get; set; }
 }
 
 /// <summary>

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using AlbocariusCompanions.Core.Dialogs;
+using AlbocariusCompanions.Core.Triggers;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Registry;
 using AlbocariusCompanions.Core.Rules;
@@ -44,7 +45,16 @@ public sealed class SimSession
     /// <summary>Replaces the state; unknown variables are an error, nothing is changed then.</summary>
     public void SetState(SimState state)
     {
-        var store = new VariableStore(_registry.All);
+        _variables = BuildVariables(_registry, state);
+        var copy = state.Clone();
+        copy.Variables = new Dictionary<string, JToken>();
+        _state = copy;
+    }
+
+    /// <summary>A variable store from the state's "&lt;companionId&gt;.&lt;name&gt;" values; unknown variables are an error.</summary>
+    internal static VariableStore BuildVariables(CompanionRegistry registry, SimState state)
+    {
+        var store = new VariableStore(registry.All);
         foreach (var pair in state.Variables ?? new Dictionary<string, JToken>())
         {
             var dot = pair.Key.IndexOf('.');
@@ -55,10 +65,7 @@ public sealed class SimSession
                 throw new SimulationException($"variable '{pair.Key}' is a {VariableRules.Name(definition.Type)}");
             store.Set(definition.Owner, definition.Name, VariableUses.ValueOf(pair.Value));
         }
-        var copy = state.Clone();
-        copy.Variables = new Dictionary<string, JToken>();
-        _state = copy;
-        _variables = store;
+        return store;
     }
 
     /// <summary>The current state, every declared variable included (with its value or default).</summary>
@@ -300,6 +307,12 @@ public sealed class SimSession
         if (Transfers.Of(effects) is { } transfer)
             applied.Add(ApplyTransfer(transfer));
 
+        if (effects.PartyMorale is { } morale)
+        {
+            _state.Player.PartyMorale += morale;
+            applied.Add($"partyMorale {morale:+0;-0} -> {_state.Player.PartyMorale}");
+        }
+
         if (effects.Join)
         {
             self.Hired = self.InParty = true;
@@ -375,7 +388,7 @@ public sealed class SimSession
 
     private IConversationContext Context() => new SimContext(this);
 
-    private sealed class SimContext : IConversationContext
+    private sealed class SimContext : IConversationContext, ITriggerContext
     {
         private readonly SimSession _session;
         private readonly SimCompanion _self;
@@ -395,6 +408,8 @@ public sealed class SimSession
         public int? GetVariable(string reference) => _session._variables.Get(_session._package.Id, reference);
         public int? GoldOf(string actor) => _session.GoldOf(actor);
         public int PlayerItemCount(string itemId) => _session._state.Player.Items.TryGetValue(itemId, out var n) ? n : 0;
+        public TriggerPayload? Event => null;
+        public string? Role => _self.Role;
     }
 }
 

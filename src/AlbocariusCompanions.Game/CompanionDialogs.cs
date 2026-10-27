@@ -34,6 +34,9 @@ internal static class CompanionDialogs
     // Greeting conversations: above the vanilla greetings (100/110), below the intro, which needs an unmet companion (Q20).
     private const int GreetingPriority = 119;
 
+    // Triggered conversations (M11): above greetings and the intro, but only while their delivery names them.
+    private const int TriggeredPriority = 121;
+
     // Menu options of conversations: listed above the vanilla 100 options, below story quests (Q7, Q20).
     private const int HubOptionPriority = 105;
 
@@ -179,14 +182,21 @@ internal static class CompanionDialogs
             var variable = ("ALBOCARIUS_" + id + "_" + conversation.Id + "_" + current.SentenceId.Replace(':', '_')).ToUpperInvariant();
             var text = "{=!}{" + variable + "}";
 
+            var triggered = conversation.Trigger != null;
             ConversationSentence.OnConditionDelegate condition = () => Safe.Run(ModRuntime.Log, "dialog condition " + context, () =>
             {
                 if (current.IsStart && !isThisCompanion())
                     return false;
+                // A triggered conversation opens only through its delivery (TriggerHost), never on a normal talk.
+                if (current.IsStart && triggered
+                    && !(ModRuntime.ActiveTrigger is { } active && active.CompanionId == id && active.ConversationId == conversation.Id))
+                    return false;
                 var state = new HeroConversationContext(Hero.OneToOneConversationHero, id);
                 if (!ConversationConditions.CanSay(conversation, current, state, ModRuntime.Flags.HasStarted(id, conversation.Id!)))
                     return false;
-                if (!current.IsPlayer && !IsSelected(package, conversation, current, state))
+                if (!current.IsPlayer && (triggered
+                        ? ConversationSelection.NpcReply(id, conversation, current.ParentId, state, ModRuntime.Selections, DialogText.Random) != current.Node
+                        : !IsSelected(package, conversation, current, state)))
                     return false;
                 var line = DialogText.TextOf(package, current.Node);
                 if (line == null)
@@ -199,7 +209,7 @@ internal static class CompanionDialogs
             {
                 if (current.IsStart)
                     ModRuntime.Flags.MarkStarted(id, conversation.Id!);
-                ApplyEffects(id, current.Node);
+                ApplyEffects(id, current.Node, Hero.OneToOneConversationHero);
             });
 
             if (current.IsPlayer)
@@ -207,7 +217,7 @@ internal static class CompanionDialogs
                     current.IsStart ? HubOptionPriority : 100);
             else
                 starter.AddDialogLine(current.SentenceId, current.InputToken, current.OutputToken, text, condition, consequence,
-                    current.IsStart ? GreetingPriority : 100);
+                    current.IsStart ? (triggered ? TriggeredPriority : GreetingPriority) : 100);
         }
         return edges.Count;
     }
@@ -229,14 +239,16 @@ internal static class CompanionDialogs
             == edge.Node;
     }
 
-    /// <summary>Node effects (GAME_MAP Q20): variables first, then relation, gold and joining, each logged.</summary>
-    private static void ApplyEffects(string id, ConversationNode node)
+    /// <summary>
+    /// Node effects (GAME_MAP Q20): variables first, then relation, gold, morale and joining, each logged. <paramref name="hero"/>
+    /// is the companion's hero (the one talked to, or the one whose triggered pop-up/notification this is).
+    /// </summary>
+    internal static void ApplyEffects(string id, ConversationNode node, Hero hero)
     {
         var effects = node.Effects;
         if (effects == null)
             return;
 
-        var hero = Hero.OneToOneConversationHero;
         foreach (var reference in ConversationEffects.ApplyVariables(id, effects, ModRuntime.Variables))
             ModRuntime.Log.Warning($"Conversation effect of '{id}' node '{node.Id}': '{reference}' skipped, its companion is not loaded.");
 
@@ -246,15 +258,23 @@ internal static class CompanionDialogs
         if (Transfers.Of(effects) is { } transfer)
             ApplyTransfer(id, node, transfer, hero);
 
+        // One-off "Recent Events" morale, decays 10 %/day; the setter clamps to ±100 (GAME_MAP Q22).
+        if (effects.PartyMorale is { } morale && MobileParty.MainParty != null)
+            MobileParty.MainParty.RecentEventsMorale += morale;
+
         if (effects.Join)
         {
             AddCompanionAction.Apply(Clan.PlayerClan, hero);
             AddHeroToPartyAction.Apply(hero, MobileParty.MainParty);
         }
 
+        // varCrossed compares variables after every effect (M11 G10).
+        if (VariableUses.InEffects(effects).Any())
+            ModRuntime.Triggers?.VariablesChanged();
+
         ModRuntime.Log.Info($"Conversation effects of '{id}' node '{node.Id}': " +
             $"variables [{string.Join(", ", VariableUses.InEffects(effects).Select(u => u.Reference))}], " +
-            $"relation {effects.Relation?.ToString() ?? "-"}, join {effects.Join}.");
+            $"relation {effects.Relation?.ToString() ?? "-"}, party morale {effects.PartyMorale?.ToString() ?? "-"}, join {effects.Join}.");
     }
 
     /// <summary>

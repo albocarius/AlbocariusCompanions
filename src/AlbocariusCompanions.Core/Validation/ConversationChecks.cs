@@ -4,6 +4,7 @@ using System.Linq;
 using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Rules;
+using AlbocariusCompanions.Core.Triggers;
 
 namespace AlbocariusCompanions.Core.Validation;
 
@@ -47,7 +48,14 @@ public static class ConversationChecks
         HashSet<string> localIds, HashSet<string> seenFullIds, List<ValidationIssue> issues)
     {
         var valid = new List<ConversationNode>();
-        if (!ConversationRules.Entries.Contains(conversation.Entry ?? "", StringComparer.Ordinal))
+        if (conversation.Trigger != null)
+        {
+            // Started only by its trigger (M11 G5).
+            if (conversation.Entry != null)
+                issues.Add(Error(IssueCodes.InvalidTrigger, folder, name,
+                    $"has a 'trigger' and entry '{conversation.Entry}'; a triggered conversation has no entry."));
+        }
+        else if (!ConversationRules.Entries.Contains(conversation.Entry ?? "", StringComparer.Ordinal))
             issues.Add(Error(IssueCodes.InvalidConversation, folder, name,
                 $"has entry '{conversation.Entry}'; use one of: {string.Join(", ", ConversationRules.Entries)}."));
 
@@ -126,13 +134,17 @@ public static class ConversationChecks
             return;
         }
 
-        var expected = conversation.Entry == ConversationRules.EntryGreeting ? ConversationRules.SpeakerNpc : ConversationRules.SpeakerPlayer;
+        var npcFirst = conversation.Entry == ConversationRules.EntryGreeting || conversation.Trigger != null;
+        var expected = npcFirst ? ConversationRules.SpeakerNpc : ConversationRules.SpeakerPlayer;
         foreach (var id in start)
         {
             if (id == null || !byId.TryGetValue(id, out var node))
                 issues.Add(Error(IssueCodes.UnknownNode, folder, name, $"starts with '{id}', which is not a node of this conversation."));
-            else if (ConversationRules.Entries.Contains(conversation.Entry ?? "", StringComparer.Ordinal) && node.Speaker != expected)
-                issues.Add(Error(IssueCodes.InvalidConversation, folder, name, conversation.Entry == ConversationRules.EntryGreeting
+            else if ((conversation.Trigger != null || ConversationRules.Entries.Contains(conversation.Entry ?? "", StringComparer.Ordinal))
+                     && node.Speaker != expected)
+                issues.Add(Error(IssueCodes.InvalidConversation, folder, name, conversation.Trigger != null
+                    ? $"is triggered, so its start node '{id}' must be a companion ({ConversationRules.SpeakerNpc}) line."
+                    : conversation.Entry == ConversationRules.EntryGreeting
                     ? $"is a greeting, so its start node '{id}' must be a companion ({ConversationRules.SpeakerNpc}) line."
                     : $"starts from the menu, so its start node '{id}' must be a {ConversationRules.SpeakerPlayer} line."));
         }
@@ -209,7 +221,7 @@ public static class ConversationChecks
         when != null && (when.Met != null || when.Hired != null || when.InParty != null || when.MinRelation != null ||
             when.MaxRelation != null || when.MinGold != null || when.HasGold != null || when.HasItem != null ||
             when.Flags?.Count > 0 || when.NotFlags?.Count > 0 ||
-            when.All?.Any(IsSet) == true || when.Any != null || when.Not != null || when.Var != null);
+            when.All?.Any(IsSet) == true || when.Any != null || when.Not != null || when.Var != null || when.Role != null);
 
     private static void ReportUnreachable(ConversationDefinition conversation, Dictionary<string, ConversationNode> byId, string folder,
         string name, List<ValidationIssue> issues)
@@ -311,6 +323,8 @@ public static class ConversationChecks
             Bad($"'var' '{when.Var}': use either 'eq' or 'min'/'max'.");
         if (when.Min > when.Max)
             Bad($"'var' '{when.Var}': min {when.Min} is greater than max {when.Max}.");
+        if (when.Role != null && !TriggerRegistry.Roles.Contains(when.Role))
+            Bad($"role '{when.Role}' is unknown; use one of: {string.Join(", ", TriggerRegistry.Roles)}.");
 
         void Nested(List<ConditionSet>? list, string key)
         {
@@ -366,6 +380,8 @@ public static class ConversationChecks
 
         if (effects.Relation is { } relation && (relation == 0 || !InRelationRange(relation)))
             Bad($"relation {relation} must be a non-zero change within {ConversationRules.MinRelation}..{ConversationRules.MaxRelation}.");
+        if (effects.PartyMorale is { } morale && (morale == 0 || morale < DeliveryRules.PartyMoraleMin || morale > DeliveryRules.PartyMoraleMax))
+            Bad($"partyMorale {morale} must be a non-zero change within {DeliveryRules.PartyMoraleMin}..{DeliveryRules.PartyMoraleMax}.");
         if (effects.Transfer != null && TransferProblem(effects.Transfer, ownId) is { } problem)
             Bad($"transfer: {problem}.");
         foreach (var pair in effects.Add ?? new Dictionary<string, int>())

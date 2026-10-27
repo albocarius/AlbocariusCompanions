@@ -31,7 +31,10 @@ public sealed class DialogLine : ISpokenLine
 {
     /// <summary>Local id, unique within the companion (e.g. intro_01); key of the line in the lang files.</summary>
     [JsonProperty("id")] public string? Id { get; set; }
+    /// <summary>The fixed dialog the line belongs to; absent for a triggered line (<see cref="Trigger"/>).</summary>
     [JsonProperty("slot")] public string? Slot { get; set; }
+    /// <summary>A line shown when a game event fires (M11): no slot, delivered as a notification.</summary>
+    [JsonProperty("trigger")] public TriggerSpec? Trigger { get; set; }
     /// <summary>The line is a candidate only while this holds (same conditions as conversations).</summary>
     [JsonProperty("when")] public ConditionSet? When { get; set; }
     /// <summary>Among the slot's passing lines the highest priority wins, ties at random. Absent = 0.</summary>

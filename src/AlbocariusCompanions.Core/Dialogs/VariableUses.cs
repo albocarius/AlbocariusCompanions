@@ -37,7 +37,8 @@ public static class VariableUses
             yield return new VariableUse(flag, VariableType.Bool, false, "flags");
         foreach (var flag in when.NotFlags ?? new List<string>())
             yield return new VariableUse(flag, VariableType.Bool, false, "notFlags");
-        if (when.Var != null)
+        // event.<path> reads the trigger payload, not a variable (M11 G4).
+        if (when.Var != null && !TriggerConditions.IsEventReference(when.Var))
         {
             if (when.Eq != null)
                 yield return new VariableUse(when.Var, TypeOf(when.Eq), false, "var");

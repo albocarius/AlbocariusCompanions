@@ -68,7 +68,15 @@ public static class ConditionExplain
             yield return Flag("flags." + flag, c.GetVariable(flag), true);
         foreach (var flag in when.NotFlags ?? new List<string>())
             yield return Flag("notFlags." + flag, c.GetVariable(flag), false);
-        if (when.Var != null)
+        if (when.Var != null && TriggerConditions.IsEventReference(when.Var))
+        {
+            var payload = (c as ITriggerContext)?.Event;
+            object? actual = null;
+            var found = payload != null && payload.TryResolve(TriggerConditions.PathOf(when.Var), out actual);
+            yield return ConditionResult.Of(when.Var, TriggerConditions.EventHolds(when, payload),
+                when.Eq ?? new JObject { ["min"] = when.Min, ["max"] = when.Max }, found && actual != null ? JToken.FromObject(actual) : JValue.CreateNull());
+        }
+        else if (when.Var != null)
         {
             var value = c.GetVariable(when.Var) ?? 0;
             if (when.Min is { } min)
@@ -78,6 +86,11 @@ public static class ConditionExplain
             if (when.Eq != null && VariableUses.TypeOf(when.Eq) is { } type)
                 yield return ConditionResult.Of($"var.{when.Var}.eq", value == VariableUses.ValueOf(when.Eq), when.Eq,
                     type == VariableType.Bool ? (JToken)(value != 0) : value);
+        }
+        if (when.Role != null)
+        {
+            var role = (c as ITriggerContext)?.Role;
+            yield return ConditionResult.Of("role", role == when.Role, when.Role, role == null ? JValue.CreateNull() : (JToken)role);
         }
         if (when.All != null)
             yield return Group("all", when.All.Where(n => n != null).Select(n => Fields(n, c).ToList()).ToList(), all: true);

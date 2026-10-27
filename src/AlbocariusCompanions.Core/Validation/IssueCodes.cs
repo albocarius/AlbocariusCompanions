@@ -59,6 +59,12 @@ public static class IssueCodes
     /// <summary>Warning: an unconditioned candidate with a strictly higher priority hides another one of its selection set (M9 I2).</summary>
     public const string ShadowedCandidate = "shadowed_candidate";
 
+    // triggers (M11)
+    /// <summary>A trigger name that is not in the registry (docs/TRIGGERS.md).</summary>
+    public const string UnknownTrigger = "unknown_trigger";
+    /// <summary>A malformed trigger: subject, where, chance, delivery, times, params, or content that does not fit the delivery.</summary>
+    public const string InvalidTrigger = "invalid_trigger";
+
     // dialogs.json variables (M7)
     public const string InvalidVariable = "invalid_variable";
     public const string UnknownVariable = "unknown_variable";

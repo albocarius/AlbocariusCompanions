@@ -1,5 +1,6 @@
 using System;
 using AlbocariusCompanions.Core.Dialogs;
+using AlbocariusCompanions.Core.Triggers;
 using TaleWorlds.CampaignSystem;
 using TaleWorlds.CampaignSystem.Party;
 using TaleWorlds.Core;
@@ -7,17 +8,29 @@ using TaleWorlds.ObjectSystem;
 
 namespace AlbocariusCompanions.Game;
 
-/// <summary>The live values conversation conditions read, over the hero being talked to.</summary>
-internal sealed class HeroConversationContext : IConversationContext
+/// <summary>
+/// The live values conversation conditions read, over the hero being talked to. Triggered content (M11) also reads the
+/// trigger payload (<c>event.</c> conditions) and the companion's role.
+/// </summary>
+internal sealed class HeroConversationContext : IConversationContext, ITriggerContext
 {
     private readonly Hero _hero;
     private readonly string _companionId;
+    private readonly TriggerPayload? _payload;
 
-    public HeroConversationContext(Hero hero, string companionId)
+    /// <summary>
+    /// <paramref name="payload"/>: the trigger payload when the trigger engine asks; otherwise the payload of the triggered
+    /// conversation running with this companion, if any (<see cref="ModRuntime.ActiveTrigger"/>).
+    /// </summary>
+    public HeroConversationContext(Hero hero, string companionId, TriggerPayload? payload = null)
     {
         _hero = hero;
         _companionId = companionId;
+        _payload = payload;
     }
+
+    public TriggerPayload? Event => _payload ?? (ModRuntime.ActiveTrigger is { } active && active.CompanionId == _companionId ? active.Payload : null);
+    public string? Role => CompanionRoles.Of(_hero);
 
     public bool HasMet => _hero.HasMet;
     public bool IsHired => _hero.IsPlayerCompanion;

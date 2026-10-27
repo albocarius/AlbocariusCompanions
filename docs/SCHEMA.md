@@ -65,7 +65,8 @@ The companion id is the folder name; there is no `id` field.
 | `schemaVersion` | int | yes | `1` |
 | `lines` | array | yes | |
 | `lines[].id` | string | yes | local id `[a-z0-9_]+`, unique within the companion (lines and conversation nodes share one namespace). The full id `<companionId>_<id>` (e.g. `jeremus_intro_01`) is the localization key, voice-over id and log name, and must be unique across all companions |
-| `lines[].slot` | string | yes | required companion slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; required player slots (the player says these lines): `player_ask_about`, `player_ask_hire`, `player_hire_pay`, `player_hire_full`, `player_hire_later`; required vanilla dialog points (see below); reserved, no effect yet: `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is chosen by the selection rule (see "Selection rule") and kept for the rest of the talk |
+| `lines[].slot` | string | yes (no for a triggered line) | required companion slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; required player slots (the player says these lines): `player_ask_about`, `player_ask_hire`, `player_hire_pay`, `player_hire_full`, `player_hire_later`; required vanilla dialog points (see below); reserved, no effect yet: `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is chosen by the selection rule (see "Selection rule") and kept for the rest of the talk |
+| `lines[].trigger` | object | no | a triggered line (see "Triggers"): no `slot`, never used by a fixed dialog, delivered as a `notification` only |
 | `lines[].when` | object | no | conditions as for conversations (see "Conditions"); the line is a candidate only while they hold. A slot whose every line has a `when` → warning (it can end up with no line) |
 | `lines[].priority` | int | no | default 0; see "Selection rule" |
 | `lines[].voiced` | bool | no | default `false`; a player slot line must not be voiced (error) |
@@ -136,11 +137,12 @@ Extra companion ↔ player dialogs: a small graph of companion (`npc`) and `play
 | Field | Type | Required | Rule |
 |---|---|---|---|
 | `id` | string | yes | `[a-z0-9_]+`, unique among the companion's conversations |
-| `entry` | string | yes | `hub`: the start player node(s) are options in the companion's conversation menu (listed above the vanilla options). `greeting`: when the player talks to the companion (already met), a start companion node opens the conversation instead of the usual greeting |
+| `entry` | string | yes (absent for a triggered conversation) | `hub`: the start player node(s) are options in the companion's conversation menu (listed above the vanilla options). `greeting`: when the player talks to the companion (already met), a start companion node opens the conversation instead of the usual greeting |
 | `once` | bool | no | default `false`; `true`: offered until it has started once (per campaign, kept in the save) |
 | `when` | object | no | conditions of the conversation, see below; for `greeting`, `"met": false` is an error (the first meeting is the intro) |
 | `priority` | int | no | default 0. `hub`: menu order among the companion's hub conversations (higher first, ties in file order). `greeting`: among the greetings offered, the highest opens the talk (selection rule) |
-| `start` | string array | yes | node ids: player nodes for `hub` (several = several menu options), companion nodes for `greeting` (one is chosen by the selection rule) |
+| `start` | string array | yes | node ids: player nodes for `hub` (several = several menu options), companion nodes for `greeting` and triggered conversations (one is chosen by the selection rule) |
+| `trigger` | object | no | started by a game event instead of the menu (see "Triggers"); then no `entry` |
 | `nodes` | array | yes | at least one |
 | `nodes[].id` | string | yes | local id like a line id (same namespace as the companion's lines; `hub` and `end` are reserved); key of the text in the lang files; full id `<companionId>_<id>` |
 | `nodes[].speaker` | string | yes | `npc` (the companion) or `player` |
@@ -175,6 +177,10 @@ Relation ≤ 20: both hold, `coin_refuse` wins by priority; above 20 only `coin_
 - `flags` (bool variables that must all be true), `notFlags` (bool variables that must all be false; a name may not be in both);
 - `var` + `min` / `max` (int variable within the bounds, min ≤ max) or `var` + `eq` (equals: `true`/`false` for a bool, a
   whole number for an int); `min`/`max`/`eq` need a `var`, `eq` is not combined with `min`/`max`;
+- `var: "event.<path>"` + `eq` / `min` / `max`: a field of the trigger that started this content (triggered content only;
+  see "Triggers"), e.g. `{ "var": "event.village.culture", "eq": "vlandia" }`; `eq` is text, `true`/`false` or a number as
+  the field needs, `min`/`max` only on number fields. Checked when the trigger fires and again at delivery;
+- `role`: the companion's current role, one of `governor`, `partyLeader`, `caravanLeader`, `alleyLeader`, `questAlternative`;
 - `all: [ … ]` (every object holds), `any: [ … ]` (at least one holds), `not: { … }` (the object does not hold); each element
   is again a condition object, nestable; `all`/`any` may not be empty.
 
@@ -184,7 +190,8 @@ Relation ≤ 20: both hold, `coin_refuse` wins by priority; above 20 only `coin_
 
 **Effects**: `relation` (non-zero, −100..100; the game scales positive changes by its own model and clamps the result),
 `transfer` (gold or items moved between two actors, see below), `join` (`true`: the companion joins the player's clan and
-party without payment — offered only while not hired and the clan has room), and variable writes, applied in this order:
+party without payment — offered only while not hired and the clan has room), `partyMorale` (non-zero, −20..20: a
+one-off change of the player's party morale, shown under "Recent Events" and fading 10 % a day), and variable writes, applied in this order:
 `setFlags` (bools → true), `clearFlags` (bools → false), `set` (`{ "<var>": true | false | <int> }`, value of the
 variable's type), `add` (`{ "<int var>": <non-zero int> }`). One node writes a variable at most once.
 
@@ -206,6 +213,44 @@ e.g. `notFlags: ["got_coin"]` with `setFlags: ["got_coin"]` on that path. A writ
 same actor with a high enough `min` (or `minGold` for a transfer from `player`), `hasItem` for that item and count — sits
 in the node's own `when`, the conversation's `when`, or the `when` of any node it can be reached from along `next` (top
 level and nested `all` only; `any`/`not` do not count).
+
+### Triggers
+A conversation or a slot-free line with `trigger` is started by the game: an event (a battle ended, a village was
+looted, …) or a polling check (`nearSettlement`, `daily`, `varCrossed`, `roleStarted`, `roleEnded`). Every trigger,
+its fields and subjects: `docs/TRIGGERS.md` (generated from the trigger registry).
+
+```json
+"trigger": {
+  "on": "villageLooted",
+  "subject": "playerClan",
+  "where": { "village.culture": "vlandia" },
+  "chance": 0.5,
+  "delivery": "conversation",
+  "expiresAfterHours": 24,
+  "cooldownDays": 7
+}
+```
+
+| Field | Type | Required | Rule |
+|---|---|---|---|
+| `on` | string | yes | a trigger name from docs/TRIGGERS.md; unknown → error |
+| `subject` | string | no | who/where the event must be about: `self` (this companion), `player`, `playerParty` (anyone in the player's party), `playerClan`, `companion:<id>`, `hero:<stringId>`, `settlement:<stringId>`, `any`. Which ones a trigger accepts and its default: docs/TRIGGERS.md; others → error |
+| `where` | object | no | payload path → value that must be equal: `"<field>"` (an entity field compares its id) or `"<field>.<property>"`, e.g. `"village.culture": "vlandia"`. Unknown field/property or a value of the wrong type → error |
+| `chance` | number | no | 0..1, default 1 |
+| `delivery` | string | no | `conversation` (default for conversations): the companion starts it on the map; `notification` (only choice for lines): one line in the message log; `inquiry`: a pop-up |
+| `expiresAfterHours` | number | no | ≥ 0, default 24: queued and not delivered by then → dropped |
+| `cooldownDays` | number | no | ≥ 0, default 0: in-game days before this item can fire again |
+| `allowAbsent` | bool | no | default `false`: the companion must be in the player's party |
+| `params` | object | polling triggers | `nearSettlement`: `settlement` (id), `radius` (> 0), `rearmRadius` (> radius; fires once per approach). `varCrossed`: `var` (an int variable of this companion or `mood`), `value` (int), `direction` (`up`/`down`). `roleStarted`/`roleEnded`: `role` (`governor`, `partyLeader`, `caravanLeader`, `alleyLeader`, `questAlternative`). Other triggers take none |
+
+Content rules: a triggered conversation has no `entry` and starts with companion nodes. `notification`: the selected
+start node is shown; it must end (`next: ["end"]`). `inquiry`: exactly one start companion node (the pop-up text) whose
+`next` are one or more player nodes (the buttons; 1–2 → standard pop-up, 3 or more → multi-choice pop-up), each ending
+(`next: ["end"]`); choosing one applies its effects. `when` is checked when the trigger fires and again at delivery.
+
+Delivery limits (mod-wide): a companion interrupts (conversation or inquiry) at most once every 3 in-game days; at most
+1 interruption per in-game day in total; at most 3 notifications per in-game day. Fired items wait in a queue (e.g.
+until a battle is over), ordered by the selection rule, and are dropped after `expiresAfterHours`.
 
 ### Variables
 Declared per companion in dialogs.json; permanent per campaign until changed.

@@ -17,6 +17,7 @@ public sealed class SimulatorProtocol
     public const int Version = 1;
 
     private readonly Dictionary<string, SimSession> _sessions = new Dictionary<string, SimSession>(StringComparer.Ordinal);
+    private readonly Dictionary<string, SimTriggerSession> _triggerSessions = new Dictionary<string, SimTriggerSession>(StringComparer.Ordinal);
     private CompanionRegistry? _registry;
     private int _nextSession = 1;
 
@@ -92,8 +93,22 @@ public sealed class SimulatorProtocol
                 session.SetState(StateOf(request) ?? throw new SimulationException("'state' is required"));
                 return new JObject { ["state"] = JToken.FromObject(session.State) };
             }
+            case "triggers":
+                return StartTriggers(request);
+            case "fire":
+                return TriggerSession(request).Fire(Text(request, "trigger"), ObjectOf(request, "payload"), Hours(request));
+            case "deliver":
+                return TriggerSession(request).Deliver(Hours(request), Flag(request, "onMap", true), Flag(request, "canInterrupt", true));
+            case "queue":
+                return TriggerSession(request).QueueJson();
+            case "clearCooldowns":
+            {
+                var session = TriggerSession(request);
+                session.ClearCooldowns();
+                return session.QueueJson();
+            }
             case "close":
-                if (!_sessions.Remove(Text(request, "session")))
+                if (!_sessions.Remove(Text(request, "session")) && !_triggerSessions.Remove(Text(request, "session")))
                     throw new SimulationException("unknown session");
                 return new JObject();
             case "quit":
@@ -109,6 +124,7 @@ public sealed class SimulatorProtocol
         var catalog = CompanionCatalog.Load(root);
         _registry = catalog.Registry;
         _sessions.Clear();
+        _triggerSessions.Clear();
         return new JObject
         {
             ["companions"] = new JArray(catalog.Registry.All.Select(p => p.Id)),
@@ -130,6 +146,44 @@ public sealed class SimulatorProtocol
         var result = StepResult(session.Start(Text(request, "entry")));
         result["session"] = name;
         return result;
+    }
+
+    /// <summary><c>triggers</c>: a trigger session over every loaded companion (M11 T7).</summary>
+    private JObject StartTriggers(JObject request)
+    {
+        if (_registry == null)
+            throw new SimulationException("nothing loaded; send 'load' first");
+        var seed = request["seed"]?.Type == JTokenType.Integer ? (int?)request.Value<int>("seed") : null;
+        var session = new SimTriggerSession(_registry, StateOf(request), new SystemRandomSource(seed));
+        var name = "t" + _nextSession++;
+        _triggerSessions[name] = session;
+        return new JObject { ["session"] = name, ["usedTriggers"] = new JArray(session.Engine.UsedTriggers.OrderBy(t => t, StringComparer.Ordinal)) };
+    }
+
+    private SimTriggerSession TriggerSession(JObject request) =>
+        _triggerSessions.TryGetValue(Text(request, "session"), out var session) ? session : throw new SimulationException("unknown trigger session");
+
+    private static double? Hours(JObject request)
+    {
+        var token = request["hours"];
+        if (token == null || token.Type == JTokenType.Null) return null;
+        if (token.Type != JTokenType.Integer && token.Type != JTokenType.Float)
+            throw new SimulationException("'hours' must be a number");
+        return (double)token;
+    }
+
+    private static bool Flag(JObject request, string key, bool defaultValue)
+    {
+        var token = request[key];
+        if (token == null || token.Type == JTokenType.Null) return defaultValue;
+        return token.Type == JTokenType.Boolean ? (bool)token : throw new SimulationException($"'{key}' must be true/false");
+    }
+
+    private static JObject? ObjectOf(JObject request, string key)
+    {
+        var token = request[key];
+        if (token == null || token.Type == JTokenType.Null) return null;
+        return token as JObject ?? throw new SimulationException($"'{key}' must be an object");
     }
 
     private static JObject StepResult(SimStep step) => new JObject { ["step"] = JToken.FromObject(step) };
