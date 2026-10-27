@@ -82,3 +82,4 @@
 | 122c-game-adapters-q37 | 1 | PASS, reviewed | 20 adapters; registry from fixed (Alley.State) |
 | 122d-game-adapters-q38 | 1 | PASS, reviewed | 13 adapters; registry from fixed (MobileParty.ActualClan) |
 | 122e-game-adapters-q39 | 1 | PASS, reviewed | 32 adapters |
+| 122f-game-adapters-q40 | 1 | stuck (25 min, no edit, looping on test logic) → stopped, done by orchestrator | 27 adapters |
