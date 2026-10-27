@@ -5,8 +5,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoCommand, QUndoStack
+from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoStack
 from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMessageBox, QTabWidget,
                                QToolBar, QWidget)
 
@@ -14,10 +14,12 @@ from .. import __version__
 from ..cli.client import Cli, CliError
 from ..data import graph, workspace
 from ..data.companion import CompanionFolder, CompanionLoadError
+from ..data.edit import EditError
 from ..schema.catalog import SchemaCatalog
 from .blackboard import BlackboardPanel
 from .canvas.scene import ConversationScene
 from .canvas.view import CanvasView
+from .commands import EditCommand, MoveCommand
 from .diagnostics import DiagnosticsPanel, layout_diagnostics
 from .inspector import InspectorPanel
 from .library import LINES_TAB, LibraryPanel
@@ -27,34 +29,13 @@ from .preview import PreviewPanel
 APP_NAME = "AlbocariusCompanions Editor"
 
 
-class MoveCommand(QUndoCommand):
-    """A card dragged on the canvas. The drag already moved the card; redo (also run on push) records the position."""
-
-    def __init__(self, window: MainWindow, conversation_id: str, key: str, old: QPointF, new: QPointF):
-        super().__init__(f"Move {key}")
-        self.window, self.conversation_id, self.key, self.old, self.new = window, conversation_id, key, old, new
-
-    def _place(self, pos: QPointF) -> None:
-        scene = self.window.scene_for(self.conversation_id)
-        if scene is not None:
-            scene.place(self.key, pos)
-        elif self.window.folder is not None:
-            self.window.folder.layout.set(self.conversation_id, self.key, pos.x(), pos.y())
-
-    def redo(self) -> None:
-        self._place(self.new)
-        self.window.update_title()
-
-    def undo(self) -> None:
-        self._place(self.old)
-        self.window.update_title()
-
-
 class MainWindow(QMainWindow):
     def __init__(self, settings: QSettings | None = None):
         super().__init__()
         self.settings = settings or QSettings("Albocarius", "CompanionsEditor")
         self.folder: CompanionFolder | None = None
+        self._inspected: tuple[str | None, str] | None = None  # (conversation id or None for a line, key)
+        self._edit_error: EditError | None = None
         self.companions_root: Path | None = None
         self.undo_stack = QUndoStack(self)
         self.undo_stack.cleanChanged.connect(lambda _: self.update_title())
@@ -308,10 +289,63 @@ class MainWindow(QMainWindow):
 
     def _show_in_inspector(self, conversation_id: str | None, key: str) -> None:
         if self.folder is None or not key:
+            self._inspected = None
             self.inspector.show_nothing()
             return
+        self._inspected = (conversation_id, key)
         self.inspector.show_item(self.folder, conversation_id, key)
         self.right_tabs.setCurrentWidget(self.inspector)
+
+    # ---- editing ----
+
+    def edit(self, text: str, fn, after_redo=None, after_undo=None) -> tuple[bool, object]:
+        """Runs ``fn(folder)`` (a ``data.edit`` call) as one undoable step. Returns (done, fn's result); an
+        :class:`EditError` is shown in the status bar and pushes nothing."""
+        if self.folder is None:
+            return False, None
+        self._edit_error = None
+        command = EditCommand(self, text, fn, after_redo, after_undo)
+        self.undo_stack.push(command)  # runs redo(); an obsolete (failed) command is deleted by the stack
+        if self._edit_error is not None:
+            self.statusBar().showMessage(f"{text}: {self._edit_error}", 6000)
+            return False, None
+        return True, command.result
+
+    def edit_failed(self, error: EditError) -> None:
+        self._edit_error = error
+
+    def refresh(self) -> None:
+        """Rebuilds every view from the data after an edit, undo or redo."""
+        folder = self.folder
+        if folder is None:
+            return
+        for i in reversed(range(self.tabs.count())):
+            widget = self.tabs.widget(i)
+            if isinstance(widget, CanvasView) and isinstance(widget.scene(), ConversationScene):
+                scene = widget.scene()
+                if folder.conversation(scene.conversation_id) is None:
+                    self.tabs.removeTab(i)
+                else:
+                    scene.rebuild()
+        self.lines_view.set_folder(folder)
+        self.library.set_folder(folder)
+        self.blackboard.set_folder(folder)
+        self._refresh_inspector()
+        self.update_title()
+
+    def _refresh_inspector(self) -> None:
+        if self.folder is None or self._inspected is None:
+            self.inspector.show_nothing()
+            return
+        conversation_id, key = self._inspected
+        exists = (self.folder.line(key) is not None if conversation_id is None
+                  else self.folder.conversation(conversation_id) is not None
+                  and (key.startswith("@") or self.folder.node(conversation_id, key) is not None))
+        if exists:
+            self.inspector.show_item(self.folder, conversation_id, key)
+        else:
+            self._inspected = None
+            self.inspector.show_nothing()
 
     # ---- opening, saving ----
 
@@ -367,6 +401,7 @@ class MainWindow(QMainWindow):
 
     def _set_folder(self, folder: CompanionFolder | None) -> None:
         self.folder = folder
+        self._inspected = None
         self.undo_stack.clear()
         while self.tabs.count():
             self.tabs.removeTab(0)

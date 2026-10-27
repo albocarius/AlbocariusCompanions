@@ -7,20 +7,10 @@ from PySide6.QtCore import QPointF, QSettings
 
 from albocarius_editor.data import graph
 from albocarius_editor.data.layout import NodeLayout
-from albocarius_editor.ui import theme
 from albocarius_editor.ui.canvas.items import Card, EdgeItem
 from albocarius_editor.ui.canvas.view import CanvasView
 from albocarius_editor.ui.lines_view import LinesView
 from albocarius_editor.ui.main_window import MainWindow
-
-
-@pytest.fixture
-def window(qtbot, tmp_path: Path, qapp):
-    theme.apply(qapp)
-    w = MainWindow(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat))
-    qtbot.addWidget(w)
-    w.show()
-    return w
 
 
 def test_opens_the_sample_with_lines_and_a_conversation(window: MainWindow, sample: Path):

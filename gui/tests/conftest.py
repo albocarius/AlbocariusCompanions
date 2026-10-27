@@ -26,3 +26,20 @@ def template_copy(tmp_path: Path) -> Path:
     target = tmp_path / "Companions" / "new_one"
     shutil.copytree(TEMPLATE, target)
     return target
+
+
+@pytest.fixture
+def window(qtbot, tmp_path: Path, qapp):
+    """The main window (headless), with its own settings file."""
+    from PySide6.QtCore import QSettings
+
+    from albocarius_editor.ui import theme
+    from albocarius_editor.ui.main_window import MainWindow
+
+    theme.apply(qapp)
+    w = MainWindow(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat))
+    w.show()
+    yield w
+    w.folder = None  # closing must not stop on the unsaved-changes question
+    w.close()
+    w.deleteLater()
