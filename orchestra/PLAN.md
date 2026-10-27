@@ -81,7 +81,7 @@ Version `0.3.1` → **`0.4.0`** at the end. Plan approved at the gate 2026-10-27
   Original: — G1 list from Q35–Q42 + naming pass (unique, camelCase, past tense; fixes the spec's list:
   `hideoutCleared` vs `alleyCleared`, `alley*` for alley events, `tournamentFinished`, village raid trio) →
   `orchestra/triggers.tsv` (event, old name, new name, category, Q). Feeds 114 and the report table.
-- [ ] 113-trigger-core-model (self) — Core `Triggers/`: `TriggerDefinition`, field/entity kinds (G2), `TriggerPayload`,
+- [x] 113-trigger-core-model (self) — Core `Triggers/`: `TriggerDefinition`, field/entity kinds (G2), `TriggerPayload`,
   subject matching (G3), `where` + `event.` path resolution, `TriggerRegistry` with 3 seed entries. Accept: Acceptance tests.
 - [ ] 114a–h-trigger-registry-<category> (worker ×8, one per Q35–Q42) — registry entries for that batch from
   `triggers.tsv` + the GAME_MAP row (fields from the event signature, subject fields, default subject, `inMission`, common).
