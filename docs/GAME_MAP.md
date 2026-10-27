@@ -4538,6 +4538,17 @@ State to persist, using this repo's Q8/Q9 pattern (`AlbocariusCompanionsCampaign
 - `Settlement.GatePosition` outliers: the shipped XML shows gate offsets from ≈0.01 to ≈98 units (median ≈2.5); the far entries are presumably ports/harbours but that was not checked entry by entry — measure to `Position` for "nearing the town", to `GatePosition` for "at the gate".
 - Radius exclusivity is not an engine property: with a minimum fortification spacing of 16.9 units, `R_enter` = 20-25 rings can overlap around two settlements, so "only one proximity line at a time" needs an explicit tie-break in the mod.
 
+## Q44 — Companion becomes a lord
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
