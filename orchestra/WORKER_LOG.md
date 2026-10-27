@@ -75,3 +75,4 @@
 | 114d-trigger-registry-q38 | 1 | PASS, reviewed | 13 entries |
 | 114e-trigger-registry-q39 | 1 | PASS, reviewed | 32 entries; IFaction args as Faction |
 | 114f-trigger-registry-q40 | 1 | PASS, reviewed | 28 entries; regenerated TRIGGERS.md as told |
+| 114g-trigger-registry-q41 | 1 | PASS, reviewed | 7 entries |

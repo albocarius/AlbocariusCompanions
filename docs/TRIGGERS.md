@@ -4,7 +4,7 @@
      trigger registry (src/AlbocariusCompanions.Core/Triggers). Do not edit by hand. -->
 
 A conversation or a slot-free line with a `trigger` is started by the game (see docs/SCHEMA.md, "Triggers"). This page
-lists every trigger: 139 in total, grouped by category, with the subjects it accepts, its payload
+lists every trigger: 146 in total, grouped by category, with the subjects it accepts, its payload
 fields (usable in `where` and in `event.<field>` conditions) and an example.
 
 ## Subjects
@@ -641,6 +641,38 @@ A hideout appeared on the campaign map because a party discovered it; in the van
 ```
 
 ## Category: economy
+
+### barterAccepted
+
+A barter offer was accepted and the exchange is already applied — heroes, prisoners, items, gold or a fief changed hands; it also fires for lord-to-lord offers, so gate on the player side.
+
+- Source: `CampaignEvents.OnBarterAcceptedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `offerer`, `other`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `offerer` | Hero | the hero who made the offer |
+| `other` | Hero | the hero who accepted it |
+
+```json
+"trigger": { "on": "barterAccepted", "subject": "playerClan", "where": { "offerer.culture": "vlandia" } }
+```
+
+### barterCancelled
+
+A barter offer was refused and closed — nothing changed hands; the relation effect of the refusal shows in the relation triggers.
+
+- Source: `CampaignEvents.OnBarterCanceledEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `offerer`, `other`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `offerer` | Hero | the hero who had made the offer |
+| `other` | Hero | the hero who refused it |
+
+```json
+"trigger": { "on": "barterCancelled", "subject": "playerClan", "where": { "offerer.culture": "vlandia" } }
+```
 
 ### goldGiven
 
@@ -1877,6 +1909,38 @@ A pending ransom offer fell through (2-day expiry or the notification was ignore
 "trigger": { "on": "ransomOfferCancelled", "subject": "playerClan", "where": { "captive.culture": "vlandia" } }
 ```
 
+## Category: quests
+
+### issueLogEntryAdded
+
+A campaign issue wrote a new journal entry the player just received — issue-arc progress between the issue's own created/resolved beats.
+
+- Source: `CampaignEvents.IssueLogAddedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `issueOwner`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `issueOwner` | Hero | the hero the issue belongs to; usually the player |
+
+```json
+"trigger": { "on": "issueLogEntryAdded", "subject": "playerClan", "where": { "issueOwner.culture": "vlandia" } }
+```
+
+### questLogEntryAdded
+
+A quest wrote a new journal entry the player just received — it fires for every journal line of a quest, not only at acceptance or completion.
+
+- Source: `CampaignEvents.QuestLogAddedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `questGiver`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `questGiver` | Hero | the hero the quest came from — the player or one of their clan |
+
+```json
+"trigger": { "on": "questLogEntryAdded", "subject": "playerClan", "where": { "questGiver.culture": "vlandia" } }
+```
+
 ## Category: raids
 
 ### itemsLooted
@@ -2024,6 +2088,22 @@ A forced levying of men at a settlement ended; when the attackers won the men ar
 
 ## Category: scenes
 
+### boardGameFinished
+
+A board game the player played ended in a win, loss or draw, before the relation and XP consequences are applied; a game the player canceled never fires it.
+
+- Source: `CampaignEvents.OnPlayerBoardGameOverEvent` — fires in a battle or scene (in mission)
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `opponent` | Hero | the opponent lord; empty when the opponent agent was not a hero |
+| `outcome` | Text | the game's BoardGameState: Win, Loss or Draw |
+
+```json
+"trigger": { "on": "boardGameFinished", "where": { "opponent.culture": "vlandia" } }
+```
+
 ### conversationEnded
 
 A vanilla game conversation ended and its characters are about to be released; it fires for every conversation in the game.
@@ -2050,6 +2130,21 @@ The player started a conversation with `hero` from the map or a location menu �
 "trigger": { "on": "playerStartedTalkFromMenu", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
 ```
 
+### portraitOpened
+
+The player opened a character portrait pop-up in a settlement or army menu; the campaign is already paused while it is open — idle flavor bark about the inspected hero.
+
+- Source: `CampaignEvents.CharacterPortraitPopUpOpenedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `character`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `character` | Hero | the hero whose portrait was opened |
+
+```json
+"trigger": { "on": "portraitOpened", "subject": "playerClan", "where": { "character.culture": "vlandia" } }
+```
+
 ### sceneEntered
 
 A mission scene the player is in started and is fully live — combat, siege, town, tavern or hideout visit, conversation — and it fires for every one of them.
@@ -2059,6 +2154,17 @@ A mission scene the player is in started and is fully live — combat, siege, to
 
 ```json
 "trigger": { "on": "sceneEntered" }
+```
+
+### tradeRumorHeard
+
+The player asked a caravan captain for trade rumors and a batch of market gossip was heard — the rumor list itself is not in the payload.
+
+- Source: `CampaignEvents.OnTradeRumorIsTakenEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "tradeRumorHeard" }
 ```
 
 ## Category: settlements
