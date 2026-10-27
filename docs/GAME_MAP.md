@@ -5036,11 +5036,156 @@ Note also that a mod-driven marriage of two *player-clan* heroes is something va
 Status: DRAFT
 
 ### Answer
-TODO
+
+The three roles live on three different objects; there is no `Hero.Role` field, and none of the paths below touches
+`Hero.CompanionOf`, so **the companion stays in `Clan.PlayerClan.Companions` for the whole role** — that list is kept only
+by `Clan.OnCompanionAdded`/`OnCompanionRemoved`, which only the `CompanionOf` setter calls (Q19/Q34). What does change is
+party membership, i.e. `Hero.PartyBelongedTo` and hence membership in `MobileParty.MainParty` (Q23/Q32).
+
+| role | where the role is stored | "does this hero hold it" test |
+| --- | --- | --- |
+| governor of a town/castle | `Settlement.Town.Governor`, back-link `Hero.GovernorOf` | `hero.GovernorOf != null`, `settlement.Town.Governor == hero` |
+| leader of one of the clan's parties | `MobileParty.LeaderHero` (reads `PartyComponent.Leader`) | `hero.IsPartyLeader`, `party.LeaderHero == hero` |
+| caravan leader | `MobileParty.LeaderHero` of a party whose component is a `CaravanPartyComponent` | `party.IsCaravan && party.LeaderHero == hero` |
+
+Two traps. (a) Towns *and* castles are both `Town` instances in this build (`Settlement.Town` field, `Settlement.IsCastle`
+just reads `Town.IsCastle`), so "town governor" and "castle governor" are the same slot — there is no separate
+`Castle.Governor` type or member. (b) `PartyRole.Governor` and `PartyRole.PartyLeader` exist in the `PartyRole` enum but
+are not stored per hero: `MobileParty.SetHeroPartyRole` routes only Surgeon/Engineer/Scout/Quartermaster/FirstMate/
+Navigator and ignores the rest, and `GetHeroPartyRoles`/`RemoveAllPartyRolesOfHero` only touch those six. Never answer
+"who is my governor / party leader" from the party-role list.
+
+#### Governor
+
+| question | answer (1.4.8, non-DLC code) |
+| --- | --- |
+| assign | `ChangeGovernorAction.Apply(Town, Hero)` is the only writer; UI entry points are `ClanFiefsVM.OnGovernorSelectionOver` and `ClanSettlementItemVM.OnGovernorChanged`. The action itself checks no eligibility. |
+| events | `CampaignEvents.OnGovernorChangedEvent(Town, oldGovernor, newGovernor)` fires on assign *and* on removal (null in the removed slot); on assign also `OnHeroGetsBusyEvent(hero, HeroGetsBusyReasons.BecomeGovernor)`. There is no "no longer busy" event, so the busy flag is one-way. |
+| movement | already in the town → `TeleportHeroAction.ApplyImmediateTeleportToSettlement` (roster removal + `EnterSettlementAction.ApplyForCharacterOnly`); elsewhere → the post is applied later by `TeleportationCampaignBehavior` (`ApplyDelayedTeleportToSettlementAsGovernor` puts the hero in `Hero.CharacterStates.Traveling` and removes him from his party roster, `ApplyImmediateTeleport` assigns `Town.Governor` on arrival). |
+| removal | `ChangeGovernorAction.RemoveGovernorOf(hero)` / `RemoveGovernorOfIfExists(town)`. Automatic strips: `ChangeOwnerOfSettlementAction.ApplyInternal` (town captured → `RemoveGovernorOfIfExists`), `GovernorCampaignBehavior.OnHeroChangedClan` (fief's clan ≠ hero's clan) and its `OnHeroKilled` path, plus every action that relocates the hero (`AddHeroToPartyAction`, `TeleportHeroAction.ApplyInternal`, `MarriageAction`, `ChangeClanLeaderAction`, `KillCharacterAction`, `RemoveCompanionAction`). `Town.Governor`'s setter also self-heals the back-link, and both `Hero.AfterLoad` (v1.2.9 save fix → `RemoveGovernorOf`) and `Town`'s load pass drop a governorship whose two sides disagree. |
+| ends by itself | "governor removed by capture" = the `ChangeOwnerOfSettlementAction` line above → one `OnGovernorChangedEvent(town, hero, null)`. Nothing then moves the hero: he is left active and party-less in (or near) the lost town unless a caller teleports him. |
+| in MainParty | **no.** He was removed from his party's `MemberRoster` on the way in; while governing `PartyBelongedTo == null`, `StayingInSettlement == the town`, `IsTraveling` only en route, `IsActive` after arrival. |
+| in PlayerClan.Companions | **yes**, untouched by all of the above. |
+| side effect | `PartyRolesCampaignBehavior` clears surgeon/engineer/scout/quartermaster duties from every player-clan party on `OnGovernorChanged` and on *any* `OnHeroGetsBusy` reason. |
+| UI eligibility | `ClanFiefsVM.GetGovernorCandidates` = `_clan.Heroes.Where(!IsDisabled).Union(_clan.Companions)` (so companions are normal candidates), `IsActive || IsTraveling`, not the player, `Hero.CanBeGovernorOrHavePartyRole()`; gate `FactionHelper.IsMainClanMemberAvailableForSendingSettlementAsGovernor` rejects prisoners, `Hero.MainHero`, anyone at sea, **party leaders**, fugitives and released heroes. |
+
+#### Party leader of your clan's own party
+
+| question | answer |
+| --- | --- |
+| candidates | `ClanPartiesVM.GetNewPartyLeaderCandidates` = clan heroes ∪ `_clan.Companions`, filtered by `Hero.CanLeadParty()` (which routes through `CampaignEventDispatcher.CanHeroLeadParty`, so it is moddable) and `CanBeGovernorOrHavePartyRole()` (false while imprisoned). |
+| assign | only `MobileParty.ChangePartyLeader(Hero)` → `PartyComponent.ChangePartyLeader`, which *requires the hero to be in that party's* `MemberRoster` (assert + silent no-op otherwise), runs the component hook (`LordPartyComponent.OnChangePartyLeader` also moves the party owner), and then dispatches `CampaignEvents.OnPartyLeaderChangedEvent(MobileParty, Hero oldLeader)` — only when the leader actually changed. The UI wraps it in a teleport: `ClanPartiesVM.OnPartyLeaderChanged` → `TeleportHeroAction.ApplyDelayedTeleportToPartyAsPartyLeader(newLeader, party)` (travel, then `AddHeroToPartyAction` + `ChangePartyLeader` + `DisbandPartyAction.CancelDisband` + AI re-enabled) plus a gold top-up. The map merge/transfer screen applies its leader dropdown directly with `PartyScreenData.ResetUsing`. |
+| where the old leader goes | `ClanPartiesVM.OnPartyLeaderChanged`: replaced → `ApplyDelayedTeleportToParty(oldLeader, MobileParty.MainParty)`, i.e. **the displaced leader walks back to the main party and rejoins it**; "no leader" chosen → `MobileParty.RemovePartyLeader()` *and* `MakeHeroFugitiveAction.Apply(oldLeader)`, i.e. he becomes a fugitive instead of coming home. A cancelled leader offer fires `OnPartyLeaderChangeOfferCanceledEvent(MobileParty)` (from `TeleportationCampaignBehavior.RemoveTeleportationData` and `PartyLeaderChangeNotificationVM`), and a cancelled traveler is made fugitive. |
+| removal / ends by itself | leaving the party clears the post first (`Hero.SetPartyBelongedTo` → `ChangePartyLeader(null)` when `LeaderHero == this`); `KillCharacterAction.ApplyInternal` re-points a party whose leader died at another hero member (→ `OnPartyLeaderChangedEvent`); a party that starts disbanding loses its leader hero (`DisbandPartyCampaignBehavior.OnPartyDisbandStarted` → `RemovePartyLeader()`); party destruction → `MobilePartyDestroyed(MobileParty, PartyBase)`; `ChangeClanLeaderAction.ApplyInternal` re-points the clan leader party (`OnClanLeaderChangedEvent(Hero, Hero)`); `PlayerCaptivity` restores `MobileParty.MainParty.ChangePartyLeader(Hero.MainHero)` after the player escapes. |
+| events | `OnPartyLeaderChangedEvent`, `OnPartyLeaderChangeOfferCanceledEvent`, `OnClanLeaderChangedEvent`; nothing else. `CaravanPartyComponent.OnChangePartyLeader` itself dispatches nothing. |
+| in MainParty | **no** while he leads another party (`PartyBelongedTo` is that party); yes again after being replaced, via the delayed teleport home. |
+| in PlayerClan.Companions | **yes** — except when he is dropped with no replacement and turned fugitive; `MakeHeroFugitiveAction` does not clear `CompanionOf` either, but `PlayerTrackCompanionBehavior` then treats him as scattered. |
+
+#### Caravan leader
+
+| question | answer |
+| --- | --- |
+| check | `party.IsCaravan && party.LeaderHero == hero`; component accessor `MobileParty.CaravanPartyComponent` (`Owner`, `PartyOwner`, home `Settlement`, `Leader`, `IsElite`). `Hero.OwnedCaravans` tracks *ownership*, not leadership (`CaravanPartyComponent.OnInitialize` adds, `OnFinalize` removes), so it is not a leader test. |
+| assign | the only vanilla companion path is the magistrate conversation: `CaravanConversationsCampaignBehavior.FindSuitableCompanionsToLeadCaravan` (main-party members with `Clan == Clan.PlayerClan`, `GovernorOf == null`, `CanLeadParty()`) then `conversation_magistrate_form_a_caravan_accept_on_consequence` → `LeaveSettlementAction.ApplyForCharacterOnly(companion)` + `CaravanPartyComponent.CreateCaravanParty(Hero.MainHero, Settlement.CurrentSettlement, template, isInitialSpawn: false, caravanLeader: companion, …)`, cost from `CaravanModel.GetCaravanFormingCost` (Q34 rows). `CreateCaravanParty` and `ConvertPartyToCaravanParty` end with `OnHeroGetsBusyEvent(LeaderHero, BecomeCaravanLeader)`, and `MobilePartyCreated(MobileParty)` fires. |
+| events | there is **no caravan-specific "caravan leader" event**: the only signals are `OnHeroGetsBusyEvent(BecomeCaravanLeader)`, `MobilePartyCreated`, and the generic `OnPartyLeaderChangedEvent`. NPC caravans are created with `caravanLeader: null` and led by the culture's `CaravanMaster` troop, so `LeaderHero == null` for most caravans on the map. |
+| ends by itself | caravan destroyed → `DestroyPartyAction.ApplyInternal` dispatches `MobilePartyDestroyed(MobileParty, PartyBase)` (destroyer, or null) and then `MobileParty.RemoveParty()`, which deactivates the party, releases its prisoners and clears `MemberRoster` → each hero member gets `Hero.OnRemovedFromParty` and `PartyBelongedTo == null`; `CaravanPartyComponent.OnFinalize` drops it from `Owner.OwnedCaravans`. Voluntary disband → `DisbandPartyAction.ApplyForDisbanding` fires `OnPartyDisbandedEvent(MobileParty, Settlement)` first, then the same destroy path; `DisbandPartyCampaignBehavior.OnPartyDisbandStarted` marches a player caravan home with `Ai.SetDoNotMakeNewDecisions(true)`. |
+| where the leader returns | vanilla does nothing: `CaravansCampaignBehavior.OnMobilePartyDestroyed` only clears its caches (`_interactedCaravans`, `_tradeActionLogs`, `_caravanLastHomeTownVisitTime`). In practice the caravan is destroyed by a battle and its hero leader is captured (`HeroPrisonerTaken(PartyBase, Hero)`), and he comes back through the generic captivity path — `HeroPrisonerReleased` marks him in `PlayerTrackCompanionBehavior._scatteredCompanions` and the player gets an inquiry naming the settlement he is in when he enters it. If he was not captured nothing re-homes him: `HeroSpawnCampaignBehavior.CanHeroMoveToAnotherSettlement` excludes `Clan.PlayerClan` heroes, leaders and governors. A hero who leads a party and is disabled or made fugitive loses the party wholesale (`DisableHeroAction.ApplyInternal`, `MakeHeroFugitiveAction.ApplyInternal` → `DestroyPartyAction.Apply(null, party)`). |
+| in MainParty | **no**, he is a member and leader of the caravan party. |
+| in PlayerClan.Companions | **yes**; `CompanionOf` is never touched by caravan code. |
+
+#### The other role candidates named in the question
+
+* Alley leader/owner: `Alley.Owner` is only written through `Alley.SetOwner(Hero)`, which keeps `Hero.OwnedAlleys`
+  in sync, flips `State` to `Empty` when the owner is nulled (alley lost or abandoned — SandBox calls it with null in the
+  attack/abandon flows) and dispatches the single alley event `CampaignEvents.AlleyOwnerChanged(Alley, newOwner,
+  oldOwner)`. `Alley.Owner` is a get-only property, so `SetOwner` really is the only way in. The public "is this hero an
+  alley leader" API is `IAlleyCampaignBehavior.IsHeroAlleyLeaderOfAnyPlayerAlley` / `GetAssignedClanMemberOfAlley` /
+  `ChangeAlleyMember(Alley, Hero)`, and the candidate pool is
+  `DefaultAlleyModel.GetClanMembersAndAvailabilityDetailsForLeadingAnAlley` = `Clan.PlayerClan.AliveLords` ∪
+  `Clan.PlayerClan.Companions` (minus the player) each tagged with a reason from
+  `DefaultAlleyModel.AlleyMemberAvailabilityDetail` — that enum is basically the game's own cross-role exclusivity matrix:
+  NotEnoughRoguerySkill (30), NotEnoughMercyTrait, CanNotLeadParty, AlreadyAlleyLeader, Prisoner, SolvingIssue, Traveling,
+  Busy, Fugutive (sic), Governor, AlleyUnderAttack. A governing or issue-busy companion is therefore refused as an alley
+  leader. `HeroGetsBusyReasons.BecomeAlleyLeader` exists in the enum but has no non-DLC call site, so an alley post never
+  makes a hero busy in the sense the other three roles do.
+* Sent to solve an issue (alternative solution): `IssueBase.AlternativeSolutionHero`; `StartIssueWithAlternativeSolution`
+  sets `IssueState.SolvingWithAlternativeSolution`, calls `DisableHeroAction.Apply(hero)` (out of the main party roster —
+  and if he happened to lead a party that party is destroyed), removes his map conversation character, and reports
+  `OnIssueUpdatedEvent(issue, IssueBase.IssueUpdateDetails.PlayerSentTroopsToQuest, Hero.MainHero)`. `IssueManager`
+  resolves due issues on a daily tick: `CompleteIssueWithAlternativeSolution` picks success (skill XP on the companion) or
+  failure (`Hero.MakeWounded()`, casualties), cancellation reports `IssueUpdateDetails.IssueCancel`, and in every case
+  `IssueManager.MakeAlternativeTroopsReturn` sets the hero back to `CharacterStates.Active` and merges the sent roster
+  into `MobileParty.MainParty.MemberRoster` — the issue companion *does* return to the main party and never leaves
+  `Clan.PlayerClan.Companions`. `IssueManager.IssueSolvingCompanionList` is the public "busy with an issue" query.
+* Because there is no un-busy event, the reliable way for a mod to ask "is this companion free right now" is to poll the
+  role members themselves (`GovernorOf`, `PartyBelongedTo`, `LeaderHero`, `OwnedCaravans`, `OwnedAlleys`),
+  `Hero.IsActive`/`IsTraveling`/`IsDisabled`/`IsPrisoner`/`IsFugitive`, `IssueManager.IssueSolvingCompanionList` and
+  `IAlleyCampaignBehavior.IsHeroAlleyLeaderOfAnyPlayerAlley`. `Hero.ChangeState` is the only place `Traveling` raises
+  `OnHeroGetsBusyEvent` and `Active` raises `OnHeroActivatedEvent(Hero, previousState)`.
 
 ### Evidence
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Town.cs` — `Town.Governor` — the only governor slot in the game; its setter clears the previous governor's back-link, and the class repairs a stale `GovernorOf` on load.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` — `Settlement.Town` — field: town *and* castle settlements are `Town` objects (`IsCastle` reads `Town.IsCastle`), so one governor slot covers both.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.GovernorOf` — hero-side governor test (`get; private set`, written only by the `Town.Governor` setter and `ChangeGovernorAction`).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeGovernorAction.cs` — `ChangeGovernorAction.Apply` — only writer of the post: queues the teleport, dispatches `OnGovernorChanged` then `OnHeroGetsBusy(BecomeGovernor)`; `RemoveGovernorOf`/`RemoveGovernorOfIfExists` null both sides and fire `OnGovernorChanged(town, old, null)` with no un-busy event.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/TeleportHeroAction.cs` — `TeleportHeroAction.ApplyInternal` — every delayed teleport first strips the governorship, removes the hero from his party roster and sets `CharacterStates.Traveling`; `ImmediateTeleportToPartyAsPartyLeader` adds the hero, calls `ChangePartyLeader` and cancels a pending disband.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/TeleportationCampaignBehavior.cs` — `TeleportationCampaignBehavior.ApplyImmediateTeleport` — the queued governor/leader teleport actually assigns `Town.Governor` / makes the hero party leader on arrival; `RemoveTeleportationData` makes a cancelled traveler fugitive and fires `OnPartyLeaderChangeOfferCanceled`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeOwnerOfSettlementAction.cs` — `ChangeOwnerOfSettlementAction.ApplyInternal` — a captured fortification drops its governor through `RemoveGovernorOfIfExists` (the "governor removed by capture" signal is just `OnGovernorChangedEvent`).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/GovernorCampaignBehavior.cs` — `GovernorCampaignBehavior.OnHeroChangedClan` — strips a governorship when the fief's clan and the hero's clan diverge; the behavior's daily tick reads `settlement.Town.Governor`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddHeroToPartyAction.cs` — `AddHeroToPartyAction.Apply` — joining any party clears `GovernorOf` first (same pattern in `MarriageAction`, `ChangeClanLeaderAction`, `KillCharacterAction`, `RemoveCompanionAction`).
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.ClanManagement.Categories/ClanFiefsVM.cs` — `ClanFiefsVM.GetGovernorCandidates` — candidates are `_clan.Heroes.Where(!IsDisabled).Union(_clan.Companions)` filtered by `CanBeGovernorOrHavePartyRole()`, i.e. companions are legitimate governors; `OnGovernorSelectionOver` is what calls the action.
+- `decomp/TaleWorlds.CampaignSystem/Helpers/FactionHelper.cs` — `FactionHelper.IsMainClanMemberAvailableForSendingSettlementAsGovernor` — the UI gate: refuses prisoners, `Hero.MainHero`, anyone at sea, party leaders, fugitives and released heroes.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/PartyRolesCampaignBehavior.cs` — `PartyRolesCampaignBehavior.RemoveAllPartyRolesOfHeroIfExist` — player-clan heroes lose surgeon/engineer/scout/quartermaster duties on `OnGovernorChanged`, on any `OnHeroGetsBusy`, on kill, capture, clan change and `CompanionRemoved`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` — `MobileParty.LeaderHero` — role test from the party side; the same file carries `ChangePartyLeader`, `RemovePartyLeader`, `IsCaravan`, `IsLordParty`, `CaravanPartyComponent`, `SetHeroPartyRole`, `GetHeroPartyRoles` and `RemoveParty`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` — `MobileParty.RemoveParty` — what a destroyed party does to its heroes: deactivate, release prisoners, `MemberRoster.Clear()`, `OnPartyRemoved` — the roster clear is what nulls each member's `PartyBelongedTo`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party.PartyComponents/PartyComponent.cs` — `PartyComponent.ChangePartyLeader` — the only leadership mutator: needs the hero in `MemberRoster`, runs the component hook, dispatches `OnPartyLeaderChanged(MobileParty, oldLeader)` only on a real change; a null leader parks the party in hold mode.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party.PartyComponents/LordPartyComponent.cs` — `LordPartyComponent.OnChangePartyLeader` — a clan war party's owner follows its leader, and the party name is rebuilt from the new leader's clan.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.SetPartyBelongedTo` — the leader post cannot outlive membership: leaving a party whose `LeaderHero` is this hero calls `ChangePartyLeader(null)` first.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` — `Clan.Companions` — maintained only by `OnCompanionAdded`/`OnCompanionRemoved` from the `Hero.CompanionOf` setter, which is why no role change can evict a companion.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` — `CampaignEvents.OnGovernorChangedEvent` — `IMbEvent<Town, Hero, Hero>`; nearby: `OnPartyLeaderChangedEvent` is `IMbEvent<MobileParty, Hero>` (party + *old* leader), `OnPartyLeaderChangeOfferCanceledEvent`, `OnClanLeaderChangedEvent`, `OnHeroGetsBusyEvent(Hero, HeroGetsBusyReasons)`, `OnHeroActivatedEvent(Hero, CharacterStates)` — and no un-busy or "role ended" event exists.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/HeroGetsBusyReasons.cs` — `HeroGetsBusyReasons` — the whole busy vocabulary: BecomeGovernor, BecomeEmissary, BecomeCaravanLeader, BecomeAlleyLeader, SolvesIssue, Traveling.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/PartyRole.cs` — `PartyRole` — `Governor` and `PartyLeader` are enum values only; `MobileParty.SetHeroPartyRole` ignores them, so the party-role API cannot answer either question.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.ClanManagement.Categories/ClanPartiesVM.cs` — `ClanPartiesVM.OnPartyLeaderChanged` — the player-clan assign path: replaced leader is teleported to `MobileParty.MainParty`, "no leader" runs `RemovePartyLeader()` plus `MakeHeroFugitiveAction.Apply`, new leader goes by `ApplyDelayedTeleportToPartyAsPartyLeader` and is topped up with gold.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.ClanManagement.Categories/ClanPartiesVM.cs` — `ClanPartiesVM.GetNewPartyLeaderCandidates` — clan heroes ∪ companions filtered by `CanLeadParty()`/`CanBeGovernorOrHavePartyRole()`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyScreenData.cs` — `PartyScreenData.ResetUsing` — the map party-merge screen applies its leader choice straight through `ChangePartyLeader`, no teleport.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/DisbandPartyCampaignBehavior.cs` — `DisbandPartyCampaignBehavior.OnPartyDisbandStarted` — a player-clan party that starts disbanding has its `LeaderHero` removed; another clan's party instead waits for a replacement leader hero before destroying itself.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/DestroyPartyAction.cs` — `DestroyPartyAction.ApplyInternal` — the caravan/lord party death funnel: insurance payout to `Party.Owner`, `OnMobilePartyDestroyed(destroyed, destroyer)`, then `RemoveParty()`; `ApplyForDisbanding` fires `OnPartyDisbanded(party, settlement)` first.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party.PartyComponents/CaravanPartyComponent.cs` — `CaravanPartyComponent.CreateCaravanParty` — companion caravan leaders are optional (`caravanLeader` may be null; NPC caravans then have `LeaderHero == null`) and the creator ends with `OnHeroGetsBusy(LeaderHero, BecomeCaravanLeader)`; `ConvertPartyToCaravanParty` and `TransferCaravanOwnership` do the same for converted/inherited caravans.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party.PartyComponents/CaravanPartyComponent.cs` — `CaravanPartyComponent.OnFinalize` — removes the caravan from `Owner.OwnedCaravans` when the party is removed (`OnInitialize` adds it), the observable "caravan is gone" signal for the owner.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CaravanConversationsCampaignBehavior.cs` — `CaravanConversationsCampaignBehavior.FindSuitableCompanionsToLeadCaravan` — main-party members with `Clan == Clan.PlayerClan`, `GovernorOf == null` and `CanLeadParty()`; `conversation_magistrate_form_a_caravan_accept_on_consequence` leaves the settlement and creates the caravan with that hero as leader.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CaravansCampaignBehavior.cs` — `CaravansCampaignBehavior.OnMobilePartyDestroyed` — vanilla's entire caravan-death handling is bookkeeping (interaction cache, trade log, last home visit): no code re-homes the caravan's hero leader.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/PlayerTrackCompanionBehavior.cs` — `PlayerTrackCompanionBehavior.SettlementEntered` — where a lost companion turns up: `_scatteredCompanions` is fed by `CharacterBecameFugitiveEvent` and `HeroPrisonerReleased`, entries are dropped when he leads a newly created party or is teleported to the main party.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/HeroSpawnCampaignBehavior.cs` — `HeroSpawnCampaignBehavior.CanHeroMoveToAnotherSettlement` — the re-homing pass excludes `Clan.PlayerClan`, party leaders, governors and wanderers, so it never rescues a player companion left party-less.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/MakeHeroFugitiveAction.cs` — `MakeHeroFugitiveAction.ApplyInternal` — a fugitive who leads a party destroys that party instead of just leaving it; otherwise roster removal + `Fugitive` state.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/DisableHeroAction.cs` — `DisableHeroAction.ApplyInternal` — same for a disabled leader (`DestroyPartyAction.Apply(null, party)`, then `CharacterStates.Disabled`); there is no counterpart `EnableHeroAction` in `Actions`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Alley.cs` — `Alley.SetOwner` — the only writer of `Alley.Owner` (the property itself is get-only): keeps `Hero.OwnedAlleys` in sync, sets `AreaState` to `Empty` when the owner is nulled, dispatches `OnAlleyOwnerChanged(alley, new, old)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultAlleyModel.cs` — `GetClanMembersAndAvailabilityDetailsForLeadingAnAlley` — alley-leader candidates are `Clan.PlayerClan.AliveLords` plus `Clan.PlayerClan.Companions`, each paired with an availability reason from the nested `AlleyMemberAvailabilityDetail` enum.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultAlleyModel.cs` — `AlleyMemberAvailabilityDetail` — the game's own list of blocking states (Roguery 30, Mercy trait, CanNotLeadParty, AlreadyAlleyLeader, Prisoner, SolvingIssue, Traveling, Busy, Fugutive, Governor, AlleyUnderAttack), produced by the private `GetAvailability` check.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/IAlleyCampaignBehavior.cs` — `IsHeroAlleyLeaderOfAnyPlayerAlley` — the public "is this hero an alley leader" query, alongside `GetAssignedClanMemberOfAlley` and `ChangeAlleyMember(Alley, Hero)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueBase.cs` — `IssueBase.StartIssueWithAlternativeSolution` — records `AlternativeSolutionHero`, failure chance and return time, sets `IssueState.SolvingWithAlternativeSolution`, calls `DisableHeroAction.Apply` on that hero and reports `IssueUpdateDetails.PlayerSentTroopsToQuest`; `CompleteIssueWithAlternativeSolution` branches to success (companion skill XP) or failure (`MakeWounded`).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueManager.cs` — `IssueManager.MakeAlternativeTroopsReturn` — on resolution every sent hero is set back to `CharacterStates.Active` and the roster is merged into `MobileParty.MainParty.MemberRoster`: the issue-sent companion comes home to the main party.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueManager.cs` — `IssueManager.IssueSolvingCompanionList` — public list used as the "this companion is busy with an issue" gate by the alley and politics models.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.ChangeState` — the state machine behind availability: `Traveling` raises `OnHeroGetsBusy(hero, Traveling)`, `Active` raises `OnHeroActivated(hero, previousState)`, and the clan is told via `OnHeroChangedState`.
 
 ### Uncertain
+- There is no un-busy/role-ended event anywhere in non-DLC code, so every "is he free now" decision has to poll; if a later
+  patch adds one, this section is stale.
+- Where a caravan leader who is *not* captured goes after his caravan is destroyed: no vanilla code re-homes him
+  (`CaravansCampaignBehavior` is bookkeeping, `HeroSpawnCampaignBehavior` excludes the player clan,
+  `PlayerTrackCompanionBehavior` tracks only fugitives and released prisoners). I read the code paths but did not observe
+  it in a live game, so "he just stands there party-less" is inference.
+- Whether `DisableHeroAction` (issue alternative solution, and mod code) is ever reversed outside
+  `IssueManager.MakeAlternativeTroopsReturn`: there is no `EnableHeroAction`, and I did not exhaustively enumerate
+  `ChangeState(Hero.CharacterStates.Active)` call sites (`HeroHelper.cs:286` is one I saw but did not identify).
+- The `BecomeEmissary` busy reason is raised from `EnterSettlementAction` for player-clan heroes without a party and
+  without a governorship; I did not establish whether an emissary companion is then excluded from the governor/party-leader
+  candidate lists beyond the `CanBeGovernorOrHavePartyRole()`/`GovernorOf == null` checks quoted above.
+- The alley assignment flow was read only in SandBox `AlleyCampaignBehavior` (its `IsTraveling` checks and `SetOwner(null)`
+  attack/abandon paths). `DefaultAlleyModel` proves vanilla *companion* alley leaders come from
+  `Clan.PlayerClan.Companions`, but I did not confirm that a mod-added companion reaches that list when it is not registered
+  there by the vanilla `CompanionOf` route (Q19/Q44 discuss that registration).
+- Caravan elite/convoy variants (`isElite`, port settlements → `ShouldCreateConvoy`, `CaravanHelper` template choice) were
+  not traced: the leader plumbing is identical, but the cost and spawn side effects are undocumented here.
 
 ## API index
 
