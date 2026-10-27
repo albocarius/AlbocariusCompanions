@@ -5694,3 +5694,33 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `CampaignEvents.OnHeroGetsBusyEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q40 | heroGotBusy trigger (M11) |
 | `CampaignEvents.OnHeroSharedFoodWithAnotherHeroEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q40 | heroSharedFood trigger (M11) |
 | `CampaignEvents.OnHeroTeleportationRequestedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q40 | heroTeleportRequested trigger (M11) |
+| `CampaignEvents.QuestLogAddedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | questLogEntryAdded trigger (M11) |
+| `CampaignEvents.IssueLogAddedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | issueLogEntryAdded trigger (M11) |
+| `CampaignEvents.OnBarterAcceptedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | barterAccepted trigger (M11) |
+| `CampaignEvents.OnBarterCanceledEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | barterCancelled trigger (M11) |
+| `CampaignEvents.CharacterPortraitPopUpOpenedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | portraitOpened trigger (M11) |
+| `CampaignEvents.OnPlayerBoardGameOverEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | boardGameFinished trigger (M11) |
+| `CampaignEvents.OnTradeRumorIsTakenEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | tradeRumorHeard trigger (M11) |
+| `CampaignEvents.PlayerInventoryExchangeEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | inventoryExchanged trigger (M11) |
+| `CampaignEvents.OnItemsDiscardedByPlayerEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | itemsDiscarded trigger (M11) |
+| `CampaignEvents.OnPlayerTradeProfitEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | tradeProfitMade trigger (M11) |
+| `CampaignEvents.OnCaravanTransactionCompletedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | caravanTradeCompleted trigger (M11) |
+| `CampaignEvents.OnPlayerEarnedGoldFromAssetEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | assetIncomeEarned trigger (M11) |
+| `CampaignEvents.WorkshopOwnerChangedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | workshopOwnerChanged trigger (M11) |
+| `CampaignEvents.WorkshopTypeChangedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | workshopTypeChanged trigger (M11) |
+| `CampaignEvents.OnItemProducedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | itemProduced trigger (M11) |
+| `CampaignEvents.OnItemConsumedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | itemConsumed trigger (M11) |
+| `CampaignEvents.OnNewItemCraftedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | itemCrafted trigger (M11) |
+| `CampaignEvents.CraftingPartUnlockedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | craftingPartUnlocked trigger (M11) |
+| `CampaignEvents.OnEquipmentSmeltedByHeroEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | itemSmelted trigger (M11) |
+| `CampaignEvents.OnItemsRefinedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | itemsRefined trigger (M11) |
+| `CampaignEvents.OnCraftingOrderCompletedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | craftingOrderCompleted trigger (M11) |
+| `CampaignEvents.OnQuestStartedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | questStarted trigger (M11) |
+| `CampaignEvents.OnQuestCompletedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | questCompleted trigger (M11) |
+| `CampaignEvents.OnNewIssueCreatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | issueCreated trigger (M11) |
+| `CampaignEvents.OnIssueUpdatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | issueUpdated trigger (M11) |
+| `CampaignEvents.OnIncidentResolvedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | incidentResolved trigger (M11) |
+| `CampaignEvents.PersuasionProgressCommittedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q42 | persuasionProgressed trigger (M11) |
+| `QuestBase.QuestGiver` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/QuestBase.cs` | Q41 | quest triggers: quest giver (M11) |
+| `IssueBase.IssueOwner` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueBase.cs` | Q41 | issue triggers: issue owner (M11) |
+| `Workshop.Owner` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements.Workshops/Workshop.cs` | Q42 | workshop triggers: owner (M11) |
