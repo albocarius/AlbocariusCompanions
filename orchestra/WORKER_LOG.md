@@ -79,3 +79,4 @@
 | 114h-trigger-registry-q42 | 1 | PASS, reviewed | 21 entries; registry complete (166) |
 | 122a-game-adapters-q35 | 1 | PASS, reviewed | 22 adapters + 29 API rows; registry from fixed (Track.PartyType) |
 | 122b-game-adapters-q36 | 1 | PASS, reviewed | 22 adapters |
+| 122c-game-adapters-q37 | 1 | PASS, reviewed | 20 adapters; registry from fixed (Alley.State) |

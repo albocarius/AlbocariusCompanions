@@ -5591,3 +5591,34 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `CampaignEvents.OnTroopsDesertedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | troopsDeserted trigger (M11) |
 | `MapEventComponent.MapEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEventComponent.cs` | Q36 | villageRaidEnded, volunteersForced and suppliesForced trigger (M11) |
 | `PartyBase.Settlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` | Q36 | hideoutSpotted trigger (M11) |
+| `CampaignEvents.ArmyCreated` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | armyCreated trigger (M11) |
+| `CampaignEvents.ArmyDispersed` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | armyDispersed trigger (M11) |
+| `CampaignEvents.PartyAttachedAnotherParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | partyAttached trigger (M11) |
+| `CampaignEvents.MobilePartyCreated` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | partyCreated trigger (M11) |
+| `CampaignEvents.MobilePartyDestroyed` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | partyDestroyed trigger (M11) |
+| `CampaignEvents.SettlementEntered` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | settlementEntered trigger (M11) |
+| `CampaignEvents.OnSettlementLeftEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | settlementLeft trigger (M11) |
+| `CampaignEvents.VillageStateChanged` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | villageStateChanged trigger (M11) |
+| `CampaignEvents.OnBuildingLevelChangedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | buildingLevelChanged trigger (M11) |
+| `CampaignEvents.AlleyOwnerChanged` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | alleyOwnerChanged trigger (M11) |
+| `CampaignEvents.AlleyOccupiedByPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | alleyTakenOver trigger (M11) |
+| `CampaignEvents.AlleyClearedByPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | alleyCleared trigger (M11) |
+| `CampaignEvents.TournamentStarted` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | tournamentStarted trigger (M11) |
+| `CampaignEvents.TournamentFinished` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | tournamentFinished trigger (M11) |
+| `CampaignEvents.TournamentCancelled` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | tournamentCancelled trigger (M11) |
+| `CampaignEvents.PlayerEliminatedFromTournament` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | playerEliminatedFromTournament trigger (M11) |
+| `CampaignEvents.AfterMissionStarted` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | sceneEntered trigger (M11) |
+| `CampaignEvents.HeroOrPartyTradedGold` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | goldGiven trigger (M11) |
+| `CampaignEvents.HeroOrPartyGaveItem` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q37 | itemGiven trigger (M11) |
+| `Army.LeaderParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Army.cs` | Q37 | armyCreated, armyDispersed trigger (M11) |
+| `Army.Kingdom` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Army.cs` | Q37 | armyCreated, armyDispersed trigger (M11) |
+| `Army.Parties` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Army.cs` | Q37 | armyCreated trigger (M11) |
+| `MobileParty.AttachedTo` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q37 | partyAttached trigger (M11) |
+| `MobileParty.Party` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q37 | partyCreated, partyDestroyed trigger (M11) |
+| `PartyBase.Owner` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` | Q37 | partyCreated, partyDestroyed trigger (M11) |
+| `Building.BuildingType` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements.Buildings/Building.cs` | Q37 | buildingLevelChanged trigger (M11) |
+| `Building.CurrentLevel` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements.Buildings/Building.cs` | Q37 | buildingLevelChanged trigger (M11) |
+| `Alley.State` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Alley.cs` | Q37 | alleyOwnerChanged trigger (M11) |
+| `ItemRosterElement.EquipmentElement` | `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemRosterElement.cs` | Q37 | itemGiven trigger (M11) |
+| `ItemRosterElement.Amount` | `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemRosterElement.cs` | Q37 | itemGiven trigger (M11) |
+| `EquipmentElement.Item` | `decomp/TaleWorlds.Core/TaleWorlds.Core/EquipmentElement.cs` | Q37 | itemGiven trigger (M11) |

@@ -123,7 +123,7 @@ public static partial class TriggerRegistry
             {
                 F("newOwner", FieldKind.Hero, "the hero who owns the alley now; empty when the alley went empty", "newOwner"),
                 F("oldOwner", FieldKind.Hero, "the previous owner; empty when the alley was empty", "oldOwner"),
-                F("areaState", FieldKind.Text, "the alley's occupancy now: OccupiedByPlayer, OccupiedByGangLeader, Empty", "alley.AreaState"),
+                F("areaState", FieldKind.Text, "the alley's occupancy now: OccupiedByPlayer, OccupiedByGangLeader, Empty", "alley.State"),
             },
             subjectFields: S("newOwner", "oldOwner"), defaultSubject: Subjects.PlayerClan),
         new TriggerDefinition("alleyTakenOver", "crime",
