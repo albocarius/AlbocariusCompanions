@@ -114,6 +114,40 @@ the hub options; the companion's fixed lines (intro, backstory, hire, vanilla di
   `startNodeHolds` (a greeting needs one start node that holds), `transfer.from.<actor>` and `join.notHired` /
   `join.clanHasRoom` (conditions implied by effects). `passes`/`shown` come from the game code; `conditions` explain them.
 
+## Triggers
+
+A trigger session runs the trigger engine over every loaded companion (docs/TRIGGERS.md, docs/SCHEMA.md "Triggers"). It
+has its own state (same shape as above; `companions.<id>.role` sets a companion's role, `player.partyMorale` sums
+`partyMorale` effects) and a clock in campaign hours that only moves forward.
+
+| Op | Request fields | Response |
+|---|---|---|
+| `triggers` | `state`?, `seed`? | `session` (`t<n>`), `usedTriggers` (the triggers loaded content uses: the game listens only to these) |
+| `fire` | `session`, `trigger`, `payload`?, `hours`? | `hours`, `candidates`, `queue` |
+| `deliver` | `session`, `hours`?, `onMap`? (default true), `canInterrupt`? (default true) | `hours`, `delivered` (or null), `dropped`, `queue` |
+| `queue` | `session` | the queue object |
+| `clearCooldowns` | `session` | the queue object after clearing item/companion cooldowns and today's counters |
+| `close` | `session` | — (also closes trigger sessions) |
+
+`payload`: field → value, as the trigger lists its fields. An entity field takes an object of its properties, e.g.
+`{"victim": {"id": "lord_1", "culture": "vlandia", "inPlayerClan": true}, "detail": "Executed"}`; properties left out read
+as `""`/`false`. Unknown fields, properties or wrong kinds are an error.
+
+Each candidate: `companion`, `content`, `kind` (`line`|`conversation`), `delivery`, `subject` (the one used: its own or
+the trigger's default), `outcome` (`queued` or the first failed check: `subject`, `where`, `no hero`, `not in party`,
+`cooldown`, `already queued`, `chance`, `when`), the check results `subjectMatches`, `whereMatches`, `present`,
+`offCooldown`, `alreadyQueued`, `chanceHit`, `whenHolds` (null = not reached), and `conditions` (as in "Step", with
+`event.<path>` and `role` entries) when `when` was evaluated. A companion not listed in the state is not in the party.
+
+`queue`: `items` (key, companion, content, trigger, delivery, priority, firedAt, expiresAt, inMission; delivery order:
+priority, then fired time), `itemCooldowns` (content key → hour last delivered), `companionInterruptions` (companion →
+hour of its last conversation/inquiry), `interruptionsToday`, `notificationsToday`.
+
+`delivered`: `key`, `companion`, `content`, `trigger`, `delivery`, and `text` (a line) or `node` + `text` (the start node
+the selection rule picked); an inquiry adds `options` (`node`, `text`, `shown`) and `popup` (`standard` for 1–2
+options, `multiSelection` for more). Effects are not applied by the simulator's delivery. `dropped`: items removed on the
+way (`expired`, `conditions no longer hold`, …) with their `reason`. The limits are the game's (docs/TRIGGERS.md).
+
 ## Example session
 
 ```
