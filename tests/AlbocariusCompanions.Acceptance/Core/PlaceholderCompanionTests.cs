@@ -31,7 +31,7 @@ public class PlaceholderCompanionTests
     {
         var package = AlbocariusCompanions.Core.Registry.CompanionCatalog.Load(CompanionsRoot).Registry.All.Single(p => p.Id == "test_companion");
         Assert.All(PlayerSlots.All, slot => Assert.Contains(package.Dialogs.Lines!, l => l.Slot == slot));
-        Assert.Equal(new[] { "the_scar", "spare_coin", "after_scar" }, package.Conversations.Select(c => c.Id));
+        Assert.Equal(new[] { "the_scar", "spare_coin", "after_scar", "battle_won", "campfire" }, package.Conversations.Select(c => c.Id));
         Assert.False(Directory.Exists(Path.Combine(CompanionsRoot, "_shared")));
     }
 
