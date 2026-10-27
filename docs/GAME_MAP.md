@@ -3514,11 +3514,11 @@ companion another day. With only mod companions above the limit nobody is remove
 
 ## Triggers & roles (SPEC_SELECTION_AND_EVENTS Track R)
 
-Q35–Q46 answer the research questions R1–R5 (R1 = Q35–Q42). Nothing here is used in mod code until it has an API index row.
+Q35–Q47 answer the research questions R1–R5 (R1 = Q35–Q42 events, R2 = Q43 proximity, R3 = Q44 lord flow, R4 = Q45 + Q47 roles, R5 = Q46 marriage). Verified by the orchestrator: every event row's raising call site checked against decomp (164 rows; Q39 line numbers are up to ~10 lines off, the cited raisers are right), key claims of Q43–Q47 spot-checked. Nothing here is used in mod code until it has an API index row.
 
 ## Q35 — Campaign events catalog 1 (battle, siege, crime, prisoners)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -3642,7 +3642,7 @@ All 30 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 
 ## Q36 — Campaign events catalog 2 (prisoners, raids, sieges, loot)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -3761,7 +3761,7 @@ All 29 members are `public static IMbEvent<…>` on `TaleWorlds.CampaignSystem.C
 
 ## Q37 — Campaign events catalog 3 (party, army, settlement, tournaments)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -3884,7 +3884,7 @@ All 37 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 
 ## Q38 — Campaign events catalog 4 (party, troops, missions, ships)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -4013,7 +4013,7 @@ All 36 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 
 ## Q39 — Campaign events catalog 5 (heroes, clan, kingdom)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -4133,7 +4133,7 @@ All 34 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 
 ## Q40 — Campaign events catalog 6 (diplomacy, family, clan)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -4254,7 +4254,7 @@ All 34 members are `public static` `IMbEvent<...>` properties on `TaleWorlds.Cam
 
 ## Q42 — Campaign events catalog 8 (economy, crafting, save) + polling-only signals
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -4427,7 +4427,7 @@ gold/item APIs are per Q29, morale per Q22, location primitives per Q28, clock p
 
 ## Q43 — Proximity trigger
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -4540,7 +4540,7 @@ State to persist, using this repo's Q8/Q9 pattern (`AlbocariusCompanionsCampaign
 
 ## Q44 — Companion becomes a lord
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -4646,7 +4646,7 @@ Effective-relation consequence (Q21): while he was a companion, every third part
 
 ## Q41 — Campaign events catalog 7 (time, lifecycle, quests)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -4756,7 +4756,7 @@ All 32 members are `public static` `IMbEvent<…>` (or bare `IMbEvent`) properti
 
 ## Q46 — Marriage between heroes
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -5033,7 +5033,7 @@ Note also that a mod-driven marriage of two *player-clan* heroes is something va
 
 ## Q45 — Companion roles 1 (governor, party leader, caravan leader)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 
@@ -5189,7 +5189,7 @@ Navigator and ignores the rest, and `GetHeroPartyRoles`/`RemoveAllPartyRolesOfHe
 
 ## Q47 — Companion roles 2 (alley leader, quest alternative solution)
 
-Status: DRAFT
+Status: VERIFIED
 
 ### Answer
 

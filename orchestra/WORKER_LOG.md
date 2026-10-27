@@ -55,3 +55,17 @@
 | 68-gm-q31-misc | 1 | PASS, verified | Clan.Tier, IsAtWarWith/FactionManager.IsAtWarAgainstFaction spot-checked |
 | 83-gm-q33-grievances | 1 | PASS, verified | excellent; private members, field names, consequence lines spot-checked; Q33 test entry added after the run (sed miss) |
 | 85-gm-q34-companion-audit | 1 | PASS, verified | 106 rows; every exclude row re-verified by orchestrator (table in Q34): 1 new exclusion, 6 already covered, 2 covered by slots, 6 reclassified keep, 1 decide |
+| 98-gm-q35-events-1 | 1 | PASS, verified | 30 events; raise sites spot-checked (Village setter, Hero.HitPoints, ChangeCrimeRatingAction, MapTracks) |
+| 99-gm-q36-events-2 | 1 | PASS, verified | raise sites checked by script against cited lines |
+| 100-gm-q37-events-3 | 1 | PASS, verified | idem |
+| 101-gm-q38-events-4 | 1 | PASS, verified | idem; DLC-only members (ships) correctly marked not useful |
+| 102-gm-q39-events-5 | 1 | PASS, verified | raisers right, cited line numbers 4–12 lines off |
+| 103-gm-q40-events-6 | 1 | PASS, verified | idem script check |
+| 104-gm-q41-events-7 | 1 | FAIL → salvaged | check failed on 2 wrong decomp paths (ViewModelCollection, Helpers); content kept, paths fixed by orchestrator |
+| 105-gm-q42-events-8 | 1 | PASS, verified | incl. polling-only signals |
+| 106-gm-q43-proximity | 1 | PASS, verified | CampaignVec2.Distance, DistanceHelper, encounter radius 3, settlement spacing measured from XML |
+| 107-gm-q44-lord-flow | 1 | PASS, verified | ClanNameSelectionIsDone order, OnClanCreated(isCompanion:true) single raiser, no vanilla lord↔lord relation change |
+| 108-gm-q45-roles | 1 | timeout (nothing written) → split | 108a governor/party/caravan = Q45, 108b alley/alternative solution = Q47 |
+| 108a-gm-q45-roles-1 | 1 | PASS, verified | ChangeGovernorAction events checked |
+| 108b-gm-q47-roles-2 | 1 | PASS, verified | IAlleyCampaignBehavior, IssueBase.AlternativeSolutionHero, IssueManager.IssueSolvingCompanionList checked |
+| 109-gm-q46-marriage | 1 | timeout → salvaged | complete section written before the limit; wrapped evidence lines joined, 5 symbols fixed; IsLord gate (companions cannot marry) verified |
