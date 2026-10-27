@@ -36,6 +36,7 @@ public static class Subjects
                 return new[] { Settlement, PlayerClan };
             case FieldKind.Clan:
             case FieldKind.Kingdom:
+            case FieldKind.Faction:
                 return new[] { Player, PlayerClan };
             default:
                 return Array.Empty<string>();

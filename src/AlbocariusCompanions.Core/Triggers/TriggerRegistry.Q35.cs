@@ -82,7 +82,7 @@ public static partial class TriggerRegistry
             "The player's crime rating with a faction changed (`delta` > 0 = a new crime; < 0 = daily decay, a fine or peace).", "CrimeRatingChanged",
             fields: new[]
             {
-                F("faction", FieldKind.Clan, "the clan whose crime rating with the player changed", "faction"),
+                F("faction", FieldKind.Faction, "the kingdom or clan whose crime rating with the player changed", "faction"),
                 F("delta", FieldKind.Number, "the change in the rating", "deltaCrimeAmount"),
             },
             subjectFields: S("faction"), defaultSubject: Subjects.Player),
@@ -130,7 +130,7 @@ public static partial class TriggerRegistry
             {
                 F("prisoner", FieldKind.Hero, "the released hero", "prisoner"),
                 F("formerCaptor", FieldKind.Party, "the party that was holding them", "formerCaptorParty"),
-                F("formerCaptorFaction", FieldKind.Clan, "the faction that was holding them", "capturerFaction"),
+                F("formerCaptorFaction", FieldKind.Faction, "the faction that was holding them", "capturerFaction"),
                 F("detail", FieldKind.Text, "the game's EndCaptivityDetail: Ransom, ReleasedAfterPeace, ReleasedAfterBattle, " +
                     "ReleasedAfterEscape, ReleasedByChoice, Death, ReleasedByCompensation", "detail"),
             },
