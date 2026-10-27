@@ -5569,3 +5569,25 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `Track.PartyType` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Track.cs` | Q35 | trackSpotted and trackLost trigger (M11) |
 | `Track.NumberOfAllMembers` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Track.cs` | Q35 | trackSpotted and trackLost trigger (M11) |
 | `Track.IsEnemy` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Track.cs` | Q35 | trackSpotted and trackLost trigger (M11) |
+| `CampaignEvents.OnSiegeEventEndedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | siegeEnded trigger (M11) |
+| `CampaignEvents.SiegeCompletedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | siegeBattleEnded trigger (M11) |
+| `CampaignEvents.OnSiegeAftermathAppliedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | siegeAftermathApplied trigger (M11) |
+| `CampaignEvents.OnBlockadeActivatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | blockadeStarted trigger (M11) |
+| `CampaignEvents.OnBlockadeDeactivatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | blockadeEnded trigger (M11) |
+| `CampaignEvents.OnMobilePartyJoinedToSiegeEventEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | partyJoinedSiege trigger (M11) |
+| `CampaignEvents.OnMobilePartyLeftSiegeEventEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | partyLeftSiege trigger (M11) |
+| `CampaignEvents.RaidCompletedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | villageRaidEnded trigger (M11) |
+| `CampaignEvents.ForceVolunteersCompletedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | volunteersForced trigger (M11) |
+| `CampaignEvents.ForceSuppliesCompletedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | suppliesForced trigger (M11) |
+| `CampaignEvents.OnPrisonerTakenEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | prisonersTaken trigger (M11) |
+| `CampaignEvents.OnPrisonerReleasedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | prisonersReleased trigger (M11) |
+| `CampaignEvents.OnMainPartyPrisonerRecruitedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | prisonersRecruited trigger (M11) |
+| `CampaignEvents.OnPrisonerSoldEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | prisonersSold trigger (M11) |
+| `CampaignEvents.OnPrisonerDonatedToSettlementEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | prisonersDonated trigger (M11) |
+| `CampaignEvents.OnLootDistributedToPartyEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | lootDistributed trigger (M11) |
+| `CampaignEvents.OnCollectLootsItemsEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | lootCollected trigger (M11) |
+| `CampaignEvents.OnHideoutSpottedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | hideoutSpotted trigger (M11) |
+| `CampaignEvents.OnHideoutDeactivatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | hideoutEmptied trigger (M11) |
+| `CampaignEvents.OnTroopsDesertedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q36 | troopsDeserted trigger (M11) |
+| `MapEventComponent.MapEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEventComponent.cs` | Q36 | villageRaidEnded, volunteersForced and suppliesForced trigger (M11) |
+| `PartyBase.Settlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` | Q36 | hideoutSpotted trigger (M11) |
