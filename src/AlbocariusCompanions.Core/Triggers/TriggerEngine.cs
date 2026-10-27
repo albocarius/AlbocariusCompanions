@@ -155,49 +155,58 @@ public sealed class TriggerEngine
         Func<string, TriggerPayload, IConversationContext?> contextFor)
     {
         var results = new List<FireCandidate>();
-        if (!TriggerRegistry.TryGet(trigger, out var definition))
+        if (!TriggerRegistry.TryGet(trigger, out _))
             return results;
-
         foreach (var content in ContentFor(trigger))
-        {
-            var c = new FireCandidate(content);
-            results.Add(c);
-            c.SubjectMatches = Subjects.Matches(definition, content.Subject, payload, content.CompanionId);
-            if (!c.SubjectMatches) { c.Outcome = "subject"; continue; }
-            c.WhereMatches = Subjects.WhereMatches(content.Spec.Where, payload);
-            if (!c.WhereMatches) { c.Outcome = "where"; continue; }
-
-            var context = contextFor(content.CompanionId, payload);
-            if (context == null) { c.Present = false; c.Outcome = "no hero"; continue; }
-            c.Present = content.Spec.AllowAbsent || context.IsInPlayerParty;
-            if (c.Present == false) { c.Outcome = "not in party"; continue; }
-            c.OffCooldown = IsOffCooldown(content, nowHours);
-            if (c.OffCooldown == false) { c.Outcome = "cooldown"; continue; }
-            c.AlreadyQueued = _queue.Any(q => q.Key == content.Key);
-            if (c.AlreadyQueued == true) { c.Outcome = "already queued"; continue; }
-            c.ChanceHit = Roll(content.Spec.Chance ?? DeliveryRules.DefaultChance);
-            if (c.ChanceHit == false) { c.Outcome = "chance"; continue; }
-            c.WhenHolds = ConversationConditions.Holds(content.When, context);
-            if (c.WhenHolds == false) { c.Outcome = "when"; continue; }
-
-            _queue.Add(new QueuedItem
-            {
-                Key = content.Key,
-                CompanionId = content.CompanionId,
-                ContentId = content.Id,
-                IsLine = content.IsLine,
-                Trigger = trigger,
-                Delivery = content.Delivery,
-                Priority = Selection.PriorityOf(content.Priority),
-                FiredAtHours = nowHours,
-                ExpiresAtHours = nowHours + (content.Spec.ExpiresAfterHours ?? DeliveryRules.DefaultExpiresAfterHours),
-                InMission = definition.InMission,
-                Payload = payload,
-            });
-            c.Queued = true;
-            c.Outcome = "queued";
-        }
+            results.Add(FireContent(content, payload, nowHours, contextFor));
         return results;
+    }
+
+    /// <summary>
+    /// One content item's checks and queueing (see <see cref="Fire"/>). Polling triggers call this per item, because their
+    /// params (settlement, variable, role) belong to the item.
+    /// </summary>
+    public FireCandidate FireContent(TriggeredContent content, TriggerPayload payload, double nowHours,
+        Func<string, TriggerPayload, IConversationContext?> contextFor)
+    {
+        var definition = content.Trigger;
+        var trigger = definition.Name;
+        var c = new FireCandidate(content);
+        c.SubjectMatches = Subjects.Matches(definition, content.Subject, payload, content.CompanionId);
+        if (!c.SubjectMatches) { c.Outcome = "subject"; return c; }
+        c.WhereMatches = Subjects.WhereMatches(content.Spec.Where, payload);
+        if (!c.WhereMatches) { c.Outcome = "where"; return c; }
+
+        var context = contextFor(content.CompanionId, payload);
+        if (context == null) { c.Present = false; c.Outcome = "no hero"; return c; }
+        c.Present = content.Spec.AllowAbsent || context.IsInPlayerParty;
+        if (c.Present == false) { c.Outcome = "not in party"; return c; }
+        c.OffCooldown = IsOffCooldown(content, nowHours);
+        if (c.OffCooldown == false) { c.Outcome = "cooldown"; return c; }
+        c.AlreadyQueued = _queue.Any(q => q.Key == content.Key);
+        if (c.AlreadyQueued == true) { c.Outcome = "already queued"; return c; }
+        c.ChanceHit = Roll(content.Spec.Chance ?? DeliveryRules.DefaultChance);
+        if (c.ChanceHit == false) { c.Outcome = "chance"; return c; }
+        c.WhenHolds = ConversationConditions.Holds(content.When, context);
+        if (c.WhenHolds == false) { c.Outcome = "when"; return c; }
+
+        _queue.Add(new QueuedItem
+        {
+            Key = content.Key,
+            CompanionId = content.CompanionId,
+            ContentId = content.Id,
+            IsLine = content.IsLine,
+            Trigger = trigger,
+            Delivery = content.Delivery,
+            Priority = Selection.PriorityOf(content.Priority),
+            FiredAtHours = nowHours,
+            ExpiresAtHours = nowHours + (content.Spec.ExpiresAfterHours ?? DeliveryRules.DefaultExpiresAfterHours),
+            InMission = definition.InMission,
+            Payload = payload,
+        });
+        c.Queued = true;
+        c.Outcome = "queued";
+        return c;
     }
 
     private bool IsOffCooldown(TriggeredContent content, double nowHours) =>
