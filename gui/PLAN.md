@@ -24,6 +24,9 @@ untouched). Add a pytest(-qt) test for each task.
   reason (missing `decomp/`, game DLLs, `dist/`); that set did not change with the §3 work. In Core.Tests, 4
   `NpcCharacterXmlGeneratorTests` fail for the missing `xmlschemas/`.
 - `PySide6-Essentials` is the dependency; QtMultimedia (inspector play button) needs `uv sync --extra audio`.
+- UI tests use the `window` fixture of `tests/conftest.py`; it drops the folder before closing, so the unsaved-changes
+  question never blocks a test. Run with a time limit when in doubt (a modal dialog hangs a headless run):
+  `timeout 300 uv run pytest -q`. Tests that answer a dialog monkeypatch `QMessageBox.question`.
 
 ## Done in session 1
 
@@ -38,13 +41,29 @@ untouched). Add a pytest(-qt) test for each task.
   layout, layout sidecar load/save with stale-entry diagnostics, drag with snap, undoable moves.
 - [x] **S1.5** `gui/ARCHITECTURE.md`. **S1.6** this plan.
 
-Also already in place (later tasks build on them): read-only inspector (fields, translations, voice + play), read-only
-blackboard, Lines tab as a grouped list, library search over ids and English text, unsaved-changes guard, reload,
+Also already in place (later tasks build on them): inspector (fields, translations, voice + play; since session 2 the
+id, English text and Start/Next are editable), read-only blackboard, Lines tab as a grouped list, library search over ids and English text, unsaved-changes guard, reload,
 external-change prompt, new companion from the template.
+
+## Done in session 2
+
+- [x] **T01** `ui/commands.py`: `EditCommand` (snapshot before/after, obsolete on `EditError`), `MoveCommand` moved
+  there; `MainWindow.edit(text, fn)` / `refresh()`. Tests: `tests/test_ui_edit.py`.
+- [x] **T02** inline English text (`canvas/items.TextEditor`, double-click the text block) and the inspector's `en` box
+  (`CommitTextEdit`), both through `edit.set_text` (new, `tests/test_edit_ops.py`).
+- [x] **T03** palette click (view center) / drag onto the canvas (drop point, snapped), Graph → Add companion/player line
+  (Ctrl+Shift+N / Ctrl+Shift+P); hub/end entries connect the selected node.
+- [x] **T04** drag from an output port onto a card (`edit.connect`), selectable edges + Del (`edit.disconnect`), the
+  inspector's Start/Next list with ↑ ↓ × (`edit.move_edge`).
+- [x] **T05** Del on cards (one command, asks when texts exist), inspector id field renames (audio file offered, not
+  undoable), conversation rename/delete from the tab and header-card context menus (tabs follow renames and undo).
+- [x] **Packaging** (asked for by the user, beyond SPEC_EDITOR §6): `packaging/build.py` makes one executable with
+  PyInstaller, optionally with a self-contained CLI inside (`--with-cli`); `albocarius-editor --check`. See README.
+  Built and checked on Linux (x64, 89 MB with the CLI; runs without .NET). Windows: part of T20.
 
 ## Remaining tasks
 
-### T01 Generic undoable edit command
+### ~~T01 Generic undoable edit command~~ (done, session 2)
 Add `ui/commands.py` with `EditCommand(window, text, fn)`: on first redo takes `folder.snapshot()`, runs `fn(folder)`
 (a `data.edit` call), takes the after-snapshot; undo/redo `folder.restore()` and call `window.refresh()` (new: rebuild
 open scenes, library, lines view, blackboard, inspector, title). An `EditError` shows in the status bar and pushes
@@ -52,26 +71,26 @@ nothing. Move `MoveCommand` there.
 **Done-check:** a pytest-qt test pushes an `EditCommand` wrapping `edit.delete_node`, sees the card gone, undoes, sees it
 back, redoes; an `EditError` pushes no command.
 
-### T02 Inline English text on cards
+### ~~T02 Inline English text on cards~~ (done, session 2)
 Double-click a card's text block → an in-place `QGraphicsTextItem`/proxy editor; Enter (Shift+Enter = newline) or
 focus-out commits through `EditCommand(set_text)`; Esc cancels. The inspector's `en` box becomes editable too, same command.
 **Done-check:** test edits a node's text, saves, only `lang/en.json` (and the sidecar) changed; undo restores the old text.
 
-### T03 Add nodes
+### ~~T03 Add nodes~~ (done, session 2)
 Palette entries (click: at the view center; drag: at the drop point) and Graph → Add companion/player line add a node via
 `edit.add_node` (id from `ids.propose_node_id`), selected and with its text editor open (T02). "Back to hub" / "End"
 entries connect the selected node via `edit.connect` to `HUB`/`END`.
 **Done-check:** test adds an npc and a player node to `the_scar`, both in `dialogs.json` and `lang/en.json` after save,
 positions in the sidecar; undo removes both.
 
-### T04 Edges: connect, disconnect, reorder
+### ~~T04 Edges: connect, disconnect, reorder~~ (done, session 2)
 Drag from a card's output port to another card (or hub/end) → `edit.connect`; select an edge + Del → `edit.disconnect`;
 the inspector shows `next`/`start` as an ordered list with up/down buttons → `edit.move_edge`. Refuse what `edit`
 refuses (status bar message).
 **Done-check:** test connects `scar_thanks` → `scar_shrug`, reorders `scar_story`'s next, deletes an edge; JSON matches;
 each step undoes.
 
-### T05 Delete and rename
+### ~~T05 Delete and rename~~ (done, session 2)
 Del on selected cards → `edit.delete_node` for each (one command; confirm when texts exist). Inspector id field editable
 → `edit.rename_id`; when the result names an audio file, ask and run `edit.rename_audio` (not undoable: say so in the
 dialog). Conversation rename/delete from the header card / tab context menu.
@@ -177,6 +196,9 @@ optional; Ctrl+F focuses the library search, Enter reveals the first match; tool
 Run on Windows: open the sample from a path with spaces, save a CRLF file (stays CRLF), the CLI found as
 `dotnet ...Cli.dll` from the repo build output, the external-change prompt, audio play with the `audio` extra. Fix what
 breaks; note results here.
+Also build the package there: `uv run --group build python packaging/build.py --with-cli`, then run
+`dist\albocarius-editor.exe` from a folder outside the repository on a machine without .NET (validate works, New
+companion works).
 **Done-check:** a checklist in this file with each item ticked on Windows.
 
 ## Notes and open points

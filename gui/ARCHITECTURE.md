@@ -98,7 +98,8 @@ effects or triggers by hand; summaries on cards (`ui/canvas/summary.py`) format 
 
 | Module | Class | In the reference |
 |---|---|---|
-| `main_window` | `MainWindow`, `MoveCommand` | menus, toolbar (New/Open/Save/Reload, Validate, Play/Stop, Snap), docks, status bar; open/save/reload, unsaved-changes guard, external-change check (every 2 s), undo stack |
+| `main_window` | `MainWindow` | menus, toolbar (New/Open/Save/Reload, Validate, Play/Stop, Snap), docks, status bar; open/save/reload, unsaved-changes guard, external-change check (every 2 s), undo stack |
+| `commands` | `EditCommand`, `MoveCommand` | undo: data edits as snapshots, moves as positions |
 | `library` | `LibraryPanel` | left: search, add palette, graph navigation (Lines + conversations → nodes), companions of the opened directory |
 | `canvas/view` | `CanvasView`, `ZoomOverlay` | center: grid, wheel zoom, pan (middle button or Space+drag), fit (F), zoom box |
 | `canvas/scene` | `ConversationScene` | one conversation: builds cards/edges from `data.graph` + layout, selection, highlight, `place()` |
@@ -125,14 +126,33 @@ effects or triggers by hand; summaries on cards (`ui/canvas/summary.py`) format 
 
 ### Undo
 
-Every edit is a `QUndoCommand`. Moves are `MoveCommand` (position only). Data edits (PLAN T02) will be one generic
-command holding `folder.snapshot()` before and after the `data.edit` call; undo/redo `restore()` the state and rebuild the
-affected scenes. Snapshots are deep copies of the in-memory JSON (small: a companion is tens of KB).
+Every edit is a `QUndoCommand` (`ui/commands.py`). Moves are `MoveCommand` (position only). Data edits go through
+`MainWindow.edit(text, fn)`: an `EditCommand` runs `fn(folder)` (one or more `data.edit` calls) once, holding
+`folder.snapshot()` before and after; undo/redo `restore()` a snapshot and call `MainWindow.refresh()`, which rebuilds the
+open scenes (closing tabs whose conversation is gone), the library, the Lines tab, the blackboard and the inspector. An
+`EditError` makes the command obsolete (the stack drops it) and shows in the status bar. Optional `on_redo`/`on_undo`
+hooks run before the rebuild (a renamed conversation's tab follows its id). Snapshots are deep copies of the in-memory
+JSON (small: a companion is tens of KB).
+
+Widgets that edit commit once (focus out, Enter, a button) and emit a signal; the window turns it into one
+`EditCommand`. Inline card text uses `canvas/items.TextEditor`, which commits on the next event-loop turn because the
+commit rebuilds the scene that owns it.
+
+## Packaging (`packaging/`)
+
+`packaging/build.py` builds one executable with PyInstaller (`--onefile`, no console) for the platform it runs on:
+Python, PySide6, `schema/fixtures`, `ui/icons` and a copy of `tools/companion-template` (unpacked to
+`albocarius_editor/companion_template`, found by `workspace.default_template()` when there is no repository).
+`--with-cli` also runs `dotnet publish` of the CLI as a self-contained single file and embeds it as
+`albocarius_editor/cli_bin/AlbocariusCompanions.Cli[.exe]`, the last place `cli.locate()` looks (after the env var, the
+setting and a repository build). `albocarius-editor --check` prints what was found and exits.
 
 ## Tests
 
 `cd gui && uv run pytest` (headless: `conftest.py` sets `QT_QPA_PLATFORM=offscreen`).
 `test_jsonfmt` (round trip, minimal diffs), `test_companion` (load/save/byte identity, edits, workspace),
 `test_layout_graph` (graph, auto layout, sidecar), `test_schema_cli` (catalog; real-CLI tests skip when the CLI is not
-built), `test_ui_smoke` (window, canvas, inspector, undo, diagnostics, missing CLI).
+built), `test_edit_ops` (edit functions added for the UI), `test_ui_smoke` (window, canvas, inspector, undo, diagnostics,
+missing CLI), `test_ui_edit` (editing through the window: PLAN T01–T05), `test_packaging` (bundled CLI/template lookup,
+`--check`).
 The CLI side (§3) is tested in `tests/AlbocariusCompanions.Acceptance/ExportTests.cs`.

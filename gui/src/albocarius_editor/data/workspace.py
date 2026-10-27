@@ -21,11 +21,17 @@ def find_repo_root(start: Path) -> Path | None:
     return None
 
 
+# A packaged editor (gui/packaging/build.py) carries a copy of tools/companion-template here.
+BUNDLED_TEMPLATE = Path(__file__).resolve().parents[1] / "companion_template"
+
+
 def default_template() -> Path | None:
-    """``tools/companion-template`` of the repository this editor runs from."""
+    """``tools/companion-template`` of the repository this editor runs from, else the copy packaged with the editor."""
     root = find_repo_root(Path(__file__).resolve())
-    template = root / "tools" / "companion-template" if root else None
-    return template if template and template.is_dir() else None
+    for template in (root / "tools" / "companion-template" if root else None, BUNDLED_TEMPLATE):
+        if template is not None and template.is_dir():
+            return template
+    return None
 
 
 def companion_folders(root: Path) -> list[Path]:

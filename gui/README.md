@@ -16,3 +16,15 @@ edits files.
 
 Opening a folder writes nothing. Saving writes only the files you changed, plus `dialogs.layout.json` (card positions,
 next to `dialogs.json`; the mod ignores it).
+
+## One-file executable
+
+```
+cd gui
+uv run --group build python packaging/build.py              # dist/albocarius-editor (.exe on Windows)
+uv run --group build python packaging/build.py --with-cli   # also embeds the mod's CLI (needs the .NET SDK to build)
+```
+
+Build on each platform for that platform (PyInstaller does not cross-compile). With `--with-cli` the executable needs
+nothing else installed: validation and the preview use the embedded CLI. Without it, point `ALBOCARIUS_CLI` at a CLI.
+`albocarius-editor --check` prints which CLI, schema and template the executable found.

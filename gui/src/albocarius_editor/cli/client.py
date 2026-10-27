@@ -1,6 +1,7 @@
 """The mod's CLI (tools/AlbocariusCompanions.Cli): found by path, run as a subprocess, never imported. No Qt.
 
-* :func:`locate` finds it: ``ALBOCARIUS_CLI`` env var, an explicit setting, else the repository's build output.
+* :func:`locate` finds it: ``ALBOCARIUS_CLI`` env var, an explicit setting, else the repository's build output, else
+  the copy packaged with the editor (gui/packaging).
 * :class:`Cli` runs one-shot commands (``validate --json``, ``export schema|triggers``).
 * :class:`ServeClient` keeps one ``serve`` process alive and exchanges JSON lines (docs/SIMULATOR_PROTOCOL.md).
 """
@@ -21,6 +22,9 @@ from ..data.workspace import find_repo_root
 
 DLL = "AlbocariusCompanions.Cli.dll"
 ENV_VAR = "ALBOCARIUS_CLI"
+# A packaged editor (gui/packaging/build.py --with-cli) carries a self-contained single-file CLI here.
+BUNDLED_DIR = Path(__file__).resolve().parents[1] / "cli_bin"
+BUNDLED_NAME = "AlbocariusCompanions.Cli.exe" if sys.platform == "win32" else "AlbocariusCompanions.Cli"
 
 
 class CliError(Exception):
@@ -39,14 +43,30 @@ def candidates(repo_root: Path | None) -> list[Path]:
     return [out / config / "net8.0" / DLL for config in ("Release", "Debug")]
 
 
+def bundled() -> Path | None:
+    """The CLI packaged with the editor, if any (made executable: an unpacked bundle may lose the bit)."""
+    path = BUNDLED_DIR / BUNDLED_NAME
+    if not path.is_file():
+        return None
+    if sys.platform != "win32" and not os.access(path, os.X_OK):
+        try:
+            path.chmod(path.stat().st_mode | 0o755)
+        except OSError:
+            return None
+    return path
+
+
 def locate(setting: str | None = None) -> Path | None:
-    """The CLI dll (or apphost executable): the env var, then the setting, then the repository's build output."""
+    """The CLI dll (or apphost executable): the env var, then the setting, then the repository's build output, then the
+    copy packaged with the editor."""
     for value in (os.environ.get(ENV_VAR), setting):
         if value:
             p = Path(value).expanduser()
             return p if p.is_file() else None
     found = [p for p in candidates(find_repo_root(Path(__file__).resolve())) if p.is_file()]
-    return max(found, key=lambda p: p.stat().st_mtime) if found else None
+    if found:
+        return max(found, key=lambda p: p.stat().st_mtime)
+    return bundled()
 
 
 def command(cli: Path) -> list[str]:
@@ -78,8 +98,8 @@ class Cli:
     def find(cls, setting: str | None = None) -> Cli:
         path = locate(setting)
         if path is None:
-            raise CliError("the AlbocariusCompanions CLI was not found; build tools/AlbocariusCompanions.Cli "
-                           f"or set {ENV_VAR} to its dll")
+            raise CliError("the AlbocariusCompanions CLI was not found; build tools/AlbocariusCompanions.Cli, "
+                           f"set {ENV_VAR} to its dll, or use an editor package built with the CLI")
         return cls(path)
 
     def run(self, *args: str) -> subprocess.CompletedProcess[str]:

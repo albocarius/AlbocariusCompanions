@@ -19,6 +19,10 @@ dev = [
     "pytest>=8",
     "pytest-qt>=4.4",
 ]
+# One-file executables: `uv run --group build python packaging/build.py` (see packaging/build.py).
+build = [
+    "pyinstaller>=6.10",
+]
 
 [build-system]
 requires = ["hatchling"]
