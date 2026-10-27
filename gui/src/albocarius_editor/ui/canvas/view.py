@@ -47,6 +47,9 @@ class ZoomOverlay(QFrame):
 
 class CanvasView(QGraphicsView):
     zoom_changed = Signal(float)
+    palette_dropped = Signal(str, QPointF)  # palette kind, scene position
+
+    PALETTE_MIME = "application/x-albocarius-palette"  # library.PALETTE_MIME (the canvas does not import the library)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -60,6 +63,7 @@ class CanvasView(QGraphicsView):
         self._space = False
         self._last = QPointF()
         self.overlay = ZoomOverlay(self)
+        self.setAcceptDrops(True)
 
     @property
     def zoom(self) -> float:
@@ -144,6 +148,31 @@ class CanvasView(QGraphicsView):
                 self.viewport().unsetCursor()
             return
         super().mouseReleaseEvent(event)
+
+    def center_scene_pos(self) -> QPointF:
+        return self.mapToScene(self.viewport().rect().center())
+
+    # ---- drops from the library palette (the scene's own drag handling would refuse them) ----
+
+    def dragEnterEvent(self, event) -> None:
+        if event.mimeData().hasFormat(self.PALETTE_MIME):
+            event.acceptProposedAction()
+        else:
+            super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event) -> None:
+        if event.mimeData().hasFormat(self.PALETTE_MIME):
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
+
+    def dropEvent(self, event) -> None:
+        if event.mimeData().hasFormat(self.PALETTE_MIME):
+            kind = bytes(event.mimeData().data(self.PALETTE_MIME)).decode()
+            self.palette_dropped.emit(kind, self.mapToScene(event.position().toPoint()))
+            event.acceptProposedAction()
+        else:
+            super().dropEvent(event)
 
     def drawBackground(self, painter: QPainter, rect: QRectF) -> None:
         super().drawBackground(painter, rect)

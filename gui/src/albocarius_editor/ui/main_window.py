@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QSettings, Qt, QTimer
+from PySide6.QtCore import QPointF, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoStack
 from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMessageBox, QTabWidget,
                                QToolBar, QWidget)
@@ -18,6 +18,7 @@ from ..data.edit import EditError
 from ..schema.catalog import SchemaCatalog
 from .blackboard import BlackboardPanel
 from .canvas.scene import ConversationScene
+from .canvas.items import GRID
 from .canvas.view import CanvasView
 from .commands import EditCommand, MoveCommand
 from .diagnostics import DiagnosticsPanel, layout_diagnostics
@@ -115,8 +116,15 @@ class MainWindow(QMainWindow):
             view.addSeparator() if a is None else view.addAction(a)
         self.view_menu = view
         graph_menu = bar.addMenu("&Graph")
-        graph_menu.addAction(self._action("Add companion line", enabled=False, tip="Comes in a later task (gui/PLAN.md)"))
-        graph_menu.addAction(self._action("Add player line", enabled=False, tip="Comes in a later task (gui/PLAN.md)"))
+        graph_menu.addAction(self._action("Add companion line", lambda: self.add_from_palette("npc"),
+                                          QKeySequence("Ctrl+Shift+N"), "A companion (npc) node at the view center"))
+        graph_menu.addAction(self._action("Add player line", lambda: self.add_from_palette("player"),
+                                          QKeySequence("Ctrl+Shift+P"), "A player option at the view center"))
+        graph_menu.addSeparator()
+        graph_menu.addAction(self._action("Continue with: Back to hub", lambda: self.add_from_palette("hub"),
+                                          tip="The selected node returns to the companion's menu"))
+        graph_menu.addAction(self._action("Continue with: End", lambda: self.add_from_palette("end"),
+                                          tip="The selected node ends the talk"))
         build = bar.addMenu("&Build")
         for a in (self.act_validate, self.act_play, self.act_stop):
             build.addAction(a)
@@ -164,8 +172,7 @@ class MainWindow(QMainWindow):
         self.library.open_conversation.connect(self.open_tab)
         self.library.open_node.connect(self.reveal)
         self.library.open_companion.connect(self.open_companion)
-        self.library.palette_activated.connect(
-            lambda kind: self.statusBar().showMessage("Adding nodes comes in a later task (gui/PLAN.md)", 4000))
+        self.library.palette_activated.connect(self.add_from_palette)
         self.library_dock = self._dock("Library", self.library, Qt.DockWidgetArea.LeftDockWidgetArea, "library")
 
         self.inspector = InspectorPanel(self.catalog)
@@ -251,6 +258,7 @@ class MainWindow(QMainWindow):
                 scene.text_committed.connect(self.set_text)
                 widget = CanvasView()
                 widget.setScene(scene)
+                widget.palette_dropped.connect(lambda kind, pos: self.add_from_palette(kind, pos))
                 title = conversation_id
             widget.setProperty("tabKey", conversation_id)
             index = self.tabs.addTab(widget, title)
@@ -318,6 +326,44 @@ class MainWindow(QMainWindow):
         if self.folder is None or self.folder.text(local_id, code) == text:
             return False
         return self.edit(f"Edit text of {local_id}", lambda f: edit.set_text(f, local_id, text, code))[0]
+
+    def current_scene(self) -> ConversationScene | None:
+        widget = self.tabs.currentWidget()
+        if isinstance(widget, CanvasView) and isinstance(widget.scene(), ConversationScene):
+            return widget.scene()
+        return None
+
+    def add_from_palette(self, kind: str, pos: QPointF | None = None) -> str | None:
+        """npc/player: a new node in the current conversation at ``pos`` (default: the view center), selected with its
+        text editor open; returns its id. hub/end: the selected node continues with Back to hub / End."""
+        scene = self.current_scene()
+        if self.folder is None or scene is None:
+            self.statusBar().showMessage("Open a conversation tab first", 4000)
+            return None
+        conv = scene.conversation_id
+        if kind in ("hub", "end"):
+            key = scene.selected_key()
+            if not key or key.startswith("@"):
+                self.statusBar().showMessage("Select a node card first", 4000)
+                return None
+            self.edit(f"{key} → {kind}", lambda f: edit.connect(f, conv, key, graph.TERMINALS[kind]))
+            return None
+        if pos is None:
+            pos = self.tabs.currentWidget().center_scene_pos()
+        x, y = pos.x(), pos.y()
+        if self.act_snap.isChecked():
+            x, y = round(x / GRID) * GRID, round(y / GRID) * GRID
+
+        def add(f: CompanionFolder) -> str:
+            node = edit.add_node(f, conv, kind)
+            f.layout.set(conv, node["id"], x, y)
+            return node["id"]
+
+        done, node_id = self.edit(f"Add {'player' if kind == 'player' else 'companion'} line", add)
+        if not done:
+            return None
+        scene.edit_text(node_id)
+        return node_id
 
     def edit_failed(self, error: EditError) -> None:
         self._edit_error = error

@@ -4,20 +4,40 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QMimeData, Qt, Signal
 from PySide6.QtWidgets import QLabel, QLineEdit, QListWidget, QListWidgetItem, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 from ..data.companion import CompanionFolder
 
 LINES_TAB = "@lines"
+PALETTE_MIME = "application/x-albocarius-palette"
 
-# The palette entries: (label, what it adds). Adding by click/drag is a later task (gui/PLAN.md); listed for the layout.
+# The palette entries: (label, what it adds). Click: at the view center (or, for hub/end, from the selected card);
+# drag onto a canvas: at the drop point.
 PALETTE = [
     ("Companion line", "npc"),
     ("Player line", "player"),
     ("Back to hub", "hub"),
     ("End", "end"),
 ]
+
+
+class PaletteList(QListWidget):
+    """The add palette; dragging an entry carries its kind as PALETTE_MIME."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setDragEnabled(True)
+        self.setDragDropMode(QListWidget.DragDropMode.DragOnly)
+
+    def mimeTypes(self) -> list[str]:
+        return [PALETTE_MIME]
+
+    def mimeData(self, items) -> QMimeData:
+        data = QMimeData()
+        if items:
+            data.setData(PALETTE_MIME, str(items[0].data(Qt.ItemDataRole.UserRole)).encode())
+        return data
 
 
 def _section(text: str) -> QLabel:
@@ -45,13 +65,13 @@ class LibraryPanel(QWidget):
         layout.addWidget(self.search)
 
         layout.addWidget(_section("Add"))
-        self.palette = QListWidget()
+        self.palette = PaletteList()
         self.palette.setMaximumHeight(4 * 28 + 6)
         for label, kind in PALETTE:
             item = QListWidgetItem(("◆  " if kind in ("npc", "player") else "→  ") + label)
             item.setData(Qt.ItemDataRole.UserRole, kind)
             self.palette.addItem(item)
-        self.palette.itemActivated.connect(lambda i: self.palette_activated.emit(i.data(Qt.ItemDataRole.UserRole)))
+        self.palette.itemClicked.connect(lambda i: self.palette_activated.emit(i.data(Qt.ItemDataRole.UserRole)))
         layout.addWidget(self.palette)
 
         layout.addWidget(_section("Graph navigation"))

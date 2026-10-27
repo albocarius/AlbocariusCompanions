@@ -100,3 +100,54 @@ def test_inspector_english_box_edits_the_text(window: MainWindow, sample: Path):
     assert window.undo_stack.count() == 1
     window.undo_stack.undo()
     assert window.folder.text("scar_thanks") != "Thanks, friend."
+
+
+# ---- T03 add nodes ----
+
+def test_add_npc_and_player_nodes(window: MainWindow, sample: Path, qtbot):
+    import json
+
+    from PySide6.QtCore import QPointF
+
+    scene = open_scar(window, sample)
+    npc = window.add_from_palette("npc", QPointF(1000, 600))
+    assert npc == "the_scar_01"
+    assert scene.selected_key() == npc and scene.editor is not None  # selected, text editor open
+    scene.editor.setPlainText("Hello there.")
+    scene.editor.finish(commit=True)
+    qtbot.waitUntil(lambda: window.folder.text(npc) == "Hello there.")
+    window.library.palette_activated.emit("player")  # a palette click: at the view center
+    player = "p_the_scar_01"
+    assert window.folder.node("the_scar", player)["speaker"] == "player"
+    assert window.save()
+    dialogs = json.loads((sample / "dialogs.json").read_text())
+    scar = next(c for c in dialogs["conversations"] if c["id"] == "the_scar")
+    assert [n["id"] for n in scar["nodes"]][-2:] == [npc, player]
+    en = json.loads((sample / "lang" / "en.json").read_text())["lines"]
+    assert en[npc] == "Hello there." and en[player] == ""
+    layout = json.loads((sample / "dialogs.layout.json").read_text())["conversations"]["the_scar"]
+    assert layout[npc] == [1000, 600] and player in layout
+    for _ in range(3):  # player, npc text, npc
+        window.undo_stack.undo()
+    assert window.folder.node("the_scar", npc) is None and window.folder.node("the_scar", player) is None
+    assert npc not in scene.cards
+
+
+def test_palette_hub_and_end_connect_the_selected_node(window: MainWindow, sample: Path):
+    scene = open_scar(window, sample)
+    window.add_from_palette("end")  # nothing selected: refused
+    assert window.undo_stack.count() == 0
+    scene.select("p_scar_enough")
+    window.add_from_palette("end")
+    assert window.folder.node("the_scar", "p_scar_enough")["next"] == ["end"]
+    assert graph.END in scene.cards
+
+
+def test_drop_from_the_palette(window: MainWindow, sample: Path):
+    from PySide6.QtCore import QPointF
+
+    scene = open_scar(window, sample)
+    view = window.tabs.currentWidget()
+    view.palette_dropped.emit("npc", QPointF(415, 222))
+    node_id = scene.selected_key()
+    assert window.folder.layout.get("the_scar", node_id) == (420, 220)  # snapped to the grid
