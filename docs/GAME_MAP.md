@@ -5031,6 +5031,17 @@ Note also that a mod-driven marriage of two *player-clan* heroes is something va
   `GetClanAfterMarriage`'s leader branch) behave sanely when the mod's hero is the *leader* of a Q44-created companion clan
   was not exercised; such a clan is the one case where both partners can be their own clan's leader.
 
+## Q45 — Companion roles 1 (governor, party leader, caravan leader)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
