@@ -4644,6 +4644,393 @@ Effective-relation consequence (Q21): while he was a companion, every third part
 - `HeroCreated`'s `bool` payload semantics for the founders are taken from the Q39/Q40 rows (special spawn), not re-derived here.
 - Whether the clan-name inquiry rejects names already used by existing clans beyond `FactionHelper.IsClanNameApplicable`'s own checks was not audited.
 
+## Q41 — Campaign events catalog 7 (time, lifecycle, quests)
+
+Status: DRAFT
+
+### Answer
+
+All 32 members are `public static` `IMbEvent<…>` (or bare `IMbEvent`) properties on `TaleWorlds.CampaignSystem.CampaignEvents` — declaration range lines 593–941 of `CampaignEvents.cs`; the `CampaignEventReceiver` overrides that `Invoke` the statics sit in the same file (lines 1428–2313). Fan-out and subscription are exactly as in Q8/Q23 (`CampaignEventDispatcher.Instance.OnX(…)` → the `CampaignEvents` override → static event; `CampaignEvents.X.AddNonSerializedListener(this, handler)` in `RegisterEvents`), so they are not repeated per row. Raise sites were grepped in `TaleWorlds.CampaignSystem*`, `SandBox*`, `StoryMode*` only (never NavalDLC); **no member here is DLC-only**, but the two tutorial members fire only in a StoryMode campaign — their sole raiser `GauntletTutorialSystem` (SandBox.GauntletUI) is started by `StoryModeGauntletUISubModule` (:21) and never by SandBox alone. Eight traps. (1) **Dispatcher method names differ from the event names**: `OnSessionStart`→`OnSessionLaunchedEvent`, `OnAfterSessionStart`→`OnAfterSessionLaunchedEvent`, `Tick(dt)`→`TickEvent`, `AiHourlyTick`/`TickPartialHourlyAi`→`…Event`; and one member has no `Event` suffix at all (`GameMenuOpened`, :747). (2) The three `OnNewGameCreated*` members all come out of **one** override, `CampaignEvents.OnNewGameCreated` (:2077–2086): main event, then a hard-coded `for (int i = 0; i < 100; i++)` of follow-ups (the const `OnNewGameCreatedPartialFollowUpEventMaxIndex = 100` lives at :295), then the End event; the chain runs only on the new-campaign path (`Campaign.cs:1585`, reached from :1694), never on a save load (:1666–1671) — see **Q8** for the whole load/new-game ordering. (3) Three raisers are written as a cast, `((CampaignEventReceiver)CampaignEventDispatcher.Instance).OnX(…)` (`SandBoxGameManager.OnLoadFinished` :177, `MissionBoardGameLogic.SetGameOver` :314, `GauntletTutorialSystem`), so grepping only `CampaignEventDispatcher.Instance.OnX` misses them. (4) `AiHourlyTickEvent` **never** fires for the player party (`mobileParty != MobileParty.MainParty` gate, `AiPartyThinkBehavior.PartyHourlyAiTick` :65) while `TickPartialHourlyAiEvent` **does** — the main party has no party component and therefore lands in `_partiesWithoutPartyComponent` (`CampaignObjectManager.AddPartyToAppropriateList`, :549–587), which has its own partial-AI ticker (`CampaignPeriodicEventManager` :280). (5) Except for those two AI members, **nothing in this catalog carries a party/clan/hero subject**, so "is the player involved" must be derived inside the handler from `Hero.MainHero` / `MobileParty.MainParty` / `Clan.PlayerClan`. (6) `OnTradeRumorIsTakenEvent`'s second parameter is optional and the only non-DLC raiser omits it (`CaravansCampaignBehavior` :1972) → `sourceSettlement` is always `null` outside NavalDLC. (7) The portrait pop-up pair is pure UI and the `CampaignEvents` overrides themselves stop/unstop time (`TimeControlMode = Stop` + `SetTimeControlModeLock`, :2229–2243), and the *closed* member takes **no arguments**, so you cannot tell which portrait closed. (8) `QuestLogAddedEvent`/`IssueLogAddedEvent` are **journal-line** events (raised by `AddLog`/`AddDiscreteLog`/`AddTwoWayContinuousLog`), not quest/issue acceptance, and `CollectAvailableTutorialsEvent` is a per-frame `ref`-list collector, not a one-shot. Rows that are already analysed in verified sections cite them (Q8 lifecycle, Q27 time) and add only the raise site and the BEFORE/AFTER answer.
+
+#### Campaign time — global clock ticks
+
+| Member | Arguments (types, in order) | When it fires — raising call site, BEFORE/AFTER the outcome | Player party / clan test | Usefulness → trigger |
+|---|---|---|---|---|
+| QuarterHourlyTickEvent | none | `MBCampaignEvent` handler `Campaign.QuarterHourlyTick(MBCampaignEvent, object[])` — event registered in `Campaign.CreateCampaignEvents` (`Campaign.cs:1024-1025`, `CreatePeriodicEvent(CampaignTime.Hours(0.25f), initialWait)`), dispatch at `Campaign.cs:779`; 4×/game-hour, boundary-aligned, only while `TimeControlMode` flows → no outcome at all, it *is* the clock | none (campaign-global); read `MobileParty.MainParty` state in the handler | not useful — clock-only, no subject; cadence hook only (see Q27) |
+| HourlyTickEvent | none | handler `Campaign.HourlyTick` (`Campaign.cs:771-776`), dispatch at :773 then `MapState.OnHourlyTick()`; registered at :1017 (1 game hour) | none (campaign-global) | not useful as a reaction — but it is the standard hourly throttle (Q27) |
+| DailyTickEvent | none | handler `Campaign.DailyTick` (`Campaign.cs:782-791`), dispatch at :786 — AFTER `PlayerProgress` has been averaged with `Models.PlayerProgressionModel.GetPlayerProgress()` (:784) and immediately before the weekly branch (:787-790); registered at :1010 | none (campaign-global) | not useful as a reaction — the recommended once-a-day driver for your own roster loop (Q27 consequence (a)) |
+| WeeklyTickEvent | none | NOT a scheduled event: emitted from inside `Campaign.DailyTick` at :789 under `(int)Models.CampaignTimeModel.CampaignStartTime.ElapsedDaysUntilNow % CampaignTime.DaysInWeek == 0`, followed by `Campaign.OnWeeklyTick()` (:790) | none (campaign-global) | not useful — weekly throttle only |
+| TickEvent | `float dt` | `Campaign.Tick()` → `CampaignEventDispatcher.Instance.Tick(_dt)` (`Campaign.cs:960`), inside the `if (_dt > 0f \|\| CurrentTickCount < 3)` map-frame pass; `CampaignEvents.Tick` override (:2063-2066) invokes with the campaign-time `dt` | none — per-frame; the player is involved only implicitly | not useful — every unpaused map frame, no subject; far too hot for reaction logic (vanilla users: `FoodConsumptionBehavior`, `PlayerArmyWaitBehavior`) |
+| DailyTickHeroEvent | `Hero hero` | per-hero ticker lambda registered in `CampaignPeriodicEventManager.InitializeTickers` (:241-244, over `Hero.AllAliveHeroes`), pumped by `PeriodicDailyTick()` (:397-405, `_dailyTickHeroTicker.PeriodicTickSome(deltaDays)`); dispatcher override `CampaignEventDispatcher.DailyTickHero` (:1314). Once per living hero per game day, **spread over frames inside the day**, no outcome | `hero == Hero.MainHero`; `hero.PartyBelongedTo == MobileParty.MainParty`; player companions are `hero.IsPlayerCompanion` (`CompanionOf == Clan.PlayerClan`, `Hero.cs:333`) | not useful — no outcome and Q27 consequence (a) shows the per-entity tick timing is deliberately jittered; loop your own roster from `DailyTickEvent` instead |
+| AiHourlyTickEvent | `MobileParty mobileParty, PartyThinkParams thinkParams` | `AiPartyThinkBehavior.PartyHourlyAiTick` → `CampaignEventDispatcher.Instance.AiHourlyTick(mobileParty, thinkParamsCache)` (:73), **BEFORE the outcome**: `thinkParamsCache.Reset(…)` (:72) then listeners write `AIBehaviorScores`, and the highest score decides `mobileParty.DefaultBehavior` (:75-100). Gate: `mobileParty.Ai.HourCounter % num == 0 && mobileParty != MobileParty.MainParty` (:66, `num` normally 6) + early-out on `Ai.IsDisabled \|\| Ai.DoNotMakeNewDecisions` (:49-52) | never the player: the raiser excludes `MobileParty.MainParty` by construction; otherwise `mobileParty.IsLordParty`/`mobileParty.OwnerClan` | not useful — AI-internal scoring hook, and the player party is filtered out |
+| TickPartialHourlyAiEvent | `MobileParty mobileParty` | nine per-category tickers in `CampaignPeriodicEventManager.InitializeTickers` (:251-282, caravans/garrisons/militia/villagers/custom/patrol/bandits/lords/`MobileParty.AllPartiesWithoutPartyComponent`), pumped by `CampaignPeriodicEventManager.TickPartialHourlyAi()` (:376-386, rate `DeltaHours * 0.99`) called from `Campaign.Tick()` (:982). One call per party per game hour, **BEFORE** the AI decides (its consumer is `AiPartyThinkBehavior` above) | `mobileParty == MobileParty.MainParty` — the main party DOES get it (no party component ⇒ `PartiesWithoutPartyComponent`, `CampaignObjectManager.AddPartyToAppropriateList` :549-587) | not useful — AI scheduler plumbing; for a per-hour main-party beat use `HourlyTickPartyEvent` (Q37/Q40) |
+
+#### Game and campaign lifecycle (see Q8 for the full ordering)
+
+| Member | Arguments (types, in order) | When it fires — raising call site, BEFORE/AFTER the outcome | Player party / clan test | Usefulness → trigger |
+|---|---|---|---|---|
+| OnSessionLaunchedEvent | `CampaignGameStarter starter` | `Campaign.OnSessionStart(CampaignGameStarter)` (:727-730) → `CampaignEventDispatcher.Instance.OnSessionStart(starter)` at :729 (name mismatch trap); fires on **both** paths — saved campaign (:1671) and new campaign (:1695) — after objects/managers are built, **BEFORE** `ConversationManager.Build()` (:732), per-settlement `OnSessionStart()` (:733-736) and `KingdomManager.OnSessionStart()` (:742) ⇒ the session is not fully live yet | no subject arg; by this point `Hero.MainHero`/`MobileParty.MainParty` are valid, so test their state | not useful — setup/registration hook, not a reaction (Q8) |
+| OnAfterSessionLaunchedEvent | `CampaignGameStarter starter` | same method, next statement: `CampaignEventDispatcher.Instance.OnAfterSessionStart(starter)` (:730) → still before `ConversationManager.Build()`/settlement+kingdom session start; vanilla users `WorkshopsCampaignBehavior` (:114), `VillageHostileActionCampaignBehavior` (:50), `StatisticsCampaignBehavior` (:163) | same as above (no subject arg) | not useful — post-session setup only; conversation lines must be registered earlier |
+| OnNewGameCreatedEvent | `CampaignGameStarter starter` | `Campaign.OnNewGameCreated(CampaignGameStarter)` (:1581-1587): `OnNewGameCreatedInternal()` → `GameManager?.OnNewGameCreated(…)` (:1584) → dispatcher (:1585) → `OnAfterNewGameCreatedInternal()`; new campaign only (reached from :1694, never from the load branch) | none — the whole world is the player's starting state | not useful as a reaction; per-campaign reset hook (Q8) |
+| OnNewGameCreatedPartialFollowUpEvent | `CampaignGameStarter starter, int index` | raised 100× back-to-back from inside the `CampaignEvents.OnNewGameCreated` override (:2077-2086, `for (int i = 0; i < 100; i++)`, indices 0…99) immediately after `OnNewGameCreatedEvent` — i.e. work-splitting slots, nothing has "happened" | none | not useful — internal index-based setup slicing |
+| OnNewGameCreatedPartialFollowUpEndEvent | `CampaignGameStarter starter` | the single invoke right after that loop, same override (:2085) ⇒ "new-campaign setup finished" | none | not useful — setup completion marker; pair it with `OnGameLoadFinishedEvent` if you need a "campaign is ready" signal (load-only, Q8) |
+| OnGameEarlyLoadedEvent | `CampaignGameStarter starter` | `Campaign.OnGameLoaded(CampaignGameStarter)` (:679-694), dispatcher at :691 — after `TroopRoster.CalculateCachedStatsOnLoad()` and the managers' `PreAfterLoad`/`AfterLoad` passes (:681-690), **BEFORE** `InitializeForSavedGame()` (:693); saved-campaign path only (:1670) | none | not useful — load plumbing (Q8) |
+| OnGameLoadedEvent | `CampaignGameStarter starter` | same method, next line, dispatcher at :692 — loaded objects exist but behaviors' saved-game init (`InitializeForSavedGame`) has not run ⇒ **BEFORE** the session is usable; never on a new campaign | none | not useful — load plumbing (Q8) |
+| OnGameLoadFinishedEvent | none | only non-DLC raiser: `SandBoxGameManager.OnLoadFinished` (:177) in the loaded-save branch, cast form `((CampaignEventReceiver)CampaignEventDispatcher.Instance).OnGameLoadFinished()`; never on a new campaign (Q8 UNCERTAIN) | none | not useful as a reaction; it is the rebuild-your-save-state hook (`CompanionsCampaignBehavior`, Q8) |
+| OnCharacterCreationIsOverEvent | none | `CharacterCreationState.FinalizeCharacterCreationState()` (:54-61): unregisters the state-disable request, pushes `MapState`, `PartyBase.MainParty.SetVisualAsDirty()`, `_handler?.OnCharacterCreationFinalized()`, then `CampaignEventDispatcher.Instance.OnCharacterCreationIsOver()` at :60 ⇒ **AFTER** the character/kingdom choice is committed and the map is up; fires once per new campaign that showed character creation (StoryMode prologue), never on load. Vanilla listeners: `StoryModeCharacterCreationCampaignBehavior` (:45), `TutorialPhaseCampaignBehavior` (:50), `TrainingFieldCampaignBehavior` (:94), `AgingCampaignBehavior` (:24), `CharacterDevelopmentCampaignBehavior` (:8) | none (no args) — the hero is `Hero.MainHero`, already final | useful → `playerCharacterCreated` — one-shot campaign-open intro bark for starting companions |
+
+#### Quests, issues and the journal
+
+| Member | Arguments (types, in order) | When it fires — raising call site, BEFORE/AFTER the outcome | Player party / clan test | Usefulness → trigger |
+|---|---|---|---|---|
+| QuestLogAddedEvent | `QuestBase quest, bool hideInformation` | three `QuestBase` log helpers, each **AFTER** the entry is appended: `AddLog(TextObject, bool)` (:301), `AddDiscreteLog(…)` (:309), `AddTwoWayContinuousLog(…, bool)` (:317) build a `JournalLog(CampaignTime.Now, …)`, add it to `_journalEntries`, then call `CampaignEventDispatcher.Instance.OnQuestLogAdded(this, hideInformation)`; consumers `JournalLogsCampaignBehavior` (:16/:34, pushes to the journal), `DefaultNotificationsCampaignBehavior` (:60, toast), `ViewDataTrackerCampaignBehavior` (:523) | `quest.QuestGiver` (Hero, `QuestBase.cs:69`) — `== Hero.MainHero`, `quest.QuestGiver.IsPlayerCompanion`, or `quest.QuestGiver.Clan == Clan.PlayerClan`; `hideInformation` marks hidden lines | useful → `questLogAdded` — quest-progress beat the player just received; a companion tied to the quest can comment. Not acceptance: it fires for every journal line of the quest |
+| IssueLogAddedEvent | `IssueBase issue, bool hideInformation` | only raiser `IssueBase.AddLog(JournalLog log)` (:1020) — appends to `_journalEntries` then `CampaignEventDispatcher.Instance.OnIssueLogAdded(this, hideInformation: false)` ⇒ **AFTER** the log exists; `hideInformation` is always `false` at that site; listeners `JournalLogsCampaignBehavior` (:15/:23), `ViewDataTrackerCampaignBehavior` (:524) | `issue.IssueOwner` (Hero, `IssueBase.cs:221`) — compare with `Hero.MainHero` / `Clan.PlayerClan`; `issue.IssueQuest` links to the quest object | useful → `issueLogAdded` — issue/quest-arc progress bark (issues are gated by `QuestManager.CanHaveCampaignIssues`, Q32) |
+
+#### Barter offers (lords trading fiefs, prisoners, gold, items)
+
+| Member | Arguments (types, in order) | When it fires — raising call site, BEFORE/AFTER the outcome | Player party / clan test | Usefulness → trigger |
+|---|---|---|---|---|
+| BarterablesRequested | `BarterData args` | `BarterManager.StartBarterOffer(…)` (:69) dispatches at :83 just before `BeginPlayerBarter(args)` — and `BarterManager.ExecuteAiBarter(…)` (:96) dispatches at :105 before `ExecuteAIBarter(…)`/`MakeBalanced(…)` ⇒ **BEFORE anything is offered or applied**: it is a *collector*, vanilla listeners (`ItemBarterBehavior`, `GoldBarterBehavior`, `TransferPrisonerBarterBehavior`, `FiefBarterBehavior`, …) fill `args` via `args.AddBarterable` | `args.OffererHero == Hero.MainHero` (you open the offer) or `args.OtherHero == Hero.MainHero` (an offer is presented to you); skip AI-to-AI noise with `args.IsAiBarter`; parties via `args.OffererParty`/`args.OtherParty` | not useful — contents-gathering hook that runs before the offer exists; use the accepted/canceled pair below |
+| OnBarterAcceptedEvent | `Hero offererHero, Hero otherHero, List<Barterable> barters` | `BarterManager.ApplyBarterOffer(…)` (:198-218): the `foreach` calling `barter.Apply()` (:200-203) runs **first**, then `CampaignEventDispatcher.Instance.OnBarterAccepted(…)` (:204) ⇒ **AFTER the exchange is applied** (gold, prisoners, items); overpay relation bonus, `Close()`, conversation continue and the "str_offer_accepted" toast come after (:205-217). Entry points `ApplyAndFinalizePlayerBarter` (:183, sets `LastBarterIsAccepted = true`) and the AI path | `offererHero == Hero.MainHero` (you offered) / `otherHero == Hero.MainHero` (they accepted your offer); both heroes can be NPCs ⇒ filter, otherwise this fires for lord-to-lord trades | useful → `barterAccepted` — e.g. a companion/hero changing hands or a fief trade the player took part in |
+| OnBarterCanceledEvent | `Hero offererHero, Hero otherHero, List<Barterable> offeredBarters` | `BarterManager.CancelBarter(…)` (:220-226): `Close()` (:134) and the "str_offer_rejected" toast (:223) happen first, then the dispatch at :224, then `ConversationManager.ContinueConversation()` ⇒ **AFTER the refusal is final, nothing was applied** | same two-hero test as accepted | useful → `barterRejected` — refused-offer bark (relation consequences are visible via Q21) |
+
+#### Game menus and the character portrait pop-up
+
+| Member | Arguments (types, in order) | When it fires — raising call site, BEFORE/AFTER the outcome | Player party / clan test | Usefulness → trigger |
+|---|---|---|---|---|
+| BeforeGameMenuOpenedEvent | `MenuCallbackArgs args` | earliest of the menu trio: `GameMenu.PreInit(MenuContext)` (:319-321) dispatches `CampaignEventDispatcher.Instance.BeforeGameMenuOpened(args)`; called from `MenuContext.HandleStates()` (:62) at :84, i.e. **before** `GameMenu.RunOnInit` (:89) and before the view is created | `args.MenuContext.GameMenu.StringId` picks the menu; no subject arg ⇒ use `MobileParty.MainParty`/`Hero.MainHero` state | not useful — menu plumbing (fires for wait/campaign menus too); UI-only |
+| GameMenuOpened | `MenuCallbackArgs args` | member has **no** `Event` suffix (:747). `GameMenu.RunOnInit(Game, MenuContext)` (:306-316) runs the menu's `OnInit` delegate first, then dispatches `CampaignEventDispatcher.Instance.OnGameMenuOpened(menuCallbackArgs)` (:315) ⇒ AFTER menu init, BEFORE `AfterGameMenuInitialized` | as above (`args.MenuContext`, `args.MapState`) | not useful — UI-only |
+| AfterGameMenuInitializedEvent | `MenuCallbackArgs args` | `GameMenu.AfterInit(MenuContext)` (:325-327) dispatches at the end, called from `MenuContext.HandleStates()` (:103) after the create-handler/`GameMenuCallbackManager.InitializeState(...)` ⇒ last of the trio (Before → Opened → After) | as above | not useful — UI-only |
+| GameMenuOptionSelectedEvent | `GameMenu gameMenu, GameMenuOption gameMenuOption` | `GameMenu.RunMenuOptionConsequence(MenuContext, int)` (:270-283): `gameMenuOption.RunConsequence(menuContext)` runs (:279) **then** `CampaignEventDispatcher.Instance.OnGameMenuOptionSelected(this, gameMenuOption)` (:281) ⇒ **AFTER the option's effect is applied** (the only caller is `GameMenuManager.RunConsequencesOfMenuOption`, :176) | no subject arg — the menu always belongs to the player; identify the action via `gameMenu.StringId` + `gameMenuOption.IdString` (+ `IsLeave`, `RelatedObject`) | not useful — fires for every clicked option; the underlying action already has its own campaign event (recruit/dismiss/settle ⇒ Q6/Q19/Q37) |
+| CharacterPortraitPopUpOpenedEvent | `CharacterObject character` | UI-VM only: `SettlementMenuOverlayVM.ExecuteOnSetAsActiveContextMenuItem(GameMenuPartyItemVM)` (:944) dispatching for `_contextMenuItem.Character` (:1014) and for the visual party leader (:1063); `ArmyMenuOverlayVM.ExecuteOnSetAsActiveContextMenuItem` (:331/:361). The `CampaignEvents` override (:2229-2235) saves `TimeControlMode`, sets `Stop`, locks time control, **then** invokes ⇒ the game is already paused in your handler | `character.IsHero` then `character.HeroObject` (`CharacterObject.cs:88`) — `== Hero.MainHero`, `.Clan == Clan.PlayerClan`, `.IsPlayerCompanion` | useful (flavor only) → `companionPortraitOpened` — idle bark when the player inspects a companion's portrait; UI-driven, campaign is paused |
+| CharacterPortraitPopUpClosedEvent | none | `GameMenuOverlay.ExecuteOnOverlayClosed()` (:160-164) and the tail of `GameMenuOverlay.ExecuteTroopAction(object)` (:336-340, `_closedHandled` guard ⇒ at most once per overlay). The override (:2237-2243) unlocks time control and restores the previous `TimeControlMode` **before** invoking | impossible to tell from arguments — there are none; cache the character from the opened event | not useful — no subject at all; only usable as the tail of the opened event |
+
+#### Tutorials, board games and trade rumors
+
+| Member | Arguments (types, in order) | When it fires — raising call site, BEFORE/AFTER the outcome | Player party / clan test | Usefulness → trigger |
+|---|---|---|---|---|
+| CollectAvailableTutorialsEvent | `List<CampaignTutorial> tutorials` | `GauntletTutorialSystem.OnTick(float dt)` (:147) clears its list and calls `((CampaignEventReceiver)CampaignEventDispatcher.Instance).CollectAvailableTutorials(ref _currentCampaignTutorials)` **every frame** while no tutorial step is shown ⇒ a per-frame collector, no outcome. Only StoryMode: the system is started by `StoryModeGauntletUISubModule` (:21); the only vanilla filler listener is `StoryModeTutorialBoxCampaignBehavior` (:36) | none — player-by-construction | not useful — tutorial plumbing at frame rate (StoryMode-gated, not DLC) |
+| OnTutorialCompletedEvent | `string tutorialTypeId` | `GauntletTutorialSystem.OnTick` (:188) when `tutorialItemBase.IsConditionsMetForCompletion()` — **AFTER** the tracked player action already happened (e.g. Q38's recruit-unit tutorial) but before the step is dropped from the list; second raiser `GauntletTutorialSystem.DisableTutorialStep()` (:270) when a step is force-ended. StoryMode-only, same gate as above | none — player-by-construction | not useful — tutorial bookkeeping; if you need the underlying action use the domain event it mirrors |
+| OnPlayerBoardGameOverEvent | `Hero opposingHero, BoardGameHelper.BoardGameState state` | `MissionBoardGameLogic.SetGameOver(GameOverEnum)` (:283-315): maps the enum to `BoardGameState` (`BoardGameHelper.cs:13`: `None, Win, Loss, Draw`) and dispatches `((CampaignEventReceiver)CampaignEventDispatcher.Instance).OnPlayerBoardGameOver(val, _boardGameState)` at :314, **skipped entirely** when `gameOverInfo == GameOverEnum.PlayerCanceledTheGame` (:312) ⇒ **BEFORE** the vanilla consequences (`BoardGameCampaignBehavior.OnPlayerBoardGameOver`, :98, changes relation/XP afterwards) | player-only (it is the player's board-game mission logic); `opposingHero` is the opponent lord and may be **null** if the opponent agent is not a hero — test `opposingHero.IsPlayerCompanion` / `.Clan == Clan.PlayerClan` | useful → `boardGameFinished` — companion/opponent banter keyed on `state` (win/loss/draw); remember a canceled game never fires it |
+| OnTradeRumorIsTakenEvent | `List<TradeRumor> rumors, Settlement sourceSettlement` | player dialog consequence `CaravansCampaignBehavior.caravan_ask_trade_rumors_on_consequence()` (:1933): once-per-day-per-caravan guard (:1959-1962), rumor list built (:1963-1970) and only dispatched when non-empty (:1971), then `CampaignEventDispatcher.Instance.OnTradeRumorIsTaken(list2)` (:1972, optional `sourceSettlement` omitted ⇒ always `null` outside NavalDLC), then the caravan is recorded (:1973-1980). The consumer `TradeRumorsCampaignBehavior.OnTradeRumorIsTaken` (:46) → `AddTradeRumors` (:51) stores them, so the event is **BEFORE the rumors reach the player's market knowledge** and the list is still mutable | no subject arg — it only exists because the player asked a caravan captain ("caravan_trade_rumors" conversation, :1469-1495, `MobileParty.ConversationParty` = that caravan at raise time); compare `ConversationParty.OwnerMobileParty` if you need the captain | useful → `tradeRumorHeard` — market-gossip bark; a caravan-master companion can react. Dialog wiring is vanilla (`CaravansCampaignBehavior`), not DLC |
+
+### Evidence
+
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` — `CampaignEvents.OnNewGameCreated` — the single override that invokes `_onNewGameCreatedEvent`, the 100-iteration `_onNewGameCreatedPartialFollowUpEvent` loop and `_onNewGameCreatedPartialFollowUpEndEvent`; also holds `public const int OnNewGameCreatedPartialFollowUpEventMaxIndex = 100` and all 32 `public static IMbEvent…` declarations of this catalog.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` — `CampaignEvents.OnCharacterPortraitPopUpOpened` — shows the override stopping time (`TimeControlMode = CampaignTimeControlMode.Stop`, `SetTimeControlModeLock(isLocked: true)`) before the invoke, and the closed override restoring it before its invoke.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEventDispatcher.cs` — `CampaignEventDispatcher.DailyTickHero` — the fan-out override (:1314) plus `TickPartialHourlyAi` (:1206), `AiHourlyTick` (:1224), `HourlyTick` (:1233), `QuarterHourlyTick` (:1242), `DailyTick` (:1278), `WeeklyTick` (:1332) and `OnSessionStart` (:1053) proving the method-name ≠ event-name mapping.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` — `Campaign.DailyTick` — handler that dispatches `DailyTick` (:786) after the `PlayerProgress` averaging and emits `WeeklyTick` (:789) inside the `CampaignTime.DaysInWeek` branch; also `HourlyTick` (:771-776), `QuarterHourlyTick` (:777-780), the `CreatePeriodicEvent` registrations (:1010, :1017, :1024) and `Instance.Tick(_dt)` (:960).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` — `Campaign.OnSessionStart` — raises `OnSessionStart`/`OnAfterSessionStart` back to back (:729-730) before `ConversationManager.Build()` (:732), and `Campaign.OnGameLoaded` (:679-694) raises `OnGameEarlyLoaded` (:691) then `OnGameLoaded` (:692) before `InitializeForSavedGame()` (:693).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` — `Campaign.OnNewGameCreated` — the new-campaign-only raise chain `OnNewGameCreatedInternal` → `GameManager?.OnNewGameCreated` → `CampaignEventDispatcher.Instance.OnNewGameCreated(gameStarter)` (:1585), reached only from the `GameLoadingType.NewCampaign` branch.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignPeriodicEventManager.cs` — `CampaignPeriodicEventManager.InitializeTickers` — the `_dailyTickHeroTicker.Initialize(Hero.AllAliveHeroes, … DailyTickHero …)` ticker and the nine `TickPartialHourlyAi(x)` category tickers (last one over `MobileParty.AllPartiesWithoutPartyComponent`), plus `TickPartialHourlyAi()` and `PeriodicDailyTick()`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignObjectManager.cs` — `CampaignObjectManager.AddPartyToAppropriateList` — the bandit/caravan/patrol/lord/militia/villager/custom/garrison classification chain whose fall-through list `_partiesWithoutPartyComponent` contains the player's main party.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors.AiBehaviors/AiPartyThinkBehavior.cs` — `AiPartyThinkBehavior.PartyHourlyAiTick` — subscribes `TickPartialHourlyAiEvent`, gates on `mobileParty.Ai.HourCounter % num == 0 && mobileParty != MobileParty.MainParty`, dispatches `AiHourlyTick` and only then reads `thinkParamsCache.AIBehaviorScores` to choose the behavior.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.BarterSystem/BarterManager.cs` — `BarterManager.CancelBarter` — `Close()` + reject toast then `OnBarterCanceled`; alongside `ApplyBarterOffer` (all `barter.Apply()` then `OnBarterAccepted`), `ApplyAndFinalizePlayerBarter` (`LastBarterIsAccepted = true`), `StartBarterOffer` (:83) and `ExecuteAiBarter` (:105) which raise `OnBarterablesRequested` before any offer exists.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.BarterSystem/BarterData.cs` — `BarterData.OffererHero` — the offer context fields (`OffererHero`, `OtherHero`, `OffererParty`, `OtherParty`, `IsAiBarter`) used to identify the player side, and `AddBarterable`/`GetOfferedBarterables` used by the collector listeners.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/QuestBase.cs` — `QuestBase.AddTwoWayContinuousLog` — creates the `JournalLog(CampaignTime.Now, …)`, appends it to `_journalEntries` and only then calls `CampaignEventDispatcher.Instance.OnQuestLogAdded(this, hideInformation)`; `AddLog`/`AddDiscreteLog` do the same, and `QuestGiver` is the quest's Hero.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueBase.cs` — `IssueBase.AddLog` — the only `OnIssueLogAdded` raiser (log appended first, `hideInformation: false`), and the `IssueOwner` Hero used for the player test.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/JournalLogsCampaignBehavior.cs` — `JournalLogsCampaignBehavior.OnQuestLogAdded` — the vanilla consumer that turns these two events into journal entries, showing the events are journal-line notifications.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameMenus/GameMenu.cs` — `GameMenu.RunMenuOptionConsequence` — `gameMenuOption.RunConsequence(menuContext)` then `OnGameMenuOptionSelected` (:281); also `RunOnInit` → `OnGameMenuOpened` (:315), `PreInit` → `BeforeGameMenuOpened` (:321) and `AfterInit` → `AfterGameMenuInitialized` (:327).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameState/MenuContext.cs` — `MenuContext.HandleStates` — the ordering driver: `GameMenu.PreInit(this)` (:84) → `GameMenu.RunOnInit(…)` (:89) → menu view creation → `GameMenu.AfterInit(this)` (:103).
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Overlay/SettlementMenuOverlayVM.cs` — `SettlementMenuOverlayVM.ExecuteOnSetAsActiveContextMenuItem` — UI context-menu handler raising `OnCharacterPortraitPopUpOpened` for a context-menu character (:1014) and for the party leader (:1063).
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.GameMenu.Overlay/GameMenuOverlay.cs` — `GameMenuOverlay.ExecuteOnOverlayClosed` — one of the two `OnCharacterPortraitPopUpClosed` raisers (the other is the `_closedHandled`-guarded tail of `ExecuteTroopAction`), proving the closed event carries no subject.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CharacterCreationContent/CharacterCreationState.cs` — `CharacterCreationState.FinalizeCharacterCreationState` — pushes `MapState`, notifies `_handler?.OnCharacterCreationFinalized()` and then raises `OnCharacterCreationIsOver` (:60).
+- `decomp/SandBox/SandBox/SandBoxGameManager.cs` — `SandBoxGameManager.OnLoadFinished` — the cast-form, saved-save-only raiser of `OnGameLoadFinished` (:177), which is why the event never fires for a new campaign (Q8).
+- `decomp/SandBox.GauntletUI/SandBox.GauntletUI.Tutorial/GauntletTutorialSystem.cs` — `GauntletTutorialSystem.DisableTutorialStep` — per-frame `CollectAvailableTutorials(ref …)` from `OnTick`, `OnTutorialCompleted(…)` on completion-conditions-met and from `DisableTutorialStep` (:270).
+- `decomp/StoryMode.GauntletUI/StoryMode.GauntletUI/StoryModeGauntletUISubModule.cs` — `GauntletTutorialSystem.OnInitialize` — proves the tutorial raiser exists only in the StoryMode sub-module (StoryMode gate, not a DLC gate).
+- `decomp/StoryMode/StoryMode.GameComponents.CampaignBehaviors/StoryModeTutorialBoxCampaignBehavior.cs` — `StoryModeTutorialBoxCampaignBehavior` — the only vanilla listener of `CollectAvailableTutorialsEvent` and `OnTutorialCompletedEvent`.
+- `decomp/SandBox/SandBox.BoardGames.MissionLogics/MissionBoardGameLogic.cs` — `MissionBoardGameLogic.SetGameOver` — maps `GameOverEnum` to the board-game state, skips the raise for `PlayerCanceledTheGame` and dispatches `OnPlayerBoardGameOver(opposingHero, state)` (:314).
+- `decomp/TaleWorlds.CampaignSystem/Helpers/BoardGameHelper.cs` — `BoardGameHelper.BoardGameState` — the `None/Win/Loss/Draw` enum passed as the second argument.
+- `decomp/SandBox/SandBox.CampaignBehaviors/BoardGameCampaignBehavior.cs` — `BoardGameCampaignBehavior.OnPlayerBoardGameOver` — the vanilla listener that applies relation/XP consequences after the event, establishing that the event fires before the outcome.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CaravansCampaignBehavior.cs` — `CaravansCampaignBehavior.caravan_ask_trade_rumors_on_consequence` — builds the rumor list and dispatches `OnTradeRumorIsTaken(list)` with the optional settlement argument omitted; the per-caravan per-day `_tradeRumorTakenCaravans` guard.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/TradeRumorsCampaignBehavior.cs` — `TradeRumorsCampaignBehavior.AddTradeRumors` — the listener that stores the rumors after the event, i.e. the outcome the event precedes.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.IsPlayerCompanion` — `CompanionOf == Clan.PlayerClan`, plus `Clan`, `PartyBelongedTo` and `CompanionsInParty`, the members used for the player-side tests in this catalog.
+
+### Uncertain
+
+- Whether a mod's listener on `DailyTickHeroEvent`/`DailyTickPartyEvent` runs before or after the vanilla behavior listeners for the same hero is registration-order dependent (same unresolved ordering as Q32/Q40); unresolved by reading decomp — resolve by logging both listeners in one session.
+- `OnGameLoadFinishedEvent` is assumed to fire only on the saved-campaign path because the only decomp raiser is inside `SandBoxGameManager.OnLoadFinished`'s loaded-save branch; a non-decompiled module (or engine code) could still raise it — confirm with a logging listener before depending on the pairing with `OnNewGameCreatedPartialFollowUpEndEvent` (carried over from Q8).
+- Exact frequency of `TickPartialHourlyAiEvent` per party: the tickers run at rate `DeltaHours * 0.99` with `PeriodicTickSome` batching and `MinimumPeriodicEventInterval = CampaignTime.Hours(0.05f)`, so whether a party can receive two calls in one game hour (or a skipped hour under heavy load) is unresolved — measure call counts against `CampaignTime.Now` in a test save.
+- Whether `CharacterPortraitPopUpOpenedEvent` also fires for the Wanderer/recruitment pop-ups and the encyclopedia portrait view: only `SettlementMenuOverlayVM`, `ArmyMenuOverlayVM` and `GameMenuOverlay` were grepped; other Gauntlet UI entry points are not decompiled — verify in-game if the `companionPortraitOpened` trigger is used.
+- The exact `Settlement` origin of a trade rumor is unrecoverable outside NavalDLC because the only non-DLC raiser omits `sourceSettlement`; if a "rumor from town X" line is wanted, the settlement has to be inferred from `MobileParty.ConversationParty` at raise time — untested.
+
+## Q46 — Marriage between heroes
+
+Status: DRAFT
+
+### Answer
+
+Scope: `TaleWorlds.CampaignSystem` (+ `.Actions`, `.GameComponents`, `.CampaignBehaviors`, `.BarterSystem.Barterables`),
+`SandBox`, `StoryMode`. `decomp/NavalDLC/**` not searched. Q39 (`BeforeHeroesMarried` / `RomanticStateChanged` fan-out),
+Q40 (conception→birth chain), Q38 (`DisbandPartyAction`), Q33 (fugitive heroes), Q34 (what vanilla can see on a companion),
+Q19 (dismissal), Q44 (companion→lord), Q16 (`AddModel`/`AddBehavior`), Q17 (notifications), Q15 (a mod listener exception is
+never caught) are mapped elsewhere and are referenced, not re-derived.
+
+**(1) The only vanilla entry point.** `MarriageAction` is a `public static class` with exactly one public entry,
+`MarriageAction.Apply(Hero firstHero, Hero secondHero, bool showNotification = true)` (`decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/MarriageAction.cs:85`);
+`ApplyInternal` (:9) is private and there is **no** "check first" overload. The whole suitability check is the single gate at
+the top of `ApplyInternal` (:11): if `Campaign.Current.Models.MarriageModel.IsCoupleSuitableForMarriage` returns false the
+call is a **silent no-op** — `Debug.Print("MarriageAction.Apply() called for not suitable couple: …")` and `return` (:13).
+No exception, no event, no return value, so a caller cannot tell success from rejection. All non-DLC call sites:
+
+| call site | couple |
+|---|---|
+| `RomanceCampaignBehavior.CheckNpcMarriages()` :145 | AI lord ↔ AI lord (daily dice, one marriage per clan per day). This closes Q39's open item "whether AI↔AI pairs ever reach `MarriageAction`" — they do. |
+| `MarriageOfferCampaignBehavior.MarryHeroesViaOffer()` :136 | a `Clan.PlayerClan` member (never `Hero.MainHero`) ↔ a hero of another clan, after the offer pop-up is accepted |
+| `MarriageBarterable.Apply()` :118–121 | whoever finished the romance dialogue/barter, incl. `Hero.MainHero`; `showNotification` = "either partner is in `Clan.PlayerClan`" |
+| `CampaignCheats` :1878, :1952, :2633, :2662 | debug/cheat menu only |
+
+`DefaultMarriageModel.IsCoupleSuitableForMarriage(a, b)` (`...GameComponents/DefaultMarriageModel.cs:17`) checks, in order:
+
+| # | condition | note |
+|---|---|---|
+| 1 | `IsClanSuitableForMarriage(a.Clan)` and `(b.Clan)` (:19 → :40) | clan non-null, not bandit, not rebel, not eliminated. **No gender, kingdom, relation or "different clans" requirement here — a same-clan couple passes.** The cross-clan / not-at-war / clan-relation ≥ −50 rule is `ShouldNpcMarriageBetweenClansBeAllowed` (:67), used only by the AI matchmaking loops (:106, :315), never by the action. |
+| 2 | not **both** partners are the leader of their own clan (:19) | |
+| 3 | `a.IsFemale != b.IsFemale` (:19) | hard-coded opposite sex; no model hook. |
+| 4 | `!AreHeroesRelated(a, b, 3)` (:19 → :89–133) | walks `Mother`/`Father` up to 3 generations in both directions → parents, grandparents, great-grandparents, siblings, aunts/uncles, first cousins blocked; in-laws are not. |
+| 5 | `Romance.GetCourtedHeroInOtherClan(a, b)` is null or `b` (:23–27) | i.e. `b` must not already be courted (level ≥ `MatchMadeByFamily`) by a third hero of `a.Clan.AliveLords`. `Romance.cs:123` dereferences `person2.Clan` with no null guard. |
+| 6 | same, mirrored (:28–32) | |
+| 7 | `a.CanMarry() && b.CanMarry()` (:33–37) | `Hero.CanMarry()` (`Hero.cs:1947`) = `MarriageModel.IsSuitableForMarriage(this)` **and** the query event `CanHeroMarry` (Q35/Q39 veto hook — the sanctioned mod interception point). |
+
+`DefaultMarriageModel.IsSuitableForMarriage` (:143) is where a companion dies on the rocks: `IsActive`, `Spouse == null`,
+**`IsLord`** (`Occupation == Occupation.Lord`, `Hero.cs:399`), not minor-faction, not notable, **not `IsTemplate`**,
+`PartyBelongedTo?.MapEvent == null`, `PartyBelongedTo?.Army == null`, not "engaged" per
+`Campaign.Current.GetCampaignBehavior<IMarriageOfferCampaignBehavior>().IsHeroEngaged(hero)` (:147), and
+`CharacterObject.Age >= MinimumMarriageAgeFemale / MinimumMarriageAgeMale` (:154/:156 — **18 and 18**, model-overridable;
+note it reads the *CharacterObject*'s age, not `Hero.Age`). `Hero.IsTemplate => CharacterObject.IsTemplate` (`Hero.cs:329`)
+and `CharacterObject.IsTemplate` is `{ get; private set; }` filled **only** from the `<IsTemplate>` XML node
+(`CharacterObject.cs:288`, `:545`) — it is *not* copied by `CharacterObject.CreateFrom` (:416–438) and cannot be set at
+runtime, so the mod's own heroes (Q11: `NpcCharacterXml.cs` emits no `IsTemplate`) satisfy `!IsTemplate`.
+
+**(2) Two companions of the player clan.** First, a correction to the premise of the question (and to one sentence of Q34):
+`Hero.Clan` is *not* the backing field — its getter is `CompanionOf ?? _clan` (`Hero.cs:498–503`; setter :503–527 only ever
+writes `_clan`). `AddCompanionAction` sets only `companion.CompanionOf` (Q19) and the `CompanionOf` setter
+(`Hero.cs:253–269`) calls `Clan.OnCompanionAdded`, which fills **both** `_companionsCache` and (via `OnHeroAdded`,
+`Clan.cs:1226`) `_heroesCache` (`Clan.cs:1214–1224`). So a hired mod or vanilla companion reports
+`hero.Clan == Clan.PlayerClan`, **is** in `Clan.PlayerClan.Heroes`, and is **not** in `Clan.AliveLords` (only `OnLordAdded`,
+`Clan.cs:1175`, fills that). Consequences for the gate chain: the clan gate passes, check 2 is false (the PlayerClan leader is
+MainHero), checks 4–6 are null-safe, and the marriage would not crash the pregnancy model. The single blocking term is
+**`IsLord`**: Q4's `CompanionHeroFactory` ends with `hero.SetNewOccupation(Occupation.Wanderer)`, so
+`IsSuitableForMarriage == false` ⇒ `CanMarry() == false` ⇒ `IsCoupleSuitableForMarriage == false` ⇒
+`MarriageAction.Apply(companionA, companionB)` is a silent no-op plus the `Debug.Print` at :13.
+
+Vanilla never marries them either, and it is not because they are invisible: (i) NPC auto-marriage skips the player clan
+outright (`RomanceCampaignBehavior.IsClanSuitableForNpcMarriage:152` = `clan != Clan.PlayerClan && IsClanSuitableForMarriage(clan)`)
+and picks spouses from `AliveLords` (:117/:131) anyway; (ii) the player-clan *offer* loop **does** enumerate companions
+(`MarriageOfferCampaignBehavior.DailyTickClan:118` iterates `Clan.PlayerClan.Heroes` with
+`hero != Hero.MainHero && hero.CanMarry()`) and rejects them at `CanMarry()`; (iii) the player cannot court a companion: every
+romance dialogue gate funnels through `MarriageCourtshipPossibility(a, b)` (:1431) =
+`IsCoupleSuitableForMarriage(a, b) && !IsAtWar(a.MapFaction, b.MapFaction)` ⇒ false for a Wanderer.
+
+So the mod *must* drive the marriage itself, and the only supported lever is the model: subclass `DefaultMarriageModel`,
+keep the vanilla answer unless the heroes involved are the mod's own (e.g. relax `IsSuitableForMarriage`'s `IsLord` for them),
+register it with `AddModel` in `InitializeGameStarter` (Q16), then call `MarriageAction.Apply(a, b)`. With that in place the
+outcome for a two-companion couple is benign: `GetClanAfterMarriage` (:161) returns the male's clan = `Clan.PlayerClan`,
+`hero.Clan != clanAfterMarriage` is false for both partners, so `HandleClanChangeAfterMarriageForHero` never runs — no party
+roster change, no fugitive, no clan move (steps 1, 2, 4, 6, 7 below still happen). The dangerous variant is marrying a
+companion to an **NPC of another clan**: then `clanAfterMarriage` is the NPC clan (male's clan wins; a clan leader's clan wins;
+otherwise `secondHero.Clan`), `HandleClanChangeAfterMarriageForHero` runs for the companion, and step 5 removes him from
+`MobileParty.MainParty`'s roster and makes him a fugitive (Q33/Q39), *then* `hero.Clan = clanAfterMarriage` (:74) writes only
+`_clan` — `CompanionOf` still points at `Clan.PlayerClan`, so the hero is simultaneously in `PlayerClan.Companions`/`Heroes`
+and in the new clan's `Heroes`, and `hero.Clan` still reports `PlayerClan` (which also breaks the save-load check in (3)).
+The safe ordering is Q44's: clear `CompanionOf` first (`RemoveCompanionAction`), then change the clan.
+
+**(3) What the action does — consequences.**
+
+| step | `MarriageAction.cs` | effect |
+|---|---|---|
+| 1 | :16–17 | `firstHero.Spouse = secondHero`, then the mirror. The `Hero.Spouse` setter (`Hero.cs:832`) keeps the pair symmetric and pushes a displaced partner into `_exSpouses` (`:154`, `:830`) — **there is no divorce action and the setter raises no event**; `Spouse = null` is the whole mechanic. |
+| 2 | :18 | `ChangeRelationAction.ApplyRelationChangeBetweenHeroes(a, b, MarriageModel.GetEffectiveRelationIncrease(a, b), showQuickNotification: false)`; `DefaultMarriageModel:136` = `round(20 + Charm skill bonus)`. `CharacterRelationCampaignBehavior` adds **another +30** from its `BeforeHeroesMarried` listener (const `RelationIncreaseBetweenHeroesAfterMarriage = 30` → handler :490), also with no quick notification ⇒ net ≈ 50. |
+| 3 | :19–24 | `clanAfterMarriage = MarriageModel.GetClanAfterMarriage(a, b)` (`DefaultMarriageModel:161`) = MainHero's clan if either partner is the player → else a partner who is his own clan's leader → else the **male's** clan → else `secondHero.Clan`; if that differs from `firstHero.Clan` the two arguments are swapped (so the event and the romantic state see the possibly-swapped order). |
+| 4 | :26 | `CampaignEventDispatcher.Instance.OnBeforeHeroesMarried(firstHero, secondHero, showNotification)`. This is the **only** marriage event; there is no `AfterHeroesMarried` (Q39 row). The name is honest about the clan move but not about the rest: `Spouse` (step 1) and the relation change (step 2) have already happened, and listeners still see the **pre-marriage** clans (Q39 already flagged this). |
+| 5 | :27–33 → :40–83 | per partner whose clan changes (skipped when `hero.Clan == clanAfterMarriage`): `hero.Clan` captured at :42 and dereferenced again at :49, so a hero with `Clan == null` NREs here; governorship removed (:43–45); if he is in a party and the old/new clan kingdoms differ, detach from / disband his army (`DisbandArmyAction.ApplyByUnknownReason` at :55, else `Army = null` at :59) and `FactionHelper.FinishAllRelatedHostileActionsOfNobleToFaction` (:62–63); `party.MemberRoster.RemoveTroop(hero.CharacterObject)` (:67) + **`MakeHeroFugitiveAction.Apply(hero)`** (:68) — a partner riding in `MobileParty.MainParty` is ejected as a fugitive — plus `DisbandPartyAction.StartDisband` if he led a lord party (:69–72); then `hero.Clan = clanAfterMarriage` (:74) and `UpdateHomeSettlement()` for every hero of **both** clans (:75–82). |
+| 6 | :35–36 | `Romance.EndAllCourtships(a)` / `(b)`: every `RomanticState` touching either hero goes to `Ended`. `Romance.EndAllCourtships`/`SetRomanticState` are `internal static` (`Romance.cs:156`, `:167`) — a mod cannot call them; the public path is `ChangeRomanticStateAction.Apply`. |
+| 7 | :37 | `ChangeRomanticStateAction.Apply(firstHero, secondHero, Romance.RomanceLevelEnum.Marriage)` → `Romance.SetRomanticState` + the `RomanticStateChanged` fan-out (Q39). |
+
+What a marriage *shows* (vanilla listeners of `BeforeHeroesMarried`, plus the one `RomanticStateChanged` logger that step 7
+triggers — all verified): `DefaultLogsCampaignBehavior:172` always writes a `CharacterMarriedLogEntry` (:174), and adds a
+`MarriageMapNotification` only when either `marriedHero.Clan == Clan.PlayerClan` (:177–178) — **true for a hired companion**,
+because of the `Clan` getter above; SandBox `DefaultNotificationsCampaignBehavior:854–861` shows the `str_hero_married_hero`
+quick info under the same player-clan gate plus `showNotification`; SandBox `DefaultCutscenesCampaignBehavior:217` creates the
+`MarriageSceneNotificationItem` only when MainHero is a partner (:222, item at :225);
+`HeroKnownInformationCampaignBehavior:256` calls `SetHasMet()` on the non-player spouse;
+`CommentOnChangeRomanticStateBehavior:18–20` logs a `ChangeRomanticStateLogEntry` only if a partner is MainHero or his own
+clan's leader (derefs `hero1.Clan.Leader`); StoryMode `AchievementsCampaignBehavior:195` → `CheckHeroMarriage:588`;
+`LordsNeedsTutorIssueBehavior:462` in `…TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/` (Q37). A couple inside
+some NPC clan therefore produces no UI at all beyond the log entry (Q17).
+**Save/load re-validation:** `Hero.AfterLoad()` (`Hero.cs:1617`) nulls a marriage when
+`Spouse.Clan != Clan || Clan == null || Age < AgeModel.HeroComesOfAge` (:1651, `DefaultAgeModel:39` = 18), removes the ex-spouse
+from both `ExSpouses` lists and deletes the matching `CharacterMarriedLogEntry` rows — silently. Any mod-made couple must
+report the *same* `Hero.Clan` and be ≥ 18 or it evaporates on the next load.
+
+Children (chain detail in Q40; only the marriage-relevant constants here). `PregnancyCampaignBehavior.DailyTickHero` (:90):
+`hero.IsFemale && !CampaignOptions.IsLifeDeathCycleDisabled && hero.IsAlive && hero.Age > HeroComesOfAge &&
+(hero.Clan == null || !hero.Clan.IsRebelClan)`, then `Spouse != null && Spouse.IsAlive && !hero.IsPregnant` (:94) →
+`RefreshSpouseVisit` (:118) → `CheckAreNearby(a, b)` (same settlement or same/attached party, `:126`; non-player clans get a
+flat 20% blind pass at :134) → `MBRandom.RandomFloat <= PregnancyModel.GetDailyChanceOfPregnancyForHero(hero)` (:120) →
+`MakePregnantAction.Apply(hero)` (Q40) → `OnChildConceived` → due in `PregnancyDurationInDays` (36, 18 under
+`Options.AccelerationMode == Fast`, `DefaultPregnancyModel:13`). `CheckOffspringToDeliver` (:155) rolls
+`StillbirthProbability` (1%), calls `HeroCreator.DeliverOffSpring`, raises `OnGivenBirth`, clears `IsPregnant`, and kills the
+mother with `MaternalMortalityProbabilityInLabor` (1.5%) via `KillCharacterAction.ApplyInLabor`.
+`DefaultPregnancyModel.GetDailyChanceOfPregnancyForHero` (:32–45) = age window 18…45, `(1.2 − (age−18)·0.04) / (children+1)² × 0.12`
+× crowding `min(1, (2·(4+4·Clan.Tier) − Clan.AliveLords.Count) / (4+4·Clan.Tier))` (1.0 when MainHero is a parent) × the Charm
+*Virile* perk factor — **`hero.Clan.Tier` (:35), `hero.Clan.AliveLords.Count` (:36) and `hero.Spouse.GetPerkValue` (:42) are
+dereferenced unguarded**; vanilla only calls it with a spouse and a clan present, so a mod that calls the model directly
+inherits those preconditions (a hero with `Clan == null` would crash the daily tick — Q15: nothing catches it).
+Offspring identity (`HeroCreator.DeliverOffSpring:258`): template = `father.CharacterObject` for a son,
+`mother.CharacterObject` for a daughter (`DefaultHeroCreationModel.GetCharacterTemplateForOffspring:346`) passed through
+`CharacterObject.CreateFrom` (`CharacterObject.cs:416`), so **a companion couple's children are copies of the mod's own
+character templates**; clan = `Hero.MainHero.Clan` when MainHero is a parent, else `father.Clan` (:270–278) — for a companion
+father that resolves to `Clan.PlayerClan` through the `CompanionOf` fold-in, and it is a real `_clan` write
+(`InitializeHeroFromSettings:304`); occupation = mother's occupation for a daughter and father's for a son (:267) — the
+children of a Wanderer couple are born **Wanderers** (nothing in non-DLC re-promotes them at adulthood; the only
+`SetNewOccupation(Lord)` paths are `HeroCreator.cs:322` and the Q44 companion→lord flow), so they stay non-marriageable and
+non-inheritable.
+
+Inheritance: marriage itself changes nothing. `Clan.GetHeirApparents()` (`Clan.cs:1356`) enumerates `Heroes` — companions
+included — but filters `!IsWanderer`, `!IsNotable`, `!IsDisabled`, `!IsNotSpawned`, alive, no death mark, `Age >= 18`, and
+scores with `HeirSelectionCalculationModel`: `DefaultHeirSelectionCalculationModel` gives **+10 for being male**, ±5 for being
+the eldest/youngest of `candidate.Clan.Heroes`, **+10 for a direct or sibling bloodline** with the dead leader (walks
+Father/Mother and `father.Children`), and `HighestSkillPoint` (5) for the best-skilled candidate — **there is no spouse term
+at all**, so a married-in companion gains zero succession standing and is in fact still excluded by `IsWanderer`. NPC clans
+get the winner via `ChangeClanLeaderAction.ApplyWithoutSelectedNewLeader` (leader-gold transfer, governor removal, clan-party
+re-point, `DiplomacyModel.GetRelationChangeAfterClanLeaderIsDead` applied to every hero relation, `OnClanLeaderChanged`).
+The player clan goes through SandBox `HeirSelectionCampaignBehavior`: `OnBeforeMainCharacterDied` (:85) builds
+`Hero.MainHero.Clan.GetHeirApparents()`; an **empty dictionary means game over** (non-player MainParty heroes are stripped,
+`OnGameOver` + `GameOverCleanup` + `ShowGameStatistics`), otherwise `OnHeirSelectionRequested` → the player picks →
+`OnHeirSelectionOver` → `ApplyHeirSelectionAction.ApplyByDeath(heir)` (:137), which transfers the clan leadership, the
+workshops and the caravans, `MakeHeroFugitiveAction.Apply`s every other hero riding in the MainParty, disbands the army and
+switches the player. Retirement is the same action from `RetirementCampaignBehavior:51`. (A companion *could* become an heir
+only if the mod gave him `Occupation.Lord` without clearing `CompanionOf` — the ordering Q44 forbids.)
+
+**(4) Vanilla courtship vs. calling the action directly.** Vanilla courtship is a dialogue/persuasion state machine over
+`Romance.RomanticState` (`Romance.cs:9`: `Person1`, `Person2`, `Level`, `ProgressToNextLevel`, `LastVisit`,
+`ScoreFromPersuasion`; `Romance.RomanceLevelEnum` :84 = `Ended(−2) < Rejection < Untested < FailedInCompatibility <
+FailedInPracticalities < MatchMadeByFamily < CourtshipStarted < CoupleDecidedThatTheyAreCompatible < CoupleAgreedOnMarriage <
+Marriage`) plus the barter layer:
+
+| stage | `RomanceCampaignBehavior` | gate / effect |
+|---|---|---|
+| open | :1239 `conversation_player_can_open_courtship_on_condition` | target not a minor faction, not a prisoner, `MarriageCourtshipPossibility(MainHero, target)` and level `Untested` (a `FailedIn*` level reopens a different line at :1257) |
+| match made for a relative | :1085 → `MatchMadeByFamily`; :1090 → `MarriageBarterable` + `BarterManager.StartBarterOffer` | the "a lord proposes a match for *my* relative" chain; the relative list comes from `FindPlayerRelativesEligibleForMarriage:1411` = `Hero.MainHero.Clan.AliveLords` (companions excluded there) |
+| stage 1 | :719 | `MatchMadeByFamily → CourtshipStarted`, then `ConversationManager.StartPersuasion(_maximumScoreCap, …)` over `GetPersuasionTasksForCourtshipStage1`, `PersuasionDifficulty.Medium` (:69); each attempt is recorded per pair (`PersuasionAttempt`, :1385) and replayed; one-attempt-per-day cooldown (`RomanceCourtshipAttemptCooldown`, private property :90, used at :1150/:1171) |
+| stage 2 | :761 → `CoupleDecidedThatTheyAreCompatible`; :771/:781 → `CoupleAgreedOnMarriage` | `ScoreFromPersuasion = GetPersuasionProgress() − GetPersuasionGoalValue()` |
+| clan-leader consent | :1179 / :1188 | required only when the partner **is** his clan's leader (`Clan.Leader == hero`); the "marry someone else of your clan" alternative at :1196 |
+| hand-off | :273 `conversation_finalize_marriage_barter_consequence` | `new MarriageBarterable(Hero.MainHero, PartyBase.MainParty, proposed, proposer)` + `BarterManager.Instance.StartBarterOffer(…, ScoreFromPersuasion, isAIBarter: false, …)` + `PlayerEncounter.LeaveEncounter = true`; `MarriageBarterable.Apply():118` is what finally calls `MarriageAction.Apply(proposed, proposer, showNotification: either is PlayerClan)` |
+| failure / abort | :701 (`CourtshipStarted → FailedInCompatibility`, `CoupleDecidedThatTheyAreCompatible → FailedInPracticalities`); :1096 (war, became clan leader, joined an Army, imprisoned) | |
+
+**A mod can skip all of it.** `MarriageAction.Apply` consults only `IsCoupleSuitableForMarriage`, whose sole romance term is
+"no *other* clan-crossing courtship at ≥ `MatchMadeByFamily`" — a couple with no `RomanticState` at all passes. Persuasion
+progress, the barterable and its valuation, the scene/map notifications and the conversation node tree leave nothing behind
+that a later vanilla step reads back. What is *not* safe to skip: (i) `MarriageModel` must still answer `true` or the call is
+silently dropped — override the model (Q16), do not bypass it; (ii) after the action, call
+`ChangeRomanticStateAction.Apply(a, b, Romance.RomanceLevelEnum.Marriage)` yourself if you want `Romance.GetRomanticLevel`
+consistent — otherwise the pair stays `Untested`, still shows up as courtable in the dialogue gates, and keeps
+`ProgressToNextLevel`/`LastVisit` bookkeeping missing (`EndAllCourtships`/`SetRomanticState` are `internal`); (iii) do **not**
+hand-set `Hero.Spouse` and expect a marriage — the setter raises nothing, so the log entry, the map notification, the +30
+relation, `SetHasMet` and the mod's own `BeforeHeroesMarried` listeners all stay silent; use the action (or, at minimum,
+`CampaignEventDispatcher.Instance.OnBeforeHeroesMarried`, but that skips steps 1–3 and 5–7). Q15 applies to the fan-out: an
+exception thrown by a mod listener inside `OnBeforeHeroesMarried`/`OnRomanticStateChanged` unwinds the whole action.
+Note also that a mod-driven marriage of two *player-clan* heroes is something vanilla never does (auto-marriage excludes
+`Clan.PlayerClan`, offers only pair a player-clan hero with an outsider), so no vanilla loop will interfere afterwards.
+
+**(5) Side effects on the player.**
+- **Offer system** (`MarriageOfferCampaignBehavior`; never about MainHero — the loop skips him at :119): the daily roll per
+  foreign clan is gated by `CanOfferMarriageForClan` (:306) — no pending offer, `_lastMarriageOfferTime` ≥ 7 days
+  (`MarriageOfferCooldownDurationAsDays`, :17/:309), MainHero not a prisoner, `MobileParty.MainParty` not rafted, clan ≠
+  PlayerClan, `IsClanSuitableForMarriage`, `ShouldNpcMarriageBetweenClansBeAllowed(Clan.PlayerClan, clan)`, then a distance
+  dice against `MapDistanceModel` (:111) and `NpcCoupleMarriageChance` per candidate pair (:49; base
+  `BaseMarriageChanceForNpcs = 0.002` × age factors, ½ across kingdoms, `(0.5 + relation/200)`);
+  `ConsiderMarriageForPlayerClanMember` (:315) aborts if any ≥`MatchMadeByFamily` state exists for either hero.
+- `CreateMarriageOffer` (:74) parks the pair and posts a `MarriageOfferMapNotification`;
+  **`OnMarriageOfferedToPlayerEvent` fires only when the player opens that banner**
+  (`MarriageOfferNotificationItemVM:21`), and `OnMarriageOfferCanceledEvent` on decline, on the 2-day auto-decline
+  (`MapNotificationAutoDeclineDurationInDays = 2f`, :21/:181), or when war/death/imprisonment invalidates the pair (:284).
+  Pending pairs are re-checked daily and married without a pop-up (:191–193). `IsHeroEngaged` (:167) feeds straight back into
+  `DefaultMarriageModel.IsSuitableForMarriage:147`.
+- Accepting re-validates `IsCoupleSuitableForMarriage` (:139–141) and then `MarryHeroesViaOffer` (:127):
+  `MarriageSceneNotificationItem`, `ChangeRelationAction.ApplyPlayerRelation(otherClanLeader, +10)`
+  (`OfferRelationGainAmountWithTheMarriageClan`, :19/:135) and `MarriageAction.Apply` (:136) — no extra event raise of its
+  own (Q40 row :4222).
+- The player's own marriage arrives only via courtship dialogue + `MarriageBarterable`; because every gate is
+  `MarriageCourtshipPossibility` → `IsCoupleSuitableForMarriage`, vanilla gives the player **no** way to marry a companion
+  (the same verdict Q34 reached from the dialogue-visibility side).
+- **Risk introduced by relaxing the model:** since the daily offer loop walks `Clan.PlayerClan.Heroes` and companions *are* in
+  that list, a `MarriageModel` that lets the mod's heroes marry will also let vanilla offer them to NPC clans — and a female
+  partner taken into another clan goes through step 5, i.e. removal from the MainParty roster + `MakeHeroFugitiveAction`
+  (Q33/Q39). A custom model must therefore return the vanilla answer unless *both* partners are mod heroes (or otherwise
+  filter by the mod's roster) if the intent is "companions marry companions, inside the player clan, only on the mod's call".
+- Relation/notification deltas on the player side: ≈50 between the two partners (20+Charm in the action, +30 from the
+  listener, neither with a quick notification), +10 to the other clan's leader only through the offer path, map notification
+  and quick info whenever either partner's `Hero.Clan == Clan.PlayerClan` — which for a hired companion is always true
+  (`Hero.cs:502`), so marriage UI for companions appears even though Q34's "invisible" rule holds for `AliveLords`-based
+  browsing and parties.
+
+### Evidence
+
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/MarriageAction.cs` — `MarriageAction.Apply(Hero, Hero, bool showNotification = true)` — (:85) and `ApplyInternal` (:9–38) — the single public entry point; gate at :11, silent `Debug.Print` rejection at :13; the ordered steps `Spouse` (:16–17) → relation (:18) → clan resolution/arg swap (:19–24) → `OnBeforeHeroesMarried` (:26) → clan change (:29/:33) → `Romance.EndAllCourtships` (:35–36) → `ChangeRomanticStateAction` (:37).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/MarriageAction.cs` — `MarriageAction.HandleClanChangeAfterMarriageForHero(Hero, Clan)` — (:40–82) — skipped when `hero.Clan == clanAfterMarriage`; otherwise governor removal (:45), army detach/disband + `FactionHelper` (:55–63), `MemberRoster.RemoveTroop` + `MakeHeroFugitiveAction.Apply` (:66–72), `DisbandPartyAction.StartDisband` for a lord-party leader (:74), `hero.Clan = clanAfterMarriage` (:76), `UpdateHomeSettlement()` for both clans (:78–83); `hero.Clan` deref at :44/:47.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultMarriageModel.cs` — `IsCoupleSuitableForMarriage` — (:17–38), `IsClanSuitableForMarriage` (:40), `ShouldNpcMarriageBetweenClansBeAllowed` (:67), `AreHeroesRelated(…, 3)` (:89–133), `GetEffectiveRelationIncrease` = 20 + Charm (:136), `IsSuitableForMarriage` (:143), `GetClanAfterMarriage` (:161–184), `MinimumMarriageAgeMale/Female = 18` (:13/:15), `BaseMarriageChanceForNpcs = 0.002` (:11) — the full condition chain and the fact that no clan-pair/kingdom rule is enforced by the action.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.Clan` — getter/setter (:498–527) — `get => CompanionOf ?? _clan`; the setter writes only `_clan`, fires `OnLordRemoved/OnLordAdded` and `OnHeroChangedClan`; decisive for what "the same clan" means for a hired companion.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.Spouse` — (:832), `Hero._exSpouses`/`ExSpouses` (:154/:830), `Hero.Children` (:857) — self-mirroring setter, ex-spouse bookkeeping and the absence of any divorce API or event.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.AfterLoad()` — (:1617, check at :1651) — a marriage with a cross-clan spouse, a null `Clan`, or an underage hero is annulled on load and its `CharacterMarriedLogEntry` rows deleted.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `Hero.CanMarry()` — (:1947), `IsLord` (:399), `IsWanderer` (:327), `IsTemplate` (:329), `IsPlayerCompanion` (:333), `CompanionOf` setter (:253–269) — the per-hero terms and the `Clan`/`Companions` wiring.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` — `Clan.OnCompanionAdded` — with `OnCompanionRemoved` (:1214–1224) and `OnHeroAdded` (:1226) — a companion enters `_companionsCache` **and** `_heroesCache`; `OnLordAdded` (:1175) is the only writer of `_aliveLordsCache` — so companions are in `Clan.Heroes` but never in `Clan.AliveLords`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` — `Clan.GetHeirApparents()` — (:1356–1374) — iterates `Heroes`, excludes `IsWanderer`/notable/not-spawned/disabled/death-marked/underage, scores via `HeirSelectionCalculationModel`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultHeirSelectionCalculationModel.cs` — `CalculateHeirSelectionPoint` — +10 male, ±5 eldest/youngest over `candidate.Clan.Heroes`, +10 direct/sibling bloodline, `HighestSkillPoint = 5`; **no spouse bonus** ⇒ marriage grants no succession standing.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Romance.cs` — `Romance.RomanticState` — (:9–27), `RomanceLevelEnum` (:84), `RomanticStateList` (:101), `GetCourtedHeroInOtherClan` (:123, derefs `person2.Clan`), `GetRomanticLevel` (:135), `internal static EndAllCourtships` (:156), `internal static SetRomanticState` (:167) — the courtship state model and the internal-only mutators.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeRomanticStateAction.cs` — `ChangeRomanticStateAction.Apply(Hero, Hero, Romance.RomanceLevelEnum)` — the public way to set a romantic level and raise `RomanticStateChanged` (Q39).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/RomanceCampaignBehavior.cs` — `CheckNpcMarriages` — (:109–150, `MarriageAction.Apply` at :145), `IsClanSuitableForNpcMarriage` (:152), `MarriageCourtshipPossibility` (:1431), `FindPlayerRelativesEligibleForMarriage` (:1411) — AI↔AI marriage exists (closes Q39's open item), the player clan is excluded from auto-marriage, and every dialogue gate re-runs the model check.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/RomanceCampaignBehavior.cs` — `RomanceCampaignBehavior` — courtship stages :719 (stage 1 persuasion), :761/:771/:781 (stage 2 → `CoupleAgreedOnMarriage`), :701 (fail states), :1085/:1090 (relative match + barter), :1096 (abort conditions), :1137–1171 (persuasion cooldown, `RomanceCourtshipAttemptCooldown` :90), :1179/:1188/:1196 (clan-leader consent), :1239 (opening gate), :1385 (`PersuasionAttempt` records), :273 (`MarriageBarterable` + `BarterManager.StartBarterOffer` + `PlayerEncounter.LeaveEncounter`) — the flow a mod may skip.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.BarterSystem.Barterables/MarriageBarterable.cs` — `MarriageBarterable.Apply()` — (:118–121) — the vanilla terminal step is just `MarriageAction.Apply(proposed, proposer, showNotification = either clan is PlayerClan)`; `GetUnitValueForFaction` guards null clans with `0f` but derefs the post-marriage clan's kingdom.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/MarriageOfferCampaignBehavior.cs` — `DailyTickClan` — (:106–124, companion-visible loop over `Clan.PlayerClan.Heroes` at :118), `MarryHeroesViaOffer` (:127–137, +10 player relation at :135, `MarriageAction.Apply` at :136), `OnMarriageOfferAcceptedOnPopUp` (:139), `IsHeroEngaged` (:167), 2-day auto-decline (:21/:181), pending re-check (:191), war invalidation (:284), `CanOfferMarriageForClan` (:306–313) with the 7-day cooldown (:17), `ConsiderMarriageForPlayerClanMember` (:315) — the player-facing offer pipeline.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/IMarriageOfferCampaignBehavior.cs` — `OnMarriageOfferedToPlayer` — , `OnMarriageOfferCanceled`, `GetMarriageAcceptedConsequences`, `IsHeroEngaged` — the interface a custom offer behavior must implement for `IsSuitableForMarriage:147` to see it.
+- `decomp/TaleWorlds.CampaignSystem.ViewModelCollection/TaleWorlds.CampaignSystem.ViewModelCollection.Map.MapNotificationTypes/MarriageOfferNotificationItemVM.cs` — `MarriageOfferNotificationItemVM` — (:21 `CampaignEventDispatcher.Instance.OnMarriageOfferedToPlayer`) — the only raiser of the offer event, i.e. it fires on UI interaction, not when the offer is created.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` — `BeforeHeroesMarried` — , `RomanticStateChanged`, `OnMarriageOfferedToPlayerEvent`, `OnMarriageOfferCanceledEvent`, `CanHeroMarry` (query), `OnGivenBirthEvent`, `OnClanLeaderChanged`, `OnHeroChangedClan` — the marriage event surface; note the absence of any `AfterHeroesMarried`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CharacterRelationCampaignBehavior.cs` — `RelationIncreaseBetweenHeroesAfterMarriage = 30` — , `BeforeHeroesMarried` listener (:41) → `OnHeroesMarried` (:490) — the second, stacked relation boost.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/DefaultLogsCampaignBehavior.cs` — `OnHeroesMarried` — (:171–182) — `CharacterMarriedLogEntry` always; `MarriageMapNotification` only when either `Hero.Clan` is `Clan.PlayerClan`, which the `Clan` getter makes true for hired companions.
+- `decomp/SandBox/SandBox.CampaignBehaviors/DefaultNotificationsCampaignBehavior.cs` — `DefaultNotificationsCampaignBehavior` — quick-info gate (:854): `showNotification && (firstHero.Clan == Clan.PlayerClan || secondHero.Clan == Clan.PlayerClan)`.
+- `decomp/SandBox/SandBox.CampaignBehaviors/DefaultCutscenesCampaignBehavior.cs` — `BeforeHeroesMarried` — listener (:26) and `DefaultCutscenesCampaignBehavior.OnHeroesMarried` (:217–226) — the `MarriageSceneNotificationItem` is created only when MainHero is one of the partners (groom picked by gender at :224).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/HeroKnownInformationCampaignBehavior.cs` — `OnHeroesMarried` — (:256) and `OnMarriageOfferedToPlayer` (:37) — `SetHasMet` / `IsKnownToPlayer` side effects.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors.CommentBehaviors/CommentOnChangeRomanticStateBehavior.cs` — `RomanticStateChanged` — listener (:9) and `OnRomanticStateChanged` gate (:18–20) — logs a `ChangeRomanticStateLogEntry` only if a partner is MainHero or his own clan's leader, and derefs `hero1.Clan.Leader` (a null-`Clan` hazard, not a companion hazard).
+- `decomp/StoryMode/StoryMode.GameComponents.CampaignBehaviors/AchievementsCampaignBehavior.cs` — `CheckHeroMarriage` — listener registration (:195) and the method (:588): a StoryMode "Hearthbreaker" scan of `Hero.ExSpouses` × `CharacterKilledLogEntry` when MainHero is a partner; proof that the story-mode starter adds nothing marriage-related itself (Q16).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/PregnancyCampaignBehavior.cs` — `DailyTickHero` — (:90–96), `RefreshSpouseVisit` (:118–122), `CheckAreNearby` (:126–141), `CheckOffspringToDeliver` (:155–196, `MakePregnantAction.Apply` at :122, `DeliverOffSpring` at :172, `OnGivenBirth` at :183, `KillCharacterAction.ApplyInLabor` at :188), `_heroPregnancies.Add(new Pregnancy(mother, mother.Spouse, …))` (:194) — the spouse-driven conception loop and its exact conditions.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultPregnancyModel.cs` — `PregnancyDurationInDays` — 36/18, `MaternalMortalityProbabilityInLabor` 1.5%, `StillbirthProbability` 1%, `DeliveringFemaleOffspringProbability` 51%, `DeliveringTwinsProbability` 3%, age window 18…45, and `GetDailyChanceOfPregnancyForHero` (:32–45) with its unguarded `hero.Clan.Tier`, `hero.Clan.AliveLords.Count` and `hero.Spouse.GetPerkValue` derefs.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/HeroCreator.cs` — `DeliverOffSpring` — (:258–283, occupation by sex at :267, clan choice at :270–278), `CreateSpecialHero` (:189–194 → `CreateHero(template, useCharacterAsTemplate: true)`) — offspring template/clan/occupation inheritance and the fact that heroes never keep the template's `CharacterObject`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` — `IsTemplate { get; private set; }` — (:288), XML fill (:545), `CreateFrom` (:416–438) — `IsTemplate` is XML-only, never copied and never runtime-settable, so `!IsTemplate` is satisfied by the mod's heroes (Q11 `NpcCharacterXml.cs` emits no `<IsTemplate>`).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/AddCompanionAction.cs` — `ApplyInternal` — (:16–26) — hires by setting `CompanionOf` only (never `_clan`), i.e. the input state the marriage rules are evaluated against.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeClanLeaderAction.cs` — `ChangeClanLeaderAction.ApplyInternal` — with `ApplyWithSelectedNewLeader`/`ApplyWithoutSelectedNewLeader` here and `ApplyByDeath`/`ApplyByRetirement` in `ApplyHeirSelectionAction.cs`: inheritance mechanics (leader gold, `DiplomacyModel` relation delta, `OnClanLeaderChanged`, MainParty fugitive sweep, workshops).
+- `decomp/SandBox/SandBox.CampaignBehaviors/HeirSelectionCampaignBehavior.cs` — `OnBeforeMainCharacterDied` — (:85–113), `OnHeirSelectionOver` (:135–140) — player-clan succession, and game over when `GetHeirApparents()` is empty.
+- `decomp/SandBox/SandBox.CampaignBehaviors/RetirementCampaignBehavior.cs` — `ApplyHeirSelectionAction.ApplyByRetirement` — called with `_selectedHeir` (:51) when the player retires.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignCheats.cs` — `MarriageAction.Apply` — call sites :1878, :1952, :2633, :2662: the remaining (debug-only) `MarriageAction.Apply` call sites; no other non-DLC caller exists.
+
+### Uncertain
+
+- **Conflict with Q34's wording (needs a maintainer decision, Q34 left untouched here).** Q34 states "neither
+  `AddCompanionAction` nor the mod ever sets `Hero.Clan`, so a mod companion has `Clan == null`" and "`Clan.PlayerClan.Heroes`
+  … never include mod companions". Decompiled `Hero.cs:498–503` (`Clan => CompanionOf ?? _clan`) plus `Clan.cs:1214–1224`
+  (`OnCompanionAdded` → `OnHeroAdded` → `_heroesCache.Add`) say the opposite for the *observable* `Hero.Clan` and for
+  `Clan.Heroes`: a hired companion reads `Clan == Clan.PlayerClan` and **is** in `PlayerClan.Heroes` (still absent from
+  `AliveLords`/parties, which is where Q34's "vanilla can't see it" results come from). This section is written against the
+  decompiled source; if Q34's sentences are meant literally (private `_clan`), they should be re-worded, because several of
+  its "the vanilla loop would NRE / never sees him" arguments depend on that reading.
+- Whether `HeroCreator.CreateHero(character, useCharacterAsTemplate: true, …)` registers the `CreateFrom` copy with
+  `MBObjectManager` under a fresh StringId (relevant only for reading back the CharacterObjects of companion *children*) was
+  not re-derived here; Q4/Q44 cover the parent case.
+- The exact `MarriageBarterable.GetUnitValueForFaction` valuation (how much persuasion/renown a courtship costs) was not
+  re-derived — it does not affect the action, but it does affect any mod that reuses the barter layer.
+- `DefaultRomanceModel.GetAttractionValuePercentage` and the `RomanceModel` courtship-permission knobs (which conversation
+  nodes consult them) were not read in this pass; only `RomanceCampaignBehavior`'s own gates are documented above.
+- Whether `CharacterObject.Age` (the unit of the `MinimumMarriageAge*` gate) can diverge from `Hero.Age` (the unit of the
+  pregnancy/`AfterLoad` gates) for `CreateSpecialHero(..., age)` heroes with an explicit age was not tested; they agree in the
+  normal path, and a mod that sets a hero's age near 18 should treat the two checks as one.
+- For a companion couple, `Hero.AfterLoad()` (:1651) is expected to keep the marriage (both report `Clan == Clan.PlayerClan`),
+  but this was reasoned from the source, not observed in a save/load test — and it does *not* hold if `CompanionOf` is later
+  cleared while `_clan` stays null.
+- Whether `Clan.Leader`-related marriage side effects (the `firstHero.Clan?.Leader == firstHero` term, and
+  `GetClanAfterMarriage`'s leader branch) behave sanely when the mod's hero is the *leader* of a Q44-created companion clan
+  was not exercised; such a clan is the one case where both partners can be their own clan's leader.
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the

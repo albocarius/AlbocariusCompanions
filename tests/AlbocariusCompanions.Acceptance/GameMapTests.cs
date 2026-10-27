@@ -7,7 +7,7 @@ namespace AlbocariusCompanions.Acceptance;
 public class GameMapTests
 {
     // One entry per question handed out so far; extended as M1 tasks are assigned.
-    public static TheoryData<int> Questions => new() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 32, 24, 25, 26, 27, 28, 31, 33, 34, 29, 30, 35, 36, 37, 38, 39, 40, 42, 43, 44 };
+    public static TheoryData<int> Questions => new() { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 32, 24, 25, 26, 27, 28, 31, 33, 34, 29, 30, 35, 36, 37, 38, 39, 40, 42, 43, 44, 41, 46 };
 
     static readonly Regex EvidenceLine = new(@"^- `(?<path>(decomp|xmlschemas|~/bannerlord)/[^`]+)` — `(?<symbol>[^`]+)` — \S", RegexOptions.Compiled);
 
