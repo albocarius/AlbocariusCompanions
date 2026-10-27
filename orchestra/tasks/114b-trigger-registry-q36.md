@@ -29,8 +29,7 @@ new TriggerDefinition("<name>", "<category>", "<one line: what happened, for aut
     subjectFields: S("<field>", ...), defaultSubject: Subjects.<X>, common: <true|false>, inMission: <true|false>),
 ```
 - **fields**: one per useful event argument. Kinds: `Hero`, `Settlement` (also for `Town`/`Village`/`Hideout` args: use
-  `.Settlement` in from), `Clan`, `Kingdom` (an `IFaction` arg → `Kingdom` if the GAME_MAP row says it is a kingdom, else
-  `Clan`), `Party` (`MobileParty`/`PartyBase`), `Item` (`ItemObject`), `Int`, `Number` (float), `Bool`, `Text` (enums,
+  `.Settlement` in from), `Clan`, `Kingdom`, `Faction` (an `IFaction` arg: clan or kingdom), `Party` (`MobileParty`/`PartyBase`), `Item` (`ItemObject`), `Int`, `Number` (float), `Bool`, `Text` (enums,
   ids, names). A `CharacterObject` that is a hero → `Hero` with from `<arg>.HeroObject`; a troop type → `Text` from
   `<arg>.StringId`. Field names camelCase, short (`victim`, `settlement`, `winner`).
 - A `MapEvent` argument → `fields: MapEventFields("<arg name>")` (you may append fields with `.Concat(new[]{...}).ToArray()`,

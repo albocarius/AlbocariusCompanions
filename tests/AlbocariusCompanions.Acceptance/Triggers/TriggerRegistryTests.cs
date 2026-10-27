@@ -22,6 +22,7 @@ public class TriggerRegistryTests
     [Theory]
     [InlineData("polling")]
     [InlineData("Q35")]
+    [InlineData("Q36")]
     public void Registry_has_exactly_the_tsv_triggers_of_the_batch(string q)
     {
         var expected = Tsv.Where(r => q == "polling" ? r.Event.StartsWith("poll:") : r.Q == q).ToList();

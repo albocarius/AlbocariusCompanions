@@ -12,6 +12,8 @@ public enum FieldKind
     Settlement,
     Clan,
     Kingdom,
+    /// <summary>A clan or a kingdom (the game's IFaction): wars, peace, crime ratings.</summary>
+    Faction,
     Party,
     Item,
     Int,
@@ -47,13 +49,15 @@ public static class EntityProperties
         [FieldKind.Settlement] = new[] { "culture", "kind", "ownerClan", "kingdom" },
         [FieldKind.Clan] = new[] { "culture", "kingdom", "leader" },
         [FieldKind.Kingdom] = new[] { "culture", "leader" },
+        // kingdom: the kingdom id (itself for a kingdom, the clan's kingdom for a clan); isKingdom: a kingdom, not a clan.
+        [FieldKind.Faction] = new[] { "culture", "leader", "kingdom", "isKingdom" },
         [FieldKind.Party] = new[] { "leader", "clan", "kingdom", "isMainParty" },
         [FieldKind.Item] = new[] { "type" },
     };
 
     /// <summary>Properties that hold a bool; every other property holds a string.</summary>
     public static readonly IReadOnlyCollection<string> BoolProperties =
-        new HashSet<string> { IsPlayer, InPlayerParty, InPlayerClan, "isCompanion", "isAlive", "isMainParty" };
+        new HashSet<string> { IsPlayer, InPlayerParty, InPlayerClan, "isCompanion", "isAlive", "isMainParty", "isKingdom" };
 
     public static bool IsEntity(FieldKind kind) => Extra.ContainsKey(kind);
 
