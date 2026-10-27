@@ -5192,11 +5192,112 @@ Navigator and ignores the rest, and `GetHeroPartyRoles`/`RemoveAllPartyRolesOfHe
 Status: DRAFT
 
 ### Answer
-TODO
+
+Both roles are tracked **inside another system, not on the `Hero`**: there is no `Hero` flag and no CampaignEvent fired when
+a companion starts or stops either role. Event subscription patterns per Q23/Q32; decide-event plumbing per Q34.
+
+#### Role 1 — Alley leader (companion in charge of a player-clan alley)
+
+The player's alleys always have `Alley.Owner == Hero.MainHero` (`SetOwner` is fed MainHero; see Q37) — the companion leader
+lives in the SandBox behavior's internal `PlayerAlleyData.AssignedClanMember`, exposed only through the core interface
+`IAlleyCampaignBehavior`, reachable without a SandBox reference via
+`Campaign.Current.GetCampaignBehavior<IAlleyCampaignBehavior>()` (vanilla core itself does this in `DefaultAlleyModel`, so
+mods can too).
+
+| Check | Expression |
+|---|---|
+| Hero leads any player alley | `Campaign.Current.GetCampaignBehavior<IAlleyCampaignBehavior>().IsHeroAlleyLeaderOfAnyPlayerAlley(hero)` |
+| Leader of one alley | `…GetAssignedClanMemberOfAlley(alley)`; all leaders: `…GetAllAssignedClanMembersForOwnedAlleys()` |
+| Candidate list + why blocked | `Campaign.Current.Models.AlleyModel.GetClanMembersAndAvailabilityDetailsForLeadingAnAlley(alley)` (candidates = `Clan.PlayerClan.AliveLords` + `Clan.PlayerClan.Companions`; gates: Roguery ≥ 30, Mercy ≤ 0, not leader/governor/party leader/prisoner/fugitive/traveling/issue-solving — `DefaultAlleyModel`) |
+| Change / remove | `…ChangeAlleyMember(alley, hero)`; `…AbandonAlleyFromClanMenu(alley)` |
+
+- **Assignment: no CampaignEvent.** Both entry points (post-takeover inquiry in `MissionAlleyHandler`, and
+  `ChangeAlleyMember` / the "Select companion" inquiry via `AlleyHelper.CreateMultiSelectionInquiryForSelectingClanMemberToAlley`)
+  end in `ChangeTheLeaderOfAlleyInternal`: swaps `AssignedClanMember`, moves the new leader into the alley's own
+  `TroopRoster`, removes the old one from it, and `TeleportHeroAction.ApplyDelayedTeleportToSettlement`s the new leader to
+  the settlement. Poll `IsHeroAlleyLeaderOfAnyPlayerAlley` or watch proxies: `AlleyOccupiedByPlayer` on takeover (its
+  `TroopRoster` argument contains the picked leader), `AlleyClearedByPlayer` on leave-empty, `AlleyOwnerChanged` on
+  take/loss (Q37 rows). `HeroGetsBusy(BecomesAlleyLeader=3)` (Q40 raiser) fires on alley **scene spawn**, not on
+  assignment — weak proxy.
+- **Removal (swap): no CampaignEvent either** — same internal method; the old leader's location-character is parked in the
+  tavern if he is in that town's scene. Poll.
+- **Role ends on its own:**
+  | End | Signal | Companion's fate |
+  |---|---|---|
+  | Leader killed | `HeroKilledEvent` (Q23) + internal map notification `AlleyLeaderDiedMapNotification` (not an event); alley survives `AlleyModel.DestroyAlleyAfterDaysWhenLeaderIsDeath` = 4 days, then `DestroyAlley` | dead |
+  | Alley lost to attacker / attack-response timeout | `AlleyOwnerChanged` (Q37; handler shows only a "you lost the alley" toast) | `MakeHeroFugitiveAction.Apply(leader, false)` → **fugitive at that settlement** (Q45 fugitive semantics), partyless |
+  | Abandon | public `AbandonAlleyFromClanMenu` → `DestroyAlley(fromAbandoning: true)` (skips fugitive step) + `AlleyOwnerChanged(…, null, MainHero)` | stays Active at the settlement, partyless; no event distinguishes it from a loss |
+- **Membership:** he **stays in `Clan.PlayerClan.Companions`** the whole time (nothing here touches `CompanionOf`/clan; even
+  the fugitive path does not). He **leaves `MobileParty.MainParty`** while leading: at takeover the selected troops are
+  moved out of `MainParty.MemberRoster` into the alley's own roster and the picked leader leaves via a delayed teleport;
+  reassignment removes him the same way — `TeleportHeroAction.ApplyInternal` drops him from
+  `PartyBelongedTo.MemberRoster` and sets `Traveling` (:96-110). On every end path vanilla **never puts him back into
+  MainParty** — to rejoin him use `TeleportHeroAction.ApplyImmediateTeleportToParty` / `AddHeroToPartyAction` (Q45).
+- Side effect worth knowing: while he is an alley leader, `AlleyCampaignBehavior.CommonAlleyLeaderRestriction` answers
+  `CanHeroLeadPartyEvent` and `CanBeGovernorOrHavePartyRoleEvent` with `false` — so he also cannot be given a party or a
+  governor seat (Q34 decide-hook style check).
+
+#### Role 2 — Companion sent on an issue's alternative solution
+
+State lives on the `IssueBase`; there is no Hero flag (the hero just goes `Disabled`, Q45 disable semantics).
+
+| Check | Expression |
+|---|---|
+| This issue is being solved this way | `issue.IsSolvingWithAlternative` |
+| Which hero | `issue.AlternativeSolutionHero` (first hero in the public readonly field `issue.AlternativeSolutionSentTroops`, a `TroopRoster`) |
+| Is hero busy on any issue | `Campaign.Current.IssueManager.IssueSolvingCompanionList` contains him |
+| Candidate at dialog time | must be in MainParty + `CanHaveCampaignIssues()` + not wounded/pregnant (`IssuesCampaignBehavior` repeat conditions) |
+
+- **Assignment:** conversation flow (`issue_offer_player_accept_alternative_*` in `IssuesCampaignBehavior`) removes him from
+  `MobileParty.MainParty.MemberRoster`, adds him to `issue.AlternativeSolutionSentTroops`, raises
+  `HeroGetsBusy(SolvesIssue)` (Q40 raiser), then `StartIssueWithAlternativeSolution()` → `DisableHeroAction.Apply(hero)`
+  (off-map, `CharacterStates.Disabled`; no teleport — he vanishes in place) and
+  `OnIssueUpdated(this, IssueUpdateDetails.PlayerSentTroopsToQuest, …)` — **that transition event (Q42) is the assignment
+  signal**; no companion-specific event exists.
+- **Role ends:** `IssueManager.DailyTick` calls `issue.CompleteIssueWithAlternativeSolution()` once
+  `AlternativeSolutionReturnTimeForTroops` is past:
+  | Outcome | Event (all via `OnIssueUpdatedEvent`, Q42) | Companion's fate |
+  |---|---|---|
+  | Success | `SentTroopsFinishedQuest` | casualties rolled on the sent roster; hero gets skill XP; `IssueManager.TryToMakeTroopsReturn` → `ChangeState(Active)` + roster merged into `MobileParty.MainParty.MemberRoster` |
+  | Fail (failure-chance roll) | `SentTroopsFailedQuest` | same return, but hero `MakeWounded()` first (if the issue has casualties) |
+  | Cancel (issue **owner** killed mid-solve → `IssueManager.OnHeroKilled` → `CompleteIssueWithCancel`) | `IssueCancel` | journal says troops returned; same `TryToMakeTroopsReturn` path |
+  Return is **immediate** only when `IssueModel.CanTroopsReturnFromAlternativeSolution()` (default: MainHero not a
+  prisoner, party not at sea unless ashore, no active battle); otherwise the roster parks in
+  `IssueManager._awaitingAlternativeSolutionTroops` and comes back later through a "As you travel, you spot …" inquiry
+  (player must press OK) checked on `HourlyTick`. `IssueFinalized()` clears the sent roster on every end.
+  Note `CompleteIssueWithStayAliveConditionsFailed` (also `IssueCancel`, Q42) cannot fire while `SolvingWithAlternative` —
+  `DailyTick` only feeds it `IsOngoingWithoutQuest` issues — so an in-progress companion always comes back on cancel.
+- **Membership:** he **stays in `Clan.PlayerClan.Companions`** (nothing removes him from the clan; and
+  `IssueManager.CanHeroDie` answers `false` for the solving companion, Q45, so he cannot be killed off mid-mission).
+  He is **out of `MobileParty.MainParty.MemberRoster`** from the dialog consequence until the return merge, and `Disabled`
+  (in no party) meanwhile. After success/fail/cancel he is back in MainParty (possibly wounded) and `Active`.
 
 ### Evidence
 
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Alley.cs` — `Alley.SetOwner` — sole writer of the get-only `Owner`; only ever MainHero for player alleys; updates `Hero.OwnedAlleys` back-link, raises AlleyOwnerChanged (Q37).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/IAlleyCampaignBehavior.cs` — `IAlleyCampaignBehavior.IsHeroAlleyLeaderOfAnyPlayerAlley` — the only public alley-leader API, with `GetAssignedClanMemberOfAlley`, `GetAllAssignedClanMembersForOwnedAlleys`, `ChangeAlleyMember`, `AbandonAlleyFromClanMenu`.
+- `decomp/SandBox/SandBox.CampaignBehaviors/AlleyCampaignBehavior.cs` — `AlleyCampaignBehavior.ChangeTheLeaderOfAlleyInternal` — leader swap (:1442) with no event: roster swap + `ApplyDelayedTeleportToSettlement` + tavern-parking of the old leader's location-character; also `PlayerAlleyData.AssignedClanMember` internal field (:57), `CommonAlleyLeaderRestriction` on both decide events (:291), `DailyTick` 4-day-after-death and attack-timeout → `DestroyAlley` (:299-325), `DestroyAlley` → `MakeHeroFugitiveAction.Apply(leader, false)` (:143-156), leader-death map notification not an event (:1358-1387), `AbandonAlleyFromClanMenu` (:1404), loss is only a toast (:278).
+- `decomp/SandBox/SandBox.Missions.MissionLogics/MissionAlleyHandler.cs` — `MissionAlleyHandler.OnPartyScreenDoneClicked` — takeover (:258-281): troops out of `MainParty.MemberRoster` into the alley roster, leader leaves via delayed teleport, then raises AlleyOccupiedByPlayer with that roster (Q37).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/TeleportHeroAction.cs` — `TeleportHeroAction.ApplyInternal` — delayed-to-settlement removes the hero from `PartyBelongedTo.MemberRoster` and sets `Traveling` (:96-110).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultAlleyModel.cs` — `DefaultAlleyModel.GetClanMembersAndAvailabilityDetailsForLeadingAnAlley` — candidates = PlayerClan `AliveLords` + `Companions` (:153-163); Roguery 30 / Mercy 0 consts (:38-40); 4-day leader-death grace (:48); availability gates resolve `IAlleyCampaignBehavior` from core.
+- `decomp/TaleWorlds.CampaignSystem/Helpers/AlleyHelper.cs` — `AlleyHelper.CreateMultiSelectionInquiryForSelectingClanMemberToAlley` — public "select companion to lead this alley" inquiry (:47).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueBase.cs` — `IssueBase.AlternativeSolutionHero` — get-only first hero of the public readonly `AlternativeSolutionSentTroops` roster (:186); `StartIssueWithAlternativeSolution` → `DisableHeroAction.Apply` (:621) and `PlayerSentTroopsToQuest` (:631); success raises `SentTroopsFinishedQuest` (:788), fail `MakeWounded` + `SentTroopsFailedQuest` (:838-864); `CompleteIssueWithCancel` returns troops then raises `IssueCancel` (:689-708); `IssueFinalized` clears the roster (:640-649).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueManager.cs` — `IssueManager.IssueSolvingCompanionList` — public heroes-currently-solving getter (:47-59); `DailyTick` fires `CompleteIssueWithAlternativeSolution` at due time, stay-alive-fail only for `IsOngoingWithoutQuest` (:245-283); deferred return via `_awaitingAlternativeSolutionTroops` + travel inquiry on `HourlyTick` (:286-324); `MakeAlternativeTroopsReturn` = `ChangeState(Active)` + `MainParty.MemberRoster.Add` (:327-337); `CanHeroDie` false for the solver (:656-670); owner killed → `CompleteIssueWithCancel` (:548-573).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/IssuesCampaignBehavior.cs` — `IssuesCampaignBehavior.issue_offer_player_accept_alternative_3_consequence` — assignment moment (:639-648): out of `MainParty.MemberRoster`, into sent troops, `OnHeroGetsBusy(SolvesIssue)`; start call site (:594-598); MainParty + not-wounded candidate conditions (:612-636).
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/DisableHeroAction.cs` — `DisableHeroAction.Apply` — removes from party roster (destroys his party if he leads one), leaves settlement, `ChangeState(Disabled)`.
+- `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameComponents/DefaultIssueModel.cs` — `DefaultIssueModel.CanTroopsReturnFromAlternativeSolution` — false while MainHero imprisoned, party at sea away from a settlement, or a battle is active (:138-144).
+
 ### Uncertain
+
+- Alley leader: the 4-day grace window after a leader's death and the attack-response deadline live in internal
+  `PlayerAlleyData` fields (`AttackResponseDueDate`, `IsAssignedClanMemberDead`) — no public read; detecting "alley will be
+  auto-destroyed soon" requires replicating `AlleyModel` constants.
+- Whether any vanilla system later re-accompanies a partyless Active/fugitive ex-leader companion (e.g. companion
+  auto-follow) was not traced; the "never auto-returns to MainParty" claim covers the alley code paths only.
+- Alternative solution: if the issue owner is *unregistered* (save/load cleanup) `OnHeroUnregistered` removes the issue
+  without any return — I saw no vanilla path that recovers the Disabled companion then; suspected orphan, not proven.
+- The deferred-return inquiry (`_awaitingAlternativeSolutionTroops`) merges only on the OK callback; if the player never
+  confirms, troops stay parked — behavior beyond that (persistence across saves) not examined.
 
 ## API index
 
