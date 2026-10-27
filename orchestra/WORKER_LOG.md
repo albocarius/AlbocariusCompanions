@@ -72,3 +72,4 @@
 | 114a-trigger-registry-q35 | 1 | PASS, reviewed | 25 entries; IFaction args exposed as Clan → orchestrator added FieldKind.Faction and fixed 2 fields |
 | 114b-trigger-registry-q36 | 1 | PASS, reviewed | 22 entries; FlattenedTroopRoster events have no fields (no GAME_MAP member for a count) |
 | 114c-trigger-registry-q37 | 1 | PASS, reviewed | 20 entries; alley events carry no alley field (no GAME_MAP member for the alley's town) |
+| 114d-trigger-registry-q38 | 1 | PASS, reviewed | 13 entries |
