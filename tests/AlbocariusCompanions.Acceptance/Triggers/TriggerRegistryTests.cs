@@ -21,6 +21,7 @@ public class TriggerRegistryTests
     // One line per finished batch (task 114x adds its Q here when it is assigned).
     [Theory]
     [InlineData("polling")]
+    [InlineData("Q35")]
     public void Registry_has_exactly_the_tsv_triggers_of_the_batch(string q)
     {
         var expected = Tsv.Where(r => q == "polling" ? r.Event.StartsWith("poll:") : r.Q == q).ToList();
