@@ -190,7 +190,8 @@ Relation ≤ 20: both hold, `coin_refuse` wins by priority; above 20 only `coin_
 
 **Effects**: `relation` (non-zero, −100..100; the game scales positive changes by its own model and clamps the result),
 `transfer` (gold or items moved between two actors, see below), `join` (`true`: the companion joins the player's clan and
-party without payment — offered only while not hired and the clan has room), and variable writes, applied in this order:
+party without payment — offered only while not hired and the clan has room), `partyMorale` (non-zero, −20..20: a
+one-off change of the player's party morale, shown under "Recent Events" and fading 10 % a day), and variable writes, applied in this order:
 `setFlags` (bools → true), `clearFlags` (bools → false), `set` (`{ "<var>": true | false | <int> }`, value of the
 variable's type), `add` (`{ "<int var>": <non-zero int> }`). One node writes a variable at most once.
 

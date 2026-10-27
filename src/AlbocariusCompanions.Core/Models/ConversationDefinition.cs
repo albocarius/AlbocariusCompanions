@@ -126,6 +126,11 @@ public sealed class EffectSet
     [JsonProperty("add")] public Dictionary<string, int>? Add { get; set; }
     /// <summary>The companion joins the player's clan and party (no payment; offered only while not hired and the clan has room).</summary>
     [JsonProperty("join")] public bool Join { get; set; }
+    /// <summary>
+    /// Change of the player's party morale, as a one-off "Recent Events" entry that decays 10 % a day (GAME_MAP Q22, M11 T6).
+    /// −20..+20, not 0.
+    /// </summary>
+    [JsonProperty("partyMorale")] public int? PartyMorale { get; set; }
 }
 
 /// <summary>

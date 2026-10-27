@@ -380,6 +380,8 @@ public static class ConversationChecks
 
         if (effects.Relation is { } relation && (relation == 0 || !InRelationRange(relation)))
             Bad($"relation {relation} must be a non-zero change within {ConversationRules.MinRelation}..{ConversationRules.MaxRelation}.");
+        if (effects.PartyMorale is { } morale && (morale == 0 || morale < DeliveryRules.PartyMoraleMin || morale > DeliveryRules.PartyMoraleMax))
+            Bad($"partyMorale {morale} must be a non-zero change within {DeliveryRules.PartyMoraleMin}..{DeliveryRules.PartyMoraleMax}.");
         if (effects.Transfer != null && TransferProblem(effects.Transfer, ownId) is { } problem)
             Bad($"transfer: {problem}.");
         foreach (var pair in effects.Add ?? new Dictionary<string, int>())

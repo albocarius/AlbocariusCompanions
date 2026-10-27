@@ -246,6 +246,10 @@ internal static class CompanionDialogs
         if (Transfers.Of(effects) is { } transfer)
             ApplyTransfer(id, node, transfer, hero);
 
+        // One-off "Recent Events" morale, decays 10 %/day; the setter clamps to ±100 (GAME_MAP Q22).
+        if (effects.PartyMorale is { } morale && MobileParty.MainParty != null)
+            MobileParty.MainParty.RecentEventsMorale += morale;
+
         if (effects.Join)
         {
             AddCompanionAction.Apply(Clan.PlayerClan, hero);
@@ -254,7 +258,7 @@ internal static class CompanionDialogs
 
         ModRuntime.Log.Info($"Conversation effects of '{id}' node '{node.Id}': " +
             $"variables [{string.Join(", ", VariableUses.InEffects(effects).Select(u => u.Reference))}], " +
-            $"relation {effects.Relation?.ToString() ?? "-"}, join {effects.Join}.");
+            $"relation {effects.Relation?.ToString() ?? "-"}, party morale {effects.PartyMorale?.ToString() ?? "-"}, join {effects.Join}.");
     }
 
     /// <summary>

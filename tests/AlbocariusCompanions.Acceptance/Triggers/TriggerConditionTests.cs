@@ -147,3 +147,40 @@ public class TriggerConditionTests
     public void Known_role_is_valid() =>
         Assert.Empty(ValidateLine("""{ "id": "x_01", "slot": "idle", "when": { "role": "governor" } }""").Errors());
 }
+
+// Task 120 (M11 T6): partyMorale effect.
+public class PartyMoraleTests
+{
+    const string Id = "morale_one";
+
+    static IReadOnlyList<ValidationIssue> Validate(int morale)
+    {
+        var d = Fixtures.Dialogs(Id);
+        var langs = Fixtures.Langs();
+        var c = Fixtures.Conversation();
+        Fixtures.Node(c, "p_wound_sorry")["effects"] = JObject.Parse($$"""{ "partyMorale": {{morale}} }""");
+        Fixtures.AddConversation(d, langs, c);
+        return DialogChecks.Validate(new[] { Fixtures.Package(Id, Fixtures.Companion(Id), d, langs: langs) });
+    }
+
+    [Theory]
+    [InlineData(5)]
+    [InlineData(-20)]
+    [InlineData(20)]
+    public void In_range_is_valid(int morale) =>
+        Assert.DoesNotContain(Validate(morale).Errors(), i => i.Code == IssueCodes.InvalidEffect);
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(21)]
+    [InlineData(-25)]
+    public void Zero_or_out_of_range_is_an_error(int morale) =>
+        Assert.Contains(Validate(morale).Errors(), i => i.Code == IssueCodes.InvalidEffect && i.Message.Contains("partyMorale"));
+
+    [Fact]
+    public void Game_applies_it_to_recent_events_morale()
+    {
+        var source = File.ReadAllText(Path.Combine(RepoPaths.Root, "src", "AlbocariusCompanions.Game", "CompanionDialogs.cs"));
+        Assert.Contains("MobileParty.MainParty.RecentEventsMorale += morale", source);
+    }
+}
