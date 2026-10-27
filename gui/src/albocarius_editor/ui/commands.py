@@ -24,15 +24,15 @@ class EditCommand(QUndoCommand):
     """``fn(folder)`` run once (on push), then replayed as snapshots. ``fn``'s return value is kept in ``result``.
 
     An :class:`EditError` from ``fn`` leaves the folder as it was, marks the command obsolete (the stack drops and deletes
-    it, so the error goes to ``window.edit_failed``). ``after_redo`` / ``after_undo`` run after the views are rebuilt
-    (e.g. a renamed conversation's tab follows)."""
+    it, so the error goes to ``window.edit_failed``). ``on_redo`` / ``on_undo`` run after the data changed and before the
+    views are rebuilt (e.g. a renamed conversation's tab follows its new id)."""
 
     def __init__(self, window: MainWindow, text: str, fn: Callable[[CompanionFolder], Any],
-                 after_redo: Callable[[], None] | None = None, after_undo: Callable[[], None] | None = None):
+                 on_redo: Callable[[], None] | None = None, on_undo: Callable[[], None] | None = None):
         super().__init__(text)
         self.window = window
         self.fn = fn
-        self.after_redo, self.after_undo = after_redo, after_undo
+        self.on_redo, self.on_undo = on_redo, on_undo
         self.before: dict | None = None
         self.after: dict | None = None
         self.result: Any = None
@@ -55,18 +55,18 @@ class EditCommand(QUndoCommand):
             self.after = folder.snapshot()
         else:
             folder.restore(self.after)
+        if self.on_redo is not None:
+            self.on_redo()
         self.window.refresh()
-        if self.after_redo is not None:
-            self.after_redo()
 
     def undo(self) -> None:
         folder = self.window.folder
         if folder is None or self.before is None:
             return
         folder.restore(self.before)
+        if self.on_undo is not None:
+            self.on_undo()
         self.window.refresh()
-        if self.after_undo is not None:
-            self.after_undo()
 
 
 class MoveCommand(QUndoCommand):

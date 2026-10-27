@@ -151,3 +151,131 @@ def test_drop_from_the_palette(window: MainWindow, sample: Path):
     view.palette_dropped.emit("npc", QPointF(415, 222))
     node_id = scene.selected_key()
     assert window.folder.layout.get("the_scar", node_id) == (420, 220)  # snapped to the grid
+
+
+# ---- T04 edges ----
+
+def nexts(window: MainWindow, node_id: str) -> list[str]:
+    return window.folder.node("the_scar", node_id)["next"]
+
+
+def test_connect_reorder_and_disconnect(window: MainWindow, sample: Path, qtbot):
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QPushButton
+
+    scene = open_scar(window, sample)
+    # Connect scar_thanks → scar_shrug by dragging from its output port to the other card.
+    view = window.tabs.currentWidget()
+    qtbot.wait(20)  # the deferred fit-to-view runs first
+    source, target = scene.cards["scar_thanks"], scene.cards["scar_shrug"]
+    view.centerOn(source)
+    start = view.mapFromScene(source.output_port())
+    end = view.mapFromScene(target.sceneBoundingRect().center())
+    qtbot.mousePress(view.viewport(), Qt.MouseButton.LeftButton, pos=start)
+    qtbot.mouseMove(view.viewport(), end)
+    qtbot.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=end)
+    assert nexts(window, "scar_thanks") == ["scar_shrug"]  # a node target replaces a lone hub
+    assert scene.edge("scar_thanks", "scar_shrug") is not None
+    # Reorder scar_story's next in the inspector.
+    scene.select("scar_story")
+    window.inspector.findChild(QPushButton, "edge_1_move").click()
+    assert nexts(window, "scar_story") == ["p_scar_enough", "p_scar_sorry"]
+    # Delete an edge: select it, Del.
+    scene.clearSelection()
+    scene.edge("scar_story", "p_scar_sorry").setSelected(True)
+    window.delete_selection()
+    assert nexts(window, "scar_story") == ["p_scar_enough"]
+    # Each step undoes.
+    window.undo_stack.undo()
+    assert nexts(window, "scar_story") == ["p_scar_enough", "p_scar_sorry"]
+    window.undo_stack.undo()
+    assert nexts(window, "scar_story") == ["p_scar_sorry", "p_scar_enough"]
+    window.undo_stack.undo()
+    assert nexts(window, "scar_thanks") == ["hub"]
+
+
+def test_refused_connections_show_a_message(window: MainWindow, sample: Path):
+    open_scar(window, sample)
+    assert not window.connect_nodes("the_scar", "scar_story", "p_scar_sorry")
+    assert "already continues" in window.statusBar().currentMessage()
+    assert not window.connect_nodes("the_scar", graph.HEADER, graph.END)
+    assert window.undo_stack.count() == 0
+
+
+# ---- T05 delete and rename ----
+
+def test_delete_nodes_removes_references_and_texts(window: MainWindow, sample: Path, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    scene = open_scar(window, sample)
+    asked = []
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: asked.append(a) or QMessageBox.StandardButton.Yes)
+    scene.select("scar_story")
+    scene.cards["p_scar_sorry"].setSelected(True)
+    window.delete_selection()
+    assert len(asked) == 1 and window.undo_stack.count() == 1
+    f = window.folder
+    assert f.node("the_scar", "scar_story") is None and f.node("the_scar", "p_scar_sorry") is None
+    assert f.node("the_scar", "p_scar_ask")["next"] == []
+    for code in f.languages():
+        assert f.text("scar_story", code) is None and f.text("p_scar_sorry", code) is None
+    assert f.layout.get("the_scar", "scar_story") is None
+    window.undo_stack.undo()
+    assert f.node("the_scar", "p_scar_ask")["next"] == ["scar_story"]
+    assert f.text("scar_story", "tr") is not None
+
+
+def test_rename_through_the_inspector(window: MainWindow, sample: Path, monkeypatch):
+    from PySide6.QtWidgets import QLineEdit, QMessageBox
+
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.No)
+    scene = open_scar(window, sample)
+    scene.select("scar_story")
+    field = window.inspector.findChild(QLineEdit, "id_field")
+    field.setText("scar_tale")
+    field.editingFinished.emit()
+    f = window.folder
+    assert f.node("the_scar", "scar_tale") is not None
+    assert f.node("the_scar", "p_scar_ask")["next"] == ["scar_tale"]
+    for code in f.languages():
+        assert f.text("scar_tale", code) is not None and f.text("scar_story", code) is None
+    assert f.layout.get("the_scar", "scar_tale") is not None and f.layout.get("the_scar", "scar_story") is None
+    assert scene.selected_key() == "scar_tale"
+    field = window.inspector.findChild(QLineEdit, "id_field")
+    field.setText("p_scar_ask")  # a duplicate is refused
+    field.editingFinished.emit()
+    assert "already used" in window.statusBar().currentMessage()
+    assert window.undo_stack.count() == 1
+
+
+def test_rename_offers_the_audio_file(window: MainWindow, sample: Path, monkeypatch):
+    from PySide6.QtWidgets import QMessageBox
+
+    audio = sample / "audio"
+    audio.mkdir(exist_ok=True)
+    (audio / "scar_story.ogg").write_bytes(b"ogg")
+    (audio / "scar_story.xml").write_text("<x/>")
+    questions = []
+    monkeypatch.setattr(QMessageBox, "question",
+                        lambda *a, **k: questions.append(a[2]) or QMessageBox.StandardButton.Yes)
+    open_scar(window, sample)
+    assert window.rename_item("the_scar", "scar_story", "scar_tale")
+    assert "cannot be undone" in questions[0]
+    assert (audio / "scar_tale.ogg").is_file() and (audio / "scar_tale.xml").is_file()
+    assert not (audio / "scar_story.ogg").exists()
+
+
+def test_rename_and_delete_a_conversation(window: MainWindow, sample: Path):
+    open_scar(window, sample)
+    assert window.rename_conversation("the_scar", "scar_talk")
+    assert window.tabs.tabText(window.tabs.currentIndex()) == "scar_talk"
+    assert window.current_scene().conversation_id == "scar_talk"
+    assert graph.HEADER in window.current_scene().cards
+    window.undo_stack.undo()
+    assert window.tabs.tabText(window.tabs.currentIndex()) == "the_scar"
+    assert window.folder.conversation("the_scar") is not None
+    assert window.delete_conversation("the_scar", confirm=False)
+    assert window._tab_index("the_scar") < 0
+    assert window.folder.text("scar_story") is None
+    window.undo_stack.undo()
+    assert window._tab_index("the_scar") >= 0

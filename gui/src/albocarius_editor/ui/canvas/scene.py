@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QPointF, Signal
-from PySide6.QtWidgets import QGraphicsScene
+from PySide6.QtCore import QLineF, QPoint, QPointF, Qt, Signal
+from PySide6.QtGui import QColor, QPainterPath, QPen
+from PySide6.QtWidgets import QGraphicsPathItem, QGraphicsScene
 
 from ...data import graph
 from ...data.companion import CompanionFolder
 from ...schema.catalog import SchemaCatalog
 from . import summary
-from .items import Card, CardContent, EdgeItem, Section, TextEditor
+from .. import theme
+from .items import PORT_RADIUS, Card, CardContent, EdgeItem, Section, TextEditor
 
 
 def header_content(conv: dict, catalog: SchemaCatalog) -> CardContent:
@@ -62,6 +64,8 @@ class ConversationScene(QGraphicsScene):
     item_selected = Signal(str)            # graph key, "" when nothing is selected
     item_moved = Signal(str, QPointF, QPointF)
     text_committed = Signal(str, str)      # node id, new English text (inline editor)
+    context_requested = Signal(str, QPoint)  # card key, screen position (right click)
+    connect_requested = Signal(str, str)   # source key (@header or node id), target key (node id, @hub, @end)
 
     def __init__(self, folder: CompanionFolder, conversation_id: str, catalog: SchemaCatalog, parent=None):
         super().__init__(parent)
@@ -70,6 +74,8 @@ class ConversationScene(QGraphicsScene):
         self.catalog = catalog
         self.cards: dict[str, Card] = {}
         self.editor: TextEditor | None = None
+        self._link_source: Card | None = None  # a drag from an output port in progress
+        self._link_item: QGraphicsPathItem | None = None
         self.snap = True
         self.selectionChanged.connect(self._on_selection)
         self.rebuild()
@@ -83,6 +89,7 @@ class ConversationScene(QGraphicsScene):
         if self.editor is not None:
             self.editor.finished = True  # a rebuild drops an open inline editor without committing
             self.editor = None
+        self._link_source, self._link_item = None, None
         self.blockSignals(True)
         self.clear()
         self.cards = {}
@@ -132,6 +139,72 @@ class ConversationScene(QGraphicsScene):
 
     def selected_keys(self) -> list[str]:
         return [i.key for i in self.selectedItems() if isinstance(i, Card)]
+
+    def selected_edges(self) -> list[EdgeItem]:
+        return [i for i in self.selectedItems() if isinstance(i, EdgeItem)]
+
+    def edge(self, source: str, target: str) -> EdgeItem | None:
+        return next((i for i in self.items() if isinstance(i, EdgeItem) and i.source.key == source
+                     and i.target_key == target), None)
+
+    # ---- connecting: drag from a card's output port onto another card ----
+
+    def card_with_output_at(self, pos: QPointF) -> Card | None:
+        # Not items(pos): the port sits on the card's edge, outside its shape.
+        return next((c for c in self.cards.values()
+                     if c.content.has_output and QLineF(c.output_port(), pos).length() <= PORT_RADIUS + 5), None)
+
+    def card_with_input_at(self, pos: QPointF) -> Card | None:
+        return next((i for i in self.items(pos) if isinstance(i, Card) and i.content.has_input), None)
+
+    def contextMenuEvent(self, event) -> None:
+        card = next((i for i in self.items(event.scenePos()) if isinstance(i, Card)), None)
+        if card is None:
+            super().contextMenuEvent(event)
+            return
+        if not card.isSelected():
+            self.select(card.key)
+        self.context_requested.emit(card.key, event.screenPos())
+        event.accept()
+
+    def mousePressEvent(self, event) -> None:
+        if event.button() == Qt.MouseButton.LeftButton:
+            card = self.card_with_output_at(event.scenePos())
+            if card is not None:
+                self._link_source = card
+                self._link_item = QGraphicsPathItem()
+                pen = QPen(QColor(theme.ACCENT), 1.6, Qt.PenStyle.DashLine)
+                self._link_item.setPen(pen)
+                self._link_item.setZValue(5)
+                self.addItem(self._link_item)
+                event.accept()
+                return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event) -> None:
+        if self._link_source is not None and self._link_item is not None:
+            start, end = self._link_source.output_port(), event.scenePos()
+            dx = max(abs(end.x() - start.x()) * 0.5, 40)
+            path = QPainterPath(start)
+            path.cubicTo(start + QPointF(dx, 0), end - QPointF(dx, 0), end)
+            self._link_item.setPath(path)
+            event.accept()
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event) -> None:
+        if self._link_source is not None:
+            source = self._link_source
+            self._link_source = None
+            if self._link_item is not None:
+                self.removeItem(self._link_item)
+                self._link_item = None
+            target = self.card_with_input_at(event.scenePos())
+            if target is not None and target is not source:
+                self.connect_requested.emit(source.key, target.key)
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
 
     def select(self, key: str) -> Card | None:
         card = self.cards.get(key)

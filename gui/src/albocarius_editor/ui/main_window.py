@@ -7,7 +7,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QPointF, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoStack
-from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMessageBox, QTabWidget,
+from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMenu, QMessageBox, QTabWidget,
                                QToolBar, QWidget)
 
 from .. import __version__
@@ -92,6 +92,9 @@ class MainWindow(QMainWindow):
         self.act_undo.setShortcut(QKeySequence.StandardKey.Undo)
         self.act_redo = self.undo_stack.createRedoAction(self, "Redo")
         self.act_redo.setShortcut(QKeySequence.StandardKey.Redo)
+        self.act_delete = self._action("Delete", self.delete_selection, QKeySequence.StandardKey.Delete,
+                                       "Delete the selected cards, or disconnect the selected links")
+        self.act_delete.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.act_zoom_in = self._action("Zoom in", lambda: self._view_call("zoom_in"), QKeySequence.StandardKey.ZoomIn)
         self.act_zoom_out = self._action("Zoom out", lambda: self._view_call("zoom_out"), QKeySequence.StandardKey.ZoomOut)
         self.act_fit = self._action("Fit", lambda: self._view_call("fit_all"), QKeySequence("Ctrl+0"))
@@ -111,6 +114,8 @@ class MainWindow(QMainWindow):
         edit = bar.addMenu("&Edit")
         edit.addAction(self.act_undo)
         edit.addAction(self.act_redo)
+        edit.addSeparator()
+        edit.addAction(self.act_delete)
         view = bar.addMenu("&View")
         for a in (self.act_zoom_in, self.act_zoom_out, self.act_fit, None, self.act_snap):
             view.addSeparator() if a is None else view.addAction(a)
@@ -152,6 +157,9 @@ class MainWindow(QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabCloseRequested.connect(self._close_tab)
         self.tabs.currentChanged.connect(self._tab_changed)
+        self.tabs.addAction(self.act_delete)  # Del acts while the canvas has focus (not in text fields)
+        self.tabs.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tabs.tabBar().customContextMenuRequested.connect(self._tab_menu)
         self.setCentralWidget(self.tabs)
         self.lines_view = LinesView(self.catalog)
         self.lines_view.line_selected.connect(lambda line_id: self._show_in_inspector(None, line_id))
@@ -177,6 +185,11 @@ class MainWindow(QMainWindow):
 
         self.inspector = InspectorPanel(self.catalog)
         self.inspector.text_committed.connect(self.set_text)
+        self.inspector.id_committed.connect(self.rename_item)
+        self.inspector.edge_move.connect(lambda c, s, t, i: self.edit(
+            f"Reorder {s} → {t}", lambda f: edit.move_edge(f, c, s, t, i)))
+        self.inspector.edge_remove.connect(lambda c, s, t: self.edit(
+            f"Disconnect {s} → {t}", lambda f: edit.disconnect(f, c, s, t)))
         self.blackboard = BlackboardPanel(self.catalog)
         right = QTabWidget()
         right.addTab(self.inspector, "Inspector")
@@ -256,6 +269,8 @@ class MainWindow(QMainWindow):
                 scene.item_moved.connect(lambda key, old, new, c=conversation_id:
                                          self.undo_stack.push(MoveCommand(self, c, key, old, new)))
                 scene.text_committed.connect(self.set_text)
+                scene.context_requested.connect(lambda key, pos, c=conversation_id: self._card_menu(c, key, pos))
+                scene.connect_requested.connect(lambda source, target, c=conversation_id: self.connect_nodes(c, source, target))
                 widget = CanvasView()
                 widget.setScene(scene)
                 widget.palette_dropped.connect(lambda kind, pos: self.add_from_palette(kind, pos))
@@ -308,13 +323,13 @@ class MainWindow(QMainWindow):
 
     # ---- editing ----
 
-    def edit(self, text: str, fn, after_redo=None, after_undo=None) -> tuple[bool, object]:
+    def edit(self, text: str, fn, on_redo=None, on_undo=None) -> tuple[bool, object]:
         """Runs ``fn(folder)`` (a ``data.edit`` call) as one undoable step. Returns (done, fn's result); an
         :class:`EditError` is shown in the status bar and pushes nothing."""
         if self.folder is None:
             return False, None
         self._edit_error = None
-        command = EditCommand(self, text, fn, after_redo, after_undo)
+        command = EditCommand(self, text, fn, on_redo, on_undo)
         self.undo_stack.push(command)  # runs redo(); an obsolete (failed) command is deleted by the stack
         if self._edit_error is not None:
             self.statusBar().showMessage(f"{text}: {self._edit_error}", 6000)
@@ -364,6 +379,123 @@ class MainWindow(QMainWindow):
             return None
         scene.edit_text(node_id)
         return node_id
+
+    def connect_nodes(self, conversation_id: str, source: str, target: str) -> bool:
+        return self.edit(f"Connect {source} → {target}", lambda f: edit.connect(f, conversation_id, source, target))[0]
+
+    def delete_selection(self) -> None:
+        """Del on the canvas: selected edges are disconnected, else the selected node cards are deleted."""
+        scene = self.current_scene()
+        if scene is None:
+            return
+        conv = scene.conversation_id
+        edges = [(e.source.key, e.target_key) for e in scene.selected_edges()]
+        if edges:
+            def disconnect_all(f: CompanionFolder) -> None:
+                for source, target in edges:
+                    edit.disconnect(f, conv, source, target)
+            self.edit("Disconnect" if len(edges) == 1 else f"Disconnect {len(edges)} links", disconnect_all)
+            return
+        self.delete_nodes(conv, [k for k in scene.selected_keys() if not k.startswith("@")])
+
+    def delete_nodes(self, conversation_id: str, node_ids: list[str]) -> bool:
+        """Deletes nodes (references, texts in every language, layout) as one step; asks first when they have text."""
+        if self.folder is None or not node_ids:
+            return False
+        if any(self.folder.text(n, code) for n in node_ids for code in self.folder.languages()):
+            what = node_ids[0] if len(node_ids) == 1 else f"{len(node_ids)} nodes"
+            if QMessageBox.question(self, APP_NAME, f"Delete {what} and its texts in every language?") \
+                    != QMessageBox.StandardButton.Yes:
+                return False
+
+        def delete_all(f: CompanionFolder) -> None:
+            for node_id in node_ids:
+                edit.delete_node(f, conversation_id, node_id)
+        return self.edit(f"Delete {node_ids[0]}" if len(node_ids) == 1 else f"Delete {len(node_ids)} nodes", delete_all)[0]
+
+    def rename_item(self, conversation_id: str | None, old: str, new: str) -> bool:
+        """Renames a line/node id (or, with key @header, the conversation). Offers to rename the audio file too."""
+        if self.folder is None or old == new:
+            return False
+        if conversation_id is not None and old == graph.HEADER:
+            return self.rename_conversation(conversation_id, new)
+        done, result = self.edit(f"Rename {old} → {new}", lambda f: edit.rename_id(f, old, new))
+        if not done:
+            return False
+        self._inspected = (conversation_id, new)
+        self.reveal(conversation_id or LINES_TAB, new)
+        if result.audio is not None:
+            old_path, new_path = result.audio
+            answer = QMessageBox.question(
+                self, APP_NAME, f"Also rename the audio file {old_path.name} to {new_path.name} (and its lipsync .xml)?\n\n"
+                                "Renaming files on disk cannot be undone; Undo only renames the id back.")
+            if answer == QMessageBox.StandardButton.Yes:
+                try:
+                    edit.rename_audio(result.audio)
+                except (EditError, OSError) as e:
+                    QMessageBox.warning(self, APP_NAME, f"The audio file was not renamed:\n{e}")
+        return True
+
+    def _retarget_tab(self, old: str, new: str) -> None:
+        index = self._tab_index(old)
+        if index >= 0:
+            widget = self.tabs.widget(index)
+            widget.setProperty("tabKey", new)
+            self.tabs.setTabText(index, new)
+            if isinstance(widget, CanvasView) and isinstance(widget.scene(), ConversationScene):
+                widget.scene().conversation_id = new
+        if self._inspected and self._inspected[0] == old:
+            self._inspected = (new, self._inspected[1])
+
+    def rename_conversation(self, old: str, new: str | None = None) -> bool:
+        if self.folder is None:
+            return False
+        if new is None:
+            new, ok = QInputDialog.getText(self, "Rename conversation", "Conversation id (a-z, 0-9, _):", text=old)
+            if not ok or not new.strip() or new.strip() == old:
+                return False
+            new = new.strip()
+        return self.edit(f"Rename conversation {old} → {new}", lambda f: edit.rename_conversation(f, old, new),
+                         on_redo=lambda: self._retarget_tab(old, new), on_undo=lambda: self._retarget_tab(new, old))[0]
+
+    def delete_conversation(self, conversation_id: str, confirm: bool = True) -> bool:
+        if self.folder is None:
+            return False
+        if confirm and QMessageBox.question(self, APP_NAME, f"Delete the conversation {conversation_id}, its nodes and "
+                                                            f"their texts in every language?") != QMessageBox.StandardButton.Yes:
+            return False
+        return self.edit(f"Delete conversation {conversation_id}", lambda f: edit.delete_conversation(f, conversation_id),
+                         on_undo=lambda: self.open_tab(conversation_id))[0]
+
+    def _conversation_menu(self, menu: QMenu, conversation_id: str) -> None:
+        menu.addAction("Rename conversation…", lambda: self.rename_conversation(conversation_id))
+        menu.addAction("Delete conversation…", lambda: self.delete_conversation(conversation_id))
+
+    def _tab_menu(self, pos) -> None:
+        index = self.tabs.tabBar().tabAt(pos)
+        if index < 0:
+            return
+        key = self.tabs.widget(index).property("tabKey")
+        if key == LINES_TAB:
+            return
+        menu = QMenu(self)
+        self._conversation_menu(menu, key)
+        menu.exec(self.tabs.tabBar().mapToGlobal(pos))
+
+    def _card_menu(self, conversation_id: str, key: str, screen_pos) -> None:
+        menu = QMenu(self)
+        scene = self.scene_for(conversation_id)
+        if key == graph.HEADER:
+            self._conversation_menu(menu, conversation_id)
+        elif not key.startswith("@") and scene is not None:
+            menu.addAction("Edit text", lambda: scene.edit_text(key))
+            menu.addAction("Continue with: Back to hub", lambda: self.connect_nodes(conversation_id, key, graph.HUB))
+            menu.addAction("Continue with: End", lambda: self.connect_nodes(conversation_id, key, graph.END))
+            menu.addSeparator()
+            menu.addAction("Delete", lambda: self.delete_nodes(conversation_id, [key]))
+        else:
+            return
+        menu.exec(screen_pos)
 
     def edit_failed(self, error: EditError) -> None:
         self._edit_error = error
