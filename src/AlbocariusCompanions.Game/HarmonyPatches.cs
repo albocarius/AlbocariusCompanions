@@ -313,7 +313,7 @@ internal static class KeepModCompanionsOverTheLimit
 /// ran (its variables are set) and the consequence and tokens are unchanged; an empty slot keeps the vanilla text.
 /// Every other NPC line a mod companion says is checked too: a vanilla line no slot covers, or a slot without usable text,
 /// shows vanilla text — that breaks the "no vanilla dialog" rule, so it is logged and shown in game as a warning (once per
-/// companion and sentence per session).
+/// session per companion and slot, or per sentence when no slot covers it — VanillaDialogPoints.WarningKey).
 /// </summary>
 [HarmonyPatch(typeof(ConversationManager), nameof(ConversationManager.UpdateCurrentSentenceText))]
 internal static class ReplaceVanillaTextForModCompanions
@@ -350,7 +350,7 @@ internal static class ReplaceVanillaTextForModCompanions
             if (text != null)
                 ____currentSentenceText = text;
             else
-                WarnOnce(id, sentence.Id, $"Companion '{id}' has no usable text for slot '{point.Slot}' (sentence '{sentence.Id}'); " +
+                WarnOnce(id, sentence.Id, $"Companion '{id}' has no line for slot '{point.Slot}' that holds now (sentence '{sentence.Id}'); " +
                     "the vanilla text was shown.");
         }
         catch (Exception ex)
@@ -359,12 +359,12 @@ internal static class ReplaceVanillaTextForModCompanions
         }
     }
 
-    /// <summary>Companion + sentence pairs already reported this session: one warning (log + game) per line, not per repeat.</summary>
+    /// <summary>Companion + warning keys already reported this session: one warning (log + game) per slot / line, not per repeat.</summary>
     private static readonly HashSet<string> Reported = new HashSet<string>(StringComparer.Ordinal);
 
     private static void WarnOnce(string companionId, string sentenceId, string message)
     {
-        if (Reported.Add(companionId + "|" + sentenceId))
+        if (Reported.Add(companionId + "|" + VanillaDialogPoints.WarningKey(sentenceId)))
             ModRuntime.Log.Warning(message);
     }
 }

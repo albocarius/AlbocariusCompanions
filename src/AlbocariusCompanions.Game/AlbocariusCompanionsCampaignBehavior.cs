@@ -43,6 +43,8 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
         CampaignEvents.OnNewGameCreatedEvent.AddNonSerializedListener(this, OnNewGameCreated);
         CampaignEvents.OnGameLoadFinishedEvent.AddNonSerializedListener(this, OnGameLoadFinished);
         CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
+        // Selection picks live for one talk (M9 F2, GAME_MAP Q20 addendum).
+        CampaignEvents.ConversationEnded.AddNonSerializedListener(this, _ => ModRuntime.Selections.Clear());
     }
 
     public override void SyncData(IDataStore dataStore)
@@ -97,6 +99,7 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
 
     private void OnSessionLaunched(CampaignGameStarter starter)
     {
+        ModRuntime.Selections.Clear();
         Safe.Run(ModRuntime.Log, "OnSessionLaunched", () => CompanionDialogs.Register(starter));
         Safe.Run(ModRuntime.Log, "in-game notifications", () =>
         {

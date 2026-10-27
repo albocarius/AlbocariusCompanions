@@ -96,6 +96,9 @@ public static class ConversationChecks
                     $"node '{node.Id}' is a player line; the player is never voiced (remove 'voiced'/'audio')."));
 
             ValidateConditions(node.When, $"node '{node.Id}'", folder, name, issues);
+            if (node.Priority != null && node.Speaker == ConversationRules.SpeakerPlayer)
+                issues.Add(ValidationIssue.Warning(IssueCodes.PriorityIgnored, folder,
+                    $"Conversation '{name}' node '{node.Id}' is a player line with 'priority'; player options are all shown, so it has no effect."));
             ValidateEffects(node.Effects, node.Id, ownId, folder, name, issues);
         }
 
@@ -192,7 +195,7 @@ public static class ConversationChecks
                 $"Conversation '{name}': every node of {where} has a condition; if none holds the conversation gets stuck. Add one without a condition."));
     }
 
-    private static bool HasCondition(ConversationNode node) =>
+    internal static bool HasCondition(ConversationNode node) =>
         IsSet(node.When) || node.Effects?.Join == true || TransferNeedsSource(node.Effects);
 
     /// <summary>A transfer whose source is not "world" needs that source to hold: an implied hasGold/hasItem condition.</summary>
@@ -202,7 +205,7 @@ public static class ConversationChecks
         return transfer != null && transfer.From != null && transfer.From != Transfers.World;
     }
 
-    private static bool IsSet(ConditionSet? when) =>
+    internal static bool IsSet(ConditionSet? when) =>
         when != null && (when.Met != null || when.Hired != null || when.InParty != null || when.MinRelation != null ||
             when.MaxRelation != null || when.MinGold != null || when.HasGold != null || when.HasItem != null ||
             when.Flags?.Count > 0 || when.NotFlags?.Count > 0 ||
@@ -275,11 +278,15 @@ public static class ConversationChecks
             $"'{ConversationRules.NextHub}' or '{ConversationRules.NextEnd}'; add a way out."));
     }
 
-    private static void ValidateConditions(ConditionSet? when, string where, string folder, string name, List<ValidationIssue> issues)
+    private static void ValidateConditions(ConditionSet? when, string where, string folder, string name, List<ValidationIssue> issues) =>
+        ValidateConditions(when, where, message => issues.Add(Error(IssueCodes.InvalidCondition, folder, name, message)));
+
+    /// <summary>Shape checks of a condition object; each problem is reported as "&lt;where&gt;: &lt;message&gt;". Also used for slot lines.</summary>
+    internal static void ValidateConditions(ConditionSet? when, string where, Action<string> report)
     {
         if (when == null)
             return;
-        void Bad(string message) => issues.Add(Error(IssueCodes.InvalidCondition, folder, name, $"{where}: {message}"));
+        void Bad(string message) => report($"{where}: {message}");
 
         if (when.MinRelation is { } min && !InRelationRange(min))
             Bad($"minRelation {min} is outside {ConversationRules.MinRelation}..{ConversationRules.MaxRelation}.");
@@ -315,12 +322,12 @@ public static class ConversationChecks
                 if (list[i] == null)
                     Bad($"'{key}' contains an empty (null) condition.");
                 else
-                    ValidateConditions(list[i], $"{where} {key}[{i}]", folder, name, issues);
+                    ValidateConditions(list[i], $"{where} {key}[{i}]", report);
         }
         Nested(when.All, "all");
         Nested(when.Any, "any");
         if (when.Not != null)
-            ValidateConditions(when.Not, $"{where} not", folder, name, issues);
+            ValidateConditions(when.Not, $"{where} not", report);
     }
 
     private static string? GoldCheckProblem(GoldCheck check)

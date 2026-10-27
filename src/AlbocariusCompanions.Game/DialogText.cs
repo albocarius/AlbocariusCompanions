@@ -4,18 +4,20 @@ using System.Linq;
 using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Rules;
+using TaleWorlds.CampaignSystem;
 using TaleWorlds.Core;
 using TaleWorlds.Localization;
 
 namespace AlbocariusCompanions.Game;
 
 /// <summary>
-/// Text of a companion line at the moment it is shown: a random line of the slot (SPEC_CORE_GAPS T5) in the active game
+/// Text of a companion line at the moment it is shown: the slot's chosen line (selection rule, M9) in the active game
 /// language with English fallback (T6), as <c>{=&lt;full id&gt;}&lt;text&gt;</c> so voice-over finds it (GAME_MAP Q14 note 2).
 /// </summary>
 internal static class DialogText
 {
-    private static readonly IRandomSource Random = new MBRandomSource();
+    /// <summary>The game's random generator for every selection (slot lines, greetings, npc replies).</summary>
+    public static readonly IRandomSource Random = new MBRandomSource();
 
     private static readonly Dictionary<string, string?> GameLanguageByIso = new Dictionary<string, string?>(StringComparer.Ordinal);
 
@@ -25,10 +27,18 @@ internal static class DialogText
             .Where(l => l?.Slot == slot && l.FullId != null && package.Text(l.Id!, CompanionRules.EnglishCode) != null)
             .ToList();
 
-    /// <summary>One random line of the slot (companion or player slot) as a TextObject, or null when the slot has no line.</summary>
+    /// <summary>
+    /// The slot's line for this talk (companion or player slot) as a TextObject, or null when no line holds: lines whose
+    /// "when" holds for the companion's hero, chosen by priority, ties at random, kept for the talk (M9 F1/F2/F4). Without
+    /// a hero only lines without "when" are candidates.
+    /// </summary>
     public static TextObject? PickText(CompanionPackage package, string slot)
     {
-        var line = LinePicker.Pick(LinesOf(package, slot), Random);
+        var lines = LinesOf(package, slot);
+        var hero = ModRuntime.HeroOf(package.Id) ?? Hero.OneToOneConversationHero;
+        var line = hero != null
+            ? ConversationSelection.SlotLine(package.Id, slot, lines, new HeroConversationContext(hero, package.Id), ModRuntime.Selections, Random)
+            : Selection.Pick(lines.Where(l => l.When == null), l => l.Priority, Random);
         return line == null ? null : TextOf(package, line);
     }
 

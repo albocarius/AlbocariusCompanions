@@ -109,6 +109,13 @@ public static class VanillaDialogPoints
         : ForSentence(sentenceId) != null ? SentenceKind.Slot
         : SentenceKind.Unmapped;
 
+    /// <summary>
+    /// What a vanilla-text warning is reported once per session for (SPEC_SELECTION_AND_EVENTS I5): the slot of a covered
+    /// point (several sentences can share a slot), else the sentence itself.
+    /// </summary>
+    public static string WarningKey(string? sentenceId) =>
+        ForSentence(sentenceId) is { } point ? "slot:" + point.Slot : "sentence:" + sentenceId;
+
     /// <summary>The point that replaces a vanilla sentence id, or null.</summary>
     public static VanillaDialogPoint? ForSentence(string? sentenceId) =>
         sentenceId != null && BySentence.TryGetValue(sentenceId, out var point) ? point : null;

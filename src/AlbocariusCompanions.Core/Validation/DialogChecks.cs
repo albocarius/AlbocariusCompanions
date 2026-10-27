@@ -66,12 +66,22 @@ public static class DialogChecks
                 textLines.Add(new LangChecks.TextLine(line.Id!, line.Voiced));
             }
 
+            ConversationChecks.ValidateConditions(line.When, LineRef(line) + " 'when'",
+                message => issues.Add(ValidationIssue.Error(IssueCodes.InvalidCondition, folder, message)));
+
             if (isPlayer && (line.Voiced || line.Audio != null))
                 issues.Add(ValidationIssue.Error(IssueCodes.VoicedPlayerLine, folder,
                     LineRef(line) + $" is in the player slot '{line.Slot}'; the player is never voiced (remove 'voiced'/'audio')."));
             else
                 ValidateAudio(line, folder, issues);
         }
+
+        // A slot whose every line has a condition can be empty at runtime: a mod slot is then not offered, a vanilla
+        // point falls back to vanilla text (reported in game).
+        foreach (var slot in lines.Where(l => l?.Slot != null && DialogSlots.IsKnown(l.Slot)).GroupBy(l => l.Slot!, StringComparer.Ordinal))
+            if (slot.All(l => ConversationChecks.IsSet(l.When)))
+                issues.Add(ValidationIssue.Warning(IssueCodes.SlotMayHaveNoLine, folder,
+                    $"Every line of slot '{slot.Key}' has a 'when'; when none holds the slot has no line. Add one line without 'when'."));
 
         // One error listing every missing slot, so a companion made before a slot existed gives one readable log line.
         var missing = DialogSlots.Required.Where(slot => !slotsPresent.Contains(slot)).ToList();
@@ -87,6 +97,7 @@ public static class DialogChecks
                 ValidateAudio(node, folder, issues);
         }
 
+        SelectionChecks.Validate(package, issues);
         LangChecks.Validate(folder, textLines, package.Languages, issues);
     }
 

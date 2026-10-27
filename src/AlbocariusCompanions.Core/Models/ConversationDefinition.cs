@@ -16,6 +16,11 @@ public sealed class ConversationDefinition
     /// <summary>True: offered until it has started once (per campaign).</summary>
     [JsonProperty("once")] public bool Once { get; set; }
     [JsonProperty("when")] public ConditionSet? When { get; set; }
+    /// <summary>
+    /// Hub: menu order (higher first, ties in file order). Greeting: the offered greeting with the highest priority
+    /// opens the talk, ties at random. Absent = 0.
+    /// </summary>
+    [JsonProperty("priority")] public int? Priority { get; set; }
     /// <summary>Node ids the conversation starts with: player options (hub) or NPC alternatives (greeting).</summary>
     [JsonProperty("start")] public List<string>? Start { get; set; }
     [JsonProperty("nodes")] public List<ConversationNode>? Nodes { get; set; }
@@ -31,6 +36,8 @@ public sealed class ConversationNode : ISpokenLine
     /// <summary>What follows: node ids of this conversation, or exactly one of "hub" / "end".</summary>
     [JsonProperty("next")] public List<string>? Next { get; set; }
     [JsonProperty("when")] public ConditionSet? When { get; set; }
+    /// <summary>NPC nodes only: among the passing npc nodes of one "next" list (or greeting start), the highest wins, ties at random. Absent = 0.</summary>
+    [JsonProperty("priority")] public int? Priority { get; set; }
     [JsonProperty("effects")] public EffectSet? Effects { get; set; }
 
     [JsonIgnore] public string? FullId { get; set; }

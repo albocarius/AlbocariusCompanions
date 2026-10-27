@@ -30,6 +30,9 @@ internal static class ModRuntime
     /// <summary>Conversation variables of the running campaign (M7); replaced and restored like <see cref="Flags"/>.</summary>
     public static VariableStore Variables { get; set; } = new VariableStore();
 
+    /// <summary>Selection picks of the current talk (M9 F2); cleared when a conversation ends and at session launch.</summary>
+    public static SelectionMemory Selections { get; } = new SelectionMemory();
+
     /// <summary>Companion id → its hero in the running campaign (null when it has none); set by the campaign behavior.</summary>
     public static Func<string, Hero?> HeroOf { get; set; } = _ => null;
 

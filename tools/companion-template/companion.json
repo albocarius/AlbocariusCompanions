@@ -15,6 +15,7 @@
     "civilian": { "Body": "monk_robe", "Head": "pilgrim_hood" }
   },
   "hireCost": 500,
+  "noble": false,
   "voiceProfile": { "reference": null, "style": null },
   "likes": [],
   "dislikes": [],

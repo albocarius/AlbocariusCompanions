@@ -65,25 +65,32 @@ Ordering: Track R runs on the worker while I do Track I; 91 after 90; 94 after 9
   (the M7 events task timed out once when unsplit). Q23/Q32 are reused, not repeated.
 
 ### Track I — implementation
-- [ ] 90-selection-core (self) — Core `Selection` (F1 rule, `IRandomSource`), `priority` on conversations / lines / npc
+- [x] 90-selection-core (self) — Core `Selection` (F1 rule, `IRandomSource`), `priority` on conversations / lines / npc
   nodes, `when` on slot lines (F4) (model, loader, validation: player node with `priority` → warning "ignored"), `LinePicker` → priority-aware,
   SCHEMA.md + example, sample F5, template. Accept: Acceptance tests (priority wins, absent = 0, seeded ties both seen,
   player options all returned, hub/greeting/npc-reply/slot sets).
-- [ ] 91-selection-game (self) — F2/F3 in CompanionDialogs/DialogText; GAME_MAP Q20 addendum. Build-only; in-game
+- [x] 91-selection-game (self) — F2/F3 in CompanionDialogs/DialogText; GAME_MAP Q20 addendum. Build-only; in-game
   checklist item 2.
-- [ ] 92-shadowing-validation (worker; self writes acceptance tests) — I2: in each set of F1, a candidate with no
+- [x] 92-shadowing-validation (self — worker queue busy with Track R) — I2: in each set of F1, a candidate with no
   conditions and a strictly higher priority than another → warning naming both. Equal → nothing. Hub/greeting: the
   conversation's `when` and its start nodes' conditions count as conditions.
-- [ ] 93-noble-field (worker; self writes acceptance tests) — I4: `noble` bool default false in companion.json model,
+- [x] 93-noble-field (self — worker queue busy) — I4: `noble` bool default false in companion.json model,
   validation (non-bool → error), SCHEMA.md, template, test_companion unchanged (default).
-- [ ] 94-sim-engine (self) — I3 Core: `Simulation` (state model F6, step → candidates + per-field condition results +
+- [x] 94-sim-engine (self) — I3 Core: `Simulation` (state model F6, step → candidates + per-field condition results +
   winning group + winner + effects + new state), reusing ConversationConditions / Selection / ConversationEffects /
   Transfers (refactor Game to the same entry points where it computes them itself). `docs/SIMULATOR_PROTOCOL.md` (F7).
   Accept: engine tests incl. the hire → the_scar → spare_coin sequence.
-- [ ] 95-cli-serve (worker; self writes acceptance tests incl. one integration test over stdin/stdout) — `serve` command:
+- [x] 95-cli-serve (self — the protocol lives in Core (SimulatorProtocol), so serve is a 20-line loop; worker queue busy) — `serve` command:
   line loop, JSON in/out per SIMULATOR_PROTOCOL.md, errors as responses (never exit on a bad line), exit on EOF/`close`.
-- [ ] 96-fallback-check (self) — F8.
-- [ ] 97-rescue-slots (self) — F9: verify in decomp which rescue / prison-break lines the companion speaks; add those as
+- [x] 96-fallback-check (self) — F8. Was once per companion+sentence; now once per companion+slot (sentence when no
+  slot covers it), key in Core `VanillaDialogPoints.WarningKey` (tested); message says "no line … that holds now" since
+  slot lines can have `when`.
+- [x] 97-rescue-slots (self) — verified in decomp: every NPC line the rescued companion says
+  (CompanionRolesCampaignBehavior rescue_companion_* ×8; PrisonBreakCampaignBehavior prison_break_start_1/_2,
+  prison_break_next_companion) is already a required slot since M5 T4.0 / Q18. The other prison-break lines
+  (start_3 unmet, next_commander/noble/notable/other) are said only by a prisoner who is not a player companion (unmet,
+  lord, notable, wanderer) — a mod companion is never one while unhired (no party to be captured with); a lord keeps
+  vanilla (§0). Nothing to add; any such line said at runtime is reported by I5. Originally planned: — F9: verify in decomp which rescue / prison-break lines the companion speaks; add those as
   vanilla dialog points / required slots (VanillaDialogPoints, DialogSlots, template, test_companion en/tr, SCHEMA.md,
   GAME_MAP Q18 addendum + API row if new members are used).
 

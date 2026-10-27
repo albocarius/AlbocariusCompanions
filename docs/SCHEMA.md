@@ -32,6 +32,7 @@ The companion id is the folder name; there is no `id` field.
 | `traits` | object | no | game trait id → level | `{ "Valor": 1 }` |
 | `equipment` | object | yes | see below | |
 | `hireCost` | int | yes | ≥ 0; hireable with exactly this much gold | `500` |
+| `noble` | bool | no | default `false`. Noble birth: making a non-noble companion a lord will cost relation with other lords, a noble one not (planned, no effect yet) | `false` |
 | `voiceProfile` | object | no | `{ "reference": string\|null, "style": string\|null }` (authoring notes, unused in game) | |
 | `likes` | array | no | `{ "event", "reaction", "slot" }` — shape-validated only, no effect yet | `[]` |
 | `dislikes` | array | no | same as `likes` | `[]` |
@@ -64,7 +65,9 @@ The companion id is the folder name; there is no `id` field.
 | `schemaVersion` | int | yes | `1` |
 | `lines` | array | yes | |
 | `lines[].id` | string | yes | local id `[a-z0-9_]+`, unique within the companion (lines and conversation nodes share one namespace). The full id `<companionId>_<id>` (e.g. `jeremus_intro_01`) is the localization key, voice-over id and log name, and must be unique across all companions |
-| `lines[].slot` | string | yes | required companion slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; required player slots (the player says these lines): `player_ask_about`, `player_ask_hire`, `player_hire_pay`, `player_hire_full`, `player_hire_later`; required vanilla dialog points (see below); reserved, no effect yet: `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is picked at random each time |
+| `lines[].slot` | string | yes | required companion slots: `intro`, `backstory`, `hire_offer`, `hire_accept`, `hire_decline`; required player slots (the player says these lines): `player_ask_about`, `player_ask_hire`, `player_hire_pay`, `player_hire_full`, `player_hire_later`; required vanilla dialog points (see below); reserved, no effect yet: `leave_threat`, `relation_complaint`, `like_reaction`, `dislike_reaction`, `idle`. Several lines in one slot → one is chosen by the selection rule (see "Selection rule") and kept for the rest of the talk |
+| `lines[].when` | object | no | conditions as for conversations (see "Conditions"); the line is a candidate only while they hold. A slot whose every line has a `when` → warning (it can end up with no line) |
+| `lines[].priority` | int | no | default 0; see "Selection rule" |
 | `lines[].voiced` | bool | no | default `false`; a player slot line must not be voiced (error) |
 | `lines[].audio` | string | no | relative to the companion folder, no `..`, must end in `.ogg` (any case) — anything else is an error; default `audio/<local id>.ogg`; not allowed on player slot lines |
 | `conversations` | array | no | authored conversations, see below |
@@ -106,7 +109,8 @@ Author-time checks and exports (`tools/AlbocariusCompanions.Cli`; all the logic 
 `ERROR <code> [<folder>] <message>` / `WARNING …` — followed by `<E> error(s), <W> warning(s).`. A path that holds a
 `companion.json` is a single companion: only that folder's issues are printed (its parent is still loaded, so cross-companion
 checks run). `dotnet run --project tools/AlbocariusCompanions.Cli -- mermaid module/ModuleData/Companions/<id> [conversation]`
-writes that companion's `conversations` (SCHEMA "Conversations") as Mermaid flowcharts, or one of them by id. Exit codes:
+writes that companion's `conversations` (SCHEMA "Conversations") as Mermaid flowcharts, or one of them by id. `serve [companionsRoot]` runs the conversation simulator for an editor: JSON lines on stdin/stdout,
+see `docs/SIMULATOR_PROTOCOL.md`. Exit codes:
 0 clean or warnings only; 1 validation errors (`mermaid` prints the broken companion's issues on stderr); 2 usage, a path
 that does not exist, or an unknown conversation id. (As built, the standalone run crashes on a missing `Newtonsoft.Json`:
 Core hides its package with `PrivateAssets=all` and the CLI csproj is orchestrator-owned — see `docs/BLOCKERS.md`.)
@@ -135,14 +139,31 @@ Extra companion ↔ player dialogs: a small graph of companion (`npc`) and `play
 | `entry` | string | yes | `hub`: the start player node(s) are options in the companion's conversation menu (listed above the vanilla options). `greeting`: when the player talks to the companion (already met), a start companion node opens the conversation instead of the usual greeting |
 | `once` | bool | no | default `false`; `true`: offered until it has started once (per campaign, kept in the save) |
 | `when` | object | no | conditions of the conversation, see below; for `greeting`, `"met": false` is an error (the first meeting is the intro) |
-| `start` | string array | yes | node ids: player nodes for `hub` (several = several menu options), companion nodes for `greeting` (the first listed whose condition holds is said) |
+| `priority` | int | no | default 0. `hub`: menu order among the companion's hub conversations (higher first, ties in file order). `greeting`: among the greetings offered, the highest opens the talk (selection rule) |
+| `start` | string array | yes | node ids: player nodes for `hub` (several = several menu options), companion nodes for `greeting` (one is chosen by the selection rule) |
 | `nodes` | array | yes | at least one |
 | `nodes[].id` | string | yes | local id like a line id (same namespace as the companion's lines; `hub` and `end` are reserved); key of the text in the lang files; full id `<companionId>_<id>` |
 | `nodes[].speaker` | string | yes | `npc` (the companion) or `player` |
 | `nodes[].voiced`, `nodes[].audio` | | no | as for lines; player nodes are never voiced |
-| `nodes[].next` | string array | yes | what follows: node ids of the same conversation, or exactly one of `["hub"]` (back to the menu) / `["end"]` (the conversation closes). Player nodes → the companion's possible replies (the first listed whose condition holds is said). Companion nodes → either the player's options (every option whose condition holds is shown) or the companion's next line. Never both kinds in one `next`; a player node is never followed by a player node. Loops back to earlier nodes are allowed |
+| `nodes[].next` | string array | yes | what follows: node ids of the same conversation, or exactly one of `["hub"]` (back to the menu) / `["end"]` (the conversation closes). Player nodes → the companion's possible replies (one is chosen by the selection rule). Companion nodes → either the player's options (every option whose condition holds is shown) or the companion's next line. Never both kinds in one `next`; a player node is never followed by a player node. Loops back to earlier nodes are allowed |
 | `nodes[].when` | object | no | conditions of this node, see below; a node whose condition fails is not offered / not said |
+| `nodes[].priority` | int | no | companion nodes only, default 0; see "Selection rule". On a player node it has no effect (warning) |
 | `nodes[].effects` | object | no | applied when the node is said, see below |
+
+**Selection rule.** Where the game must choose one of several alternatives — the greeting that opens a talk, a
+greeting's start node, the companion's reply among one `next` list, the line of a slot — the candidates whose conditions
+hold are compared by `priority` (absent = 0): the highest wins; equal priorities are chosen at random. The choice is kept
+for the rest of the talk (asked again later in the same talk, the companion says the same) and made again only when the
+kept one no longer holds. Player options are never chosen between: every option whose condition holds is shown, and hub
+conversations are all listed, ordered by `priority`. A candidate without conditions and with a strictly higher priority
+than another candidate of the same set hides that one for ever (validation warning).
+
+```json
+"next": ["coin_refuse", "coin_fine"],
+{ "id": "coin_refuse", "speaker": "npc", "when": { "maxRelation": 20 }, "priority": 1, "next": ["hub"] },
+{ "id": "coin_fine", "speaker": "npc", "next": ["end"] }
+```
+Relation ≤ 20: both hold, `coin_refuse` wins by priority; above 20 only `coin_fine` holds.
 
 **Conditions** (`when`; one object, every field that is set must hold — an implicit "all"):
 - `met` (bool), `hired` (bool: in the player's clan), `inParty` (bool: in the player's party), `minRelation` / `maxRelation`
