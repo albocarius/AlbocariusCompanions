@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QBrush, QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPen, QPolygonF
-from PySide6.QtWidgets import QGraphicsItem, QGraphicsObject, QGraphicsPathItem, QGraphicsSimpleTextItem, QStyleOptionGraphicsItem
+from collections.abc import Callable
+
+from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, Signal
+from PySide6.QtGui import QBrush, QColor, QFont, QFontMetricsF, QPainter, QPainterPath, QPainterPathStroker, QPen, QPolygonF
+from PySide6.QtWidgets import (QGraphicsItem, QGraphicsObject, QGraphicsPathItem, QGraphicsSimpleTextItem, QGraphicsTextItem,
+                               QStyleOptionGraphicsItem)
 
 from .. import theme
 
@@ -121,6 +124,10 @@ class Card(QGraphicsObject):
         self._title_font = title_font
         self._small_font = small_font
 
+    def text_rect(self) -> QRectF | None:
+        """The English text block (card coordinates), or None when the card has no text."""
+        return next((r for role, r, _, _ in self._rows if role in ("text", "placeholder")), None)
+
     def boundingRect(self) -> QRectF:
         m = PORT_RADIUS + 3
         return QRectF(-m, -m, self.width + 2 * m, self.height + 2 * m)
@@ -229,6 +236,66 @@ class Card(QGraphicsObject):
             self.moved.emit(self.key, self._press_pos, QPointF(self.pos()))
         self._press_pos = None
 
+    def mouseDoubleClickEvent(self, event) -> None:
+        rect = self.text_rect()
+        scene = self.scene()
+        if rect is not None and rect.contains(event.pos()) and hasattr(scene, "edit_text"):
+            scene.edit_text(self.key)
+            return
+        super().mouseDoubleClickEvent(event)
+
+
+class TextEditor(QGraphicsTextItem):
+    """In-place editor over a card's text block. Enter or focus-out commits, Shift+Enter is a newline, Esc cancels.
+
+    ``on_commit(text)`` runs on the next event loop turn: committing rebuilds the scene, which deletes this item."""
+
+    def __init__(self, card: Card, text: str, on_commit: Callable[[str], None]):
+        super().__init__(card)
+        self.on_commit = on_commit
+        self.finished = False
+        rect = card.text_rect() or QRectF(PAD, HEADER_HEIGHT + PAD, card.width - 2 * PAD, 40)
+        self.setPos(rect.topLeft() + QPointF(2, 2))
+        self.setTextWidth(rect.width() - 4)
+        self.setDefaultTextColor(QColor(theme.TEXT))
+        self.setPlainText(text)
+        self.setTextInteractionFlags(Qt.TextInteractionFlag.TextEditorInteraction)
+        self.setZValue(10)
+
+    def start(self) -> None:
+        self.setFocus(Qt.FocusReason.OtherFocusReason)
+        cursor = self.textCursor()
+        cursor.select(cursor.SelectionType.Document)
+        self.setTextCursor(cursor)
+
+    def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
+        painter.setPen(QPen(QColor(theme.ACCENT), 1.5))
+        painter.setBrush(QColor(theme.INPUT))
+        painter.drawRoundedRect(self.boundingRect(), 4, 4)
+        super().paint(painter, option, widget)
+
+    def keyPressEvent(self, event) -> None:
+        if event.key() == Qt.Key.Key_Escape:
+            self.finish(commit=False)
+            return
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and not event.modifiers() & Qt.KeyboardModifier.ShiftModifier:
+            self.finish(commit=True)
+            return
+        super().keyPressEvent(event)
+
+    def focusOutEvent(self, event) -> None:
+        super().focusOutEvent(event)
+        self.finish(commit=True)
+
+    def finish(self, commit: bool) -> None:
+        if self.finished:
+            return
+        self.finished = True
+        self.hide()
+        if commit:
+            text, on_commit = self.toPlainText(), self.on_commit
+            QTimer.singleShot(0, lambda: on_commit(text))
+
 
 class EdgeItem(QGraphicsPathItem):
     """An entry of a ``start`` / ``next`` list. ``index`` is its position (shown when the list has several entries).
@@ -241,6 +308,7 @@ class EdgeItem(QGraphicsPathItem):
         self.index = index
         self.missing_name = missing_name
         self.setZValue(-1)
+        self.setFlag(QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
         color = QColor(theme.EDGE_MISSING if target is None else theme.EDGE)
         pen = QPen(color, 1.6)
         if target is None:
@@ -269,13 +337,29 @@ class EdgeItem(QGraphicsPathItem):
         self._label.setPos(path.pointAtPercent(0.2) + QPointF(-3, -17))
         self._missing.setPos(end + QPointF(4, -8))
 
+    @property
+    def target_key(self) -> str:
+        """What the edge's list entry names: a graph key (node id, @hub, @end) or the missing id."""
+        return self.target.key if self.target is not None else self.missing_name
+
     def boundingRect(self) -> QRectF:
-        return super().boundingRect().united(self._arrow.boundingRect()).adjusted(-2, -2, 2, 2)
+        return super().boundingRect().united(self._arrow.boundingRect()).adjusted(-6, -6, 6, 6)
+
+    def shape(self) -> QPainterPath:
+        stroker = QPainterPathStroker()
+        stroker.setWidth(10)
+        return stroker.createStroke(self.path())
 
     def paint(self, painter: QPainter, option: QStyleOptionGraphicsItem, widget=None) -> None:
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        super().paint(painter, option, widget)
+        pen = QPen(self.pen())
+        if self.isSelected():
+            pen.setColor(QColor(theme.ACCENT))
+            pen.setWidthF(2.6)
+        painter.setPen(pen)
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        painter.drawPath(self.path())
         if self.target is not None:
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(self.pen().color())
+            painter.setBrush(pen.color())
             painter.drawPolygon(self._arrow)

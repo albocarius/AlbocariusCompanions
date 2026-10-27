@@ -12,8 +12,8 @@ from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, Q
 
 from .. import __version__
 from ..cli.client import Cli, CliError
-from ..data import graph, workspace
-from ..data.companion import CompanionFolder, CompanionLoadError
+from ..data import edit, graph, workspace
+from ..data.companion import ENGLISH, CompanionFolder, CompanionLoadError
 from ..data.edit import EditError
 from ..schema.catalog import SchemaCatalog
 from .blackboard import BlackboardPanel
@@ -38,7 +38,7 @@ class MainWindow(QMainWindow):
         self._edit_error: EditError | None = None
         self.companions_root: Path | None = None
         self.undo_stack = QUndoStack(self)
-        self.undo_stack.cleanChanged.connect(lambda _: self.update_title())
+        self.undo_stack.cleanChanged.connect(self._clean_changed)
 
         self.cli: Cli | None = None
         self.cli_error: str | None = None
@@ -169,6 +169,7 @@ class MainWindow(QMainWindow):
         self.library_dock = self._dock("Library", self.library, Qt.DockWidgetArea.LeftDockWidgetArea, "library")
 
         self.inspector = InspectorPanel(self.catalog)
+        self.inspector.text_committed.connect(self.set_text)
         self.blackboard = BlackboardPanel(self.catalog)
         right = QTabWidget()
         right.addTab(self.inspector, "Inspector")
@@ -247,6 +248,7 @@ class MainWindow(QMainWindow):
                 scene.item_selected.connect(lambda key, c=conversation_id: self._show_in_inspector(c, key))
                 scene.item_moved.connect(lambda key, old, new, c=conversation_id:
                                          self.undo_stack.push(MoveCommand(self, c, key, old, new)))
+                scene.text_committed.connect(self.set_text)
                 widget = CanvasView()
                 widget.setScene(scene)
                 title = conversation_id
@@ -310,6 +312,12 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"{text}: {self._edit_error}", 6000)
             return False, None
         return True, command.result
+
+    def set_text(self, local_id: str, text: str, code: str = ENGLISH) -> bool:
+        """The text of a line or node in one language, as one undoable step (nothing when unchanged)."""
+        if self.folder is None or self.folder.text(local_id, code) == text:
+            return False
+        return self.edit(f"Edit text of {local_id}", lambda f: edit.set_text(f, local_id, text, code))[0]
 
     def edit_failed(self, error: EditError) -> None:
         self._edit_error = error
@@ -482,6 +490,9 @@ class MainWindow(QMainWindow):
                 self.folder.accept_disk_state()
         finally:
             self._asking_disk = False
+
+    def _clean_changed(self, _clean: bool) -> None:
+        self.update_title()
 
     def update_title(self) -> None:
         if self.folder is None:

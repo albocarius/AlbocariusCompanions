@@ -1,17 +1,17 @@
 """Right panel, first tab: every field of the selected item (from the schema export), its translations side by side,
-and its voice (voiced flag, audio file, play button when QtMultimedia is available). Read-only in session 1."""
+and its voice (voiced flag, audio file, play button when QtMultimedia is available)."""
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-from PySide6.QtCore import QUrl
+from PySide6.QtCore import QUrl, Qt, Signal
 from PySide6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QScrollArea,
                                QVBoxLayout, QWidget)
 
 from ..data import graph
-from ..data.companion import CompanionFolder
+from ..data.companion import ENGLISH, CompanionFolder
 from ..schema.catalog import SchemaCatalog
 
 
@@ -54,7 +54,35 @@ class _Player:
             self.player.play()
 
 
+class CommitTextEdit(QPlainTextEdit):
+    """A text box that reports its text once editing ends (focus out or Ctrl+Enter), when it changed."""
+
+    committed = Signal(str)
+
+    def __init__(self, text: str, parent=None):
+        super().__init__(text, parent)
+        self._committed_text = text
+
+    def commit(self) -> None:
+        text = self.toPlainText()
+        if text != self._committed_text:
+            self._committed_text = text
+            self.committed.emit(text)
+
+    def focusOutEvent(self, event) -> None:
+        super().focusOutEvent(event)
+        self.commit()
+
+    def keyPressEvent(self, event) -> None:
+        if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter) and event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+            self.commit()
+            return
+        super().keyPressEvent(event)
+
+
 class InspectorPanel(QWidget):
+    text_committed = Signal(str, str, str)  # local id, text, language code
+
     def __init__(self, catalog: SchemaCatalog, parent=None):
         super().__init__(parent)
         self.catalog = catalog
@@ -126,9 +154,14 @@ class InspectorPanel(QWidget):
         for code in folder.languages():
             text = folder.text(local_id, code)
             self.layout_.addWidget(_muted(code + ("" if text is not None else " — missing, English is shown")))
-            edit = QPlainTextEdit(text or "")
-            edit.setReadOnly(True)
+            edit = CommitTextEdit(text or "")
+            edit.setObjectName(f"text_{code}")
             edit.setMaximumHeight(70)
+            if code == ENGLISH:
+                edit.setToolTip("Ctrl+Enter or leaving the box saves the text (undoable)")
+                edit.committed.connect(lambda t, i=local_id, c=code: self.text_committed.emit(i, t, c))
+            else:
+                edit.setReadOnly(True)
             self.layout_.addWidget(edit)
 
     def _voice(self, folder: CompanionFolder, item: dict, object_name: str) -> None:

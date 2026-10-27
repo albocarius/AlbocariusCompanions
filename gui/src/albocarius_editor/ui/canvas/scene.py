@@ -9,7 +9,7 @@ from ...data import graph
 from ...data.companion import CompanionFolder
 from ...schema.catalog import SchemaCatalog
 from . import summary
-from .items import Card, CardContent, EdgeItem, Section
+from .items import Card, CardContent, EdgeItem, Section, TextEditor
 
 
 def header_content(conv: dict, catalog: SchemaCatalog) -> CardContent:
@@ -61,6 +61,7 @@ class ConversationScene(QGraphicsScene):
 
     item_selected = Signal(str)            # graph key, "" when nothing is selected
     item_moved = Signal(str, QPointF, QPointF)
+    text_committed = Signal(str, str)      # node id, new English text (inline editor)
 
     def __init__(self, folder: CompanionFolder, conversation_id: str, catalog: SchemaCatalog, parent=None):
         super().__init__(parent)
@@ -68,6 +69,7 @@ class ConversationScene(QGraphicsScene):
         self.conversation_id = conversation_id
         self.catalog = catalog
         self.cards: dict[str, Card] = {}
+        self.editor: TextEditor | None = None
         self.snap = True
         self.selectionChanged.connect(self._on_selection)
         self.rebuild()
@@ -77,7 +79,10 @@ class ConversationScene(QGraphicsScene):
 
     def rebuild(self) -> None:
         """Recreates every item from the data (after an edit or undo); keeps the selection by key."""
-        selected = self.selected_key()
+        selected = self.selected_keys()
+        if self.editor is not None:
+            self.editor.finished = True  # a rebuild drops an open inline editor without committing
+            self.editor = None
         self.blockSignals(True)
         self.clear()
         self.cards = {}
@@ -111,8 +116,9 @@ class ConversationScene(QGraphicsScene):
         for e in g.edges:
             target = None if e.missing else self.cards.get(e.target)
             self.addItem(EdgeItem(self.cards[e.source], target, e.index, counts[e.source] > 1, e.target))
-        if selected and selected in self.cards:
-            self.cards[selected].setSelected(True)
+        for key in selected:
+            if key in self.cards:
+                self.cards[key].setSelected(True)
         self.blockSignals(False)
 
     def set_snap(self, on: bool) -> None:
@@ -133,6 +139,18 @@ class ConversationScene(QGraphicsScene):
             self.clearSelection()
             card.setSelected(True)
         return card
+
+    def edit_text(self, key: str) -> TextEditor | None:
+        """Opens the inline editor on a node card's English text; committing emits ``text_committed``."""
+        card = self.cards.get(key)
+        if card is None or card.text_rect() is None:
+            return None
+        if self.editor is not None:
+            self.editor.finish(commit=True)
+        self.select(key)
+        self.editor = TextEditor(card, self.folder.text(key) or "", lambda text: self.text_committed.emit(key, text))
+        self.editor.start()
+        return self.editor
 
     def set_highlight(self, key: str | None) -> None:
         for k, card in self.cards.items():

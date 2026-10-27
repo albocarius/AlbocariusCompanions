@@ -55,6 +55,17 @@ def _require_node(folder: CompanionFolder, conversation_id: str, node_id: str) -
     return node
 
 
+# ---- texts ----
+
+def set_text(folder: CompanionFolder, local_id: str, text: str, code: str = ENGLISH) -> None:
+    """The text of a line or node in one language (``lang/<code>.json``; the file is created on save when new)."""
+    if folder.find_id(local_id) is None:
+        raise EditError(f"no line or node '{local_id}'")
+    if folder.text(local_id, code) == text:
+        raise EditError("the text is unchanged")
+    folder.set_text(local_id, text, code)
+
+
 # ---- conversations ----
 
 def add_conversation(folder: CompanionFolder, conversation_id: str, entry: str | None = "hub") -> dict:

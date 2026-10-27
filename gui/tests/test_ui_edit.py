@@ -47,3 +47,56 @@ def test_edit_returns_the_result_and_refreshes_the_library(window: MainWindow, s
                 if window.library.tree.topLevelItem(i).text(0) == "the_scar")
     assert any("the_scar_01" in scar.child(j).text(0) for j in range(scar.childCount()))
     assert graph.HEADER in window.scene_for("the_scar").cards
+
+
+# ---- T02 inline English text ----
+
+def changed_files(folder: Path, before: dict[str, bytes]) -> set[str]:
+    now = {str(p.relative_to(folder)): p.read_bytes() for p in folder.rglob("*") if p.is_file()}
+    return {k for k in now if before.get(k) != now[k]}
+
+
+def files(folder: Path) -> dict[str, bytes]:
+    return {str(p.relative_to(folder)): p.read_bytes() for p in folder.rglob("*") if p.is_file()}
+
+
+def test_inline_text_edit_changes_only_the_english_file(window: MainWindow, sample: Path, qtbot):
+    scene = open_scar(window, sample)
+    before = files(sample)
+    old = window.folder.text("scar_story")
+    editor = scene.edit_text("scar_story")
+    assert editor is not None and editor.toPlainText() == old
+    editor.setPlainText("A new story.\nTwo lines.")
+    editor.finish(commit=True)
+    qtbot.waitUntil(lambda: window.folder.text("scar_story") == "A new story.\nTwo lines.")
+    assert scene.cards["scar_story"].content.text == "A new story.\nTwo lines."
+    assert window.save()
+    assert changed_files(sample, before) == {"lang/en.json", "dialogs.layout.json"}
+    window.undo_stack.undo()
+    assert window.folder.text("scar_story") == old
+
+
+def test_inline_editor_escape_cancels(window: MainWindow, sample: Path, qtbot):
+    scene = open_scar(window, sample)
+    editor = scene.edit_text("scar_story")
+    editor.setPlainText("never")
+    editor.finish(commit=False)
+    qtbot.wait(10)
+    assert window.undo_stack.count() == 0
+    assert scene.edit_text(graph.HEADER) is None  # the header has no text block
+
+
+def test_inspector_english_box_edits_the_text(window: MainWindow, sample: Path):
+    from albocarius_editor.ui.inspector import CommitTextEdit
+
+    scene = open_scar(window, sample)
+    scene.select("scar_thanks")
+    box = window.inspector.findChild(CommitTextEdit, "text_en")
+    assert not box.isReadOnly()
+    assert window.inspector.findChild(CommitTextEdit, "text_tr").isReadOnly()
+    box.setPlainText("Thanks, friend.")
+    box.commit()
+    assert window.folder.text("scar_thanks") == "Thanks, friend."
+    assert window.undo_stack.count() == 1
+    window.undo_stack.undo()
+    assert window.folder.text("scar_thanks") != "Thanks, friend."
