@@ -5187,6 +5187,17 @@ Navigator and ignores the rest, and `GetHeroPartyRoles`/`RemoveAllPartyRolesOfHe
 - Caravan elite/convoy variants (`isElite`, port settlements → `ShouldCreateConvoy`, `CaravanHelper` template choice) were
   not traced: the leader plumbing is identical, but the cost and spawn side effects are undocumented here.
 
+## Q47 — Companion roles 2 (alley leader, quest alternative solution)
+
+Status: DRAFT
+
+### Answer
+TODO
+
+### Evidence
+
+### Uncertain
+
 ## API index
 
 Every TaleWorlds type/member referenced from `src/AlbocariusCompanions.Game` (SPEC rule 1). One row per symbol; the
