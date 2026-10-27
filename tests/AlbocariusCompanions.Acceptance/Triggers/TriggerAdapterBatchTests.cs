@@ -11,6 +11,7 @@ public class TriggerAdapterBatchTests
     [InlineData("Q35")]
     [InlineData("Q36")]
     [InlineData("Q37")]
+    [InlineData("Q38")]
     public void Every_trigger_of_the_batch_has_an_adapter(string q)
     {
         var names = TriggerGameWiringTests.Entries().Select(e => e.Name).ToHashSet();
