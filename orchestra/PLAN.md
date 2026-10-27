@@ -1,5 +1,5 @@
-Active milestone: **M9 selection + event research** — source of truth `orchestra/SPEC_SELECTION_AND_EVENTS.md` (section M9 below).
-Previous: M8 vanilla guards (`orchestra/SPEC_VANILLA_GUARDS.md`), M7 behavior foundation, M6 conversations (no spec file), M5 core gaps; SPEC §1 rules and
+Active milestone: **M10 noble mechanic** — source of truth: the user request of 2026-10-27 (section M10 below; no spec file).
+Previous: M9 selection + event research (`orchestra/SPEC_SELECTION_AND_EVENTS.md`), M8 vanilla guards (`orchestra/SPEC_VANILLA_GUARDS.md`), M7 behavior foundation, M6 conversations (no spec file), M5 core gaps; SPEC §1 rules and
 `orchestra/HARD_RULES.md` still apply. The foundation run (M1–M4) is archived at the end of this file.
 Commit policy: per task `feat(NN-slug): ...` / `docs(NN-slug): ...`; at the end `milestone selection-and-events: <summary>`.
 Stop condition (SPEC rule 5): 3 failed fixes of the same error → `docs/BLOCKERS.md`, commit, move on.
@@ -21,7 +21,20 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
   fallback reported in log + game once per companion and sentence (ee30f89). Version 0.2.2, deployed.
 - M9 done 2026-10-27 (docs/RUN_REPORT_SELECTION_AND_EVENTS.md): selection rule, shadowing, simulator + serve, noble, GAME_MAP
   Q35–Q47 verified, Q34 correction. Version 0.3.0. Core.Tests 281, Acceptance 705. Not tested in game.
+- M10 done 2026-10-27 (docs/RUN_REPORT_NOBLE.md): noble mechanic. Version 0.3.1. Core.Tests 281, Acceptance 709. Not tested in game.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
+
+## M10 — Noble mechanic (user request 2026-10-27)
+Decisions (user): affected = clan leaders of the player's kingdom, excluding the player's clan and the new companion clan;
+fixed −4 per clan leader, one mod-wide constant; between the **player** and those leaders (new lord untouched); one in-game
+message, every changed relation logged; `noble: true` → nothing; mod companions only.
+Taken here: mercenary clans (`IsUnderMercenaryService`), eliminated clans and clans without a living leader are not
+affected ("lords of the realm"); per-lord vanilla toast off (`showQuickNotification: false`), our one message instead;
+message only when at least one relation changed. All self (one small, cross-layer task; no worker).
+- [x] 111-noble-mechanic (self) — Core `Rules/NobleRules` (constant, message, `CostsRelation`, `IsAffectedClan`); Game
+  `NoblePenalty` on `OnClanCreatedEvent` (isCompanion, mod hero, `ApplyPlayerRelation` per leader, log before → after);
+  GAME_MAP Q44 addendum + 8 API index rows; SCHEMA.md; version 0.3.1. Accept: NobleTests (+4).
+- [x] Report: docs/RUN_REPORT_NOBLE.md.
 
 ## M9 — Selection rules + event research (SPEC_SELECTION_AND_EVENTS)
 Rules: spec §0 decisions are fixed; no trigger implementation. Every schema change updates models + loader + validation +

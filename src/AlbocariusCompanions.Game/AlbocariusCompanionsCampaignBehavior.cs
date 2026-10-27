@@ -45,6 +45,9 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
         CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
         // Selection picks live for one talk (M9 F2, GAME_MAP Q20 addendum).
         CampaignEvents.ConversationEnded.AddNonSerializedListener(this, _ => ModRuntime.Selections.Clear());
+        // Commoner made a lord costs relation (M10, GAME_MAP Q44).
+        CampaignEvents.OnClanCreatedEvent.AddNonSerializedListener(this, (clan, isCompanion) =>
+            Safe.Run(ModRuntime.Log, "noble relation change", () => NoblePenalty.OnClanCreated(clan, isCompanion)));
     }
 
     public override void SyncData(IDataStore dataStore)

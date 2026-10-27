@@ -32,7 +32,7 @@ The companion id is the folder name; there is no `id` field.
 | `traits` | object | no | game trait id → level | `{ "Valor": 1 }` |
 | `equipment` | object | yes | see below | |
 | `hireCost` | int | yes | ≥ 0; hireable with exactly this much gold | `500` |
-| `noble` | bool | no | default `false`. Noble birth: making a non-noble companion a lord will cost relation with other lords, a noble one not (planned, no effect yet) | `false` |
+| `noble` | bool | no | default `false`. Noble birth. When the player makes a non-noble companion a lord (grant-a-fief conversation), the player loses 4 relation with every clan leader of the player's kingdom (not the player's clan, the new clan or mercenaries) and sees "The lords of the realm frown upon raising a commoner to nobility." The new lord's relations are not changed. A noble companion costs nothing. The amount is fixed for the whole mod | `false` |
 | `voiceProfile` | object | no | `{ "reference": string\|null, "style": string\|null }` (authoring notes, unused in game) | |
 | `likes` | array | no | `{ "event", "reaction", "slot" }` — shape-validated only, no effect yet | `[]` |
 | `dislikes` | array | no | same as `likes` | `[]` |

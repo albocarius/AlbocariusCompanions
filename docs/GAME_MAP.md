@@ -4638,6 +4638,18 @@ Effective-relation consequence (Q21): while he was a companion, every third part
 
 **6. Adding mod options to the vanilla lord conversation without touching vanilla lines.** The lord conversation graph routes every `UsesLordConversations` NPC (true for `Occupation.Lord`, `LordConversationsCampaignBehavior.cs:123`) through the **same hub token `hero_main_options`**: greeting `lord_start` → hub (`hero_ask_4`, :240, unconditioned), and after each exchange `lord_pretalk` → `hero_pretalk_2` (:767) → hub again. So the mod never edits or replaces vanilla lines: `starter.AddPlayerLine(<new unique id>, "hero_main_options", <new output token>, text, condition, consequence[, priority])` — exactly the Q7 mechanism the mod already uses (`CompanionDialogs.cs:110/117`), optionally also on `lord_start`/`lord_pretalk` for greeting-time options; priorities control ordering (Q18/Q20; the mod uses 105 on the hub). The converted hero *will* sit at the vanilla hub: his vanilla companion-only options self-hide (their conditions require `IsPlayerCompanion` / `HeroHelper.IsCompanionInPlayerParty`), and vanilla lord options appear normally. The mod's own hub options also still show — `IsThisCompanion()` is `ModRuntime.IsModHero(hero) && hero.Template.StringId == id`, both template-registry based and immune to the conversion; the hire chain self-hides (its condition requires `PartyBelongedTo == null` and the new lord has a party), while `ask_backstory` and the intro family keep firing, which the mod may want to occupation-gate (`hero.IsLord`) or gate on a mod-side state flag — this is exactly the "go stale — decide" row of Q33.
 
+
+**Addendum (M10, noble mechanic — implemented).** `NoblePenalty.OnClanCreated` listens on `OnClanCreatedEvent` and acts only
+for `isCompanion == true` and a new clan leader that is a mod hero (template id in the registry) with `noble: false`.
+Per user decision (2026-10-27) the change is between the **player** and the clan leaders, not the new lord, so it uses
+`ChangeRelationAction.ApplyPlayerRelation(leader, −4, showQuickNotification: false)` (the source is pinned to
+`Hero.MainHero`, which is what we want here; negative changes are not charm-scaled, Q21). Targets: `Clan.PlayerClan.Kingdom.Clans`
+without the player clan, the new clan, eliminated clans (`Clan.IsEliminated`) and mercenaries (`Clan.IsUnderMercenaryService`),
+each through its living `Clan.Leader`. The effective pair is (MainHero, leader), so the V1 low-relation guard
+(`HarmonyPatches.cs`, mod companion in the pair) never matches; the vassal-offer listener cannot run (the player rules the
+kingdom). One `InformationManager.DisplayMessage` line when at least one relation changed; each change is logged with
+`Hero.GetRelation` before and after.
+
 ### Evidence
 
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/CompanionRolesCampaignBehavior.cs` — `ClanNameSelectionIsDone` — (:258–289) the whole conversion, statement-for-statement: `ApplyByByTurningToLord`, `SetNewOccupation(Lord)`, `CreateCompanionToLordClan`, roster fix / `ActualClan` re-point / `CreateLordParty`, equipment merge, founder spawn, 20000 gold, −500 influence, `ApplyPlayerRelation(hero, 50)`.
@@ -5376,6 +5388,14 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `CampaignEvents.OnGameLoadFinishedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | spawn pass after loading a save |
 | `CampaignEvents.OnSessionLaunchedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | dialog registration per session |
 | `CampaignEvents.ConversationEnded` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q20 | drop the selection picks of a finished talk (M9) |
+| `CampaignEvents.OnClanCreatedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q44 | companion made a lord (isCompanion true) → noble relation change (M10) |
+| `Clan.Leader` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q44 | the new lord; each affected clan's leader (M10) |
+| `Clan.Kingdom` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q44 | the player's kingdom (M10) |
+| `Clan.IsEliminated` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q44 | skip eliminated clans (M10) |
+| `Clan.IsUnderMercenaryService` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q44 | skip mercenary clans (M10) |
+| `Clan.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q44 | readable clan name in the log (M10) |
+| `Hero.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q44 | readable lord name in the log (M10) |
+| `Kingdom.Clans` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Kingdom.cs` | Q44 | clans of the player's kingdom (M10) |
 | `CampaignEvents` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q8 | static campaign event receivers |
 | `IMbEvent.AddNonSerializedListener` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IMbEvent.cs` | Q8 | subscribe handlers (owner = this behavior) |
 | `IDataStore.SyncData` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IDataStore.cs` | Q8 | save/load of the companion id → hero map |
@@ -5414,7 +5434,7 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `MobileParty.ItemRoster` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q29 | player party inventory |
 | `ItemRoster.AddToCounts` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` | Q29 | item transfers in/out of the player party inventory |
 | `ItemRoster.GetItemNumber` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Roster/ItemRoster.cs` | Q29 | item count for hasItem / implied transfer check |
-| `ChangeRelationAction.ApplyPlayerRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeRelationAction.cs` | Q20 | conversation relation effect |
+| `ChangeRelationAction.ApplyPlayerRelation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Actions/ChangeRelationAction.cs` | Q20 | conversation relation effect; noble relation change player ↔ clan leaders (M10, Q44) |
 | `Hero.GetRelationWithPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q20 | conversation relation condition |
 | `MBTextManager.SetTextVariable` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | hire cost in player line |
 | `Hero.SetName` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | keep the JSON name (creation gives Special templates a random one) |
@@ -5424,7 +5444,7 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `VoiceObject` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | postfix parameter |
 | `VoiceObject.VoicePaths` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/VoiceObject.cs` | Q12 | find the mod voice path |
 | `Settlement.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | readable town name in the log |
-| `InformationManager.DisplayMessage` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` | Q17 | show queued warnings/errors in the message log |
+| `InformationManager.DisplayMessage` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` | Q17 | show queued warnings/errors in the message log; noble message (M10) |
 | `InformationMessage` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationMessage.cs` | Q17 | message text + color |
 | `Colors` | `decomp/TaleWorlds.Library/TaleWorlds.Library/Colors.cs` | Q17 | red errors, yellow warnings |
 | `MBTextManager.ActiveTextLanguage` | `decomp/TaleWorlds.Localization/TaleWorlds.Localization/MBTextManager.cs` | Q14 | pick the lang file of the active game language |

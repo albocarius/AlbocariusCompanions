@@ -23,8 +23,8 @@ public sealed class CompanionDefinition
     [JsonProperty("equipment")] public EquipmentDefinition? Equipment { get; set; }
     [JsonProperty("hireCost")] public int? HireCost { get; set; }
     /// <summary>
-    /// Noble birth (M9 I4). Planned meaning: making a non-noble companion a lord costs relation with other lords, a noble
-    /// one does not. No behavior yet.
+    /// Noble birth (M9 I4). Making a non-noble companion a lord costs the player relation with the clan leaders of the
+    /// player's kingdom; a noble one costs nothing (M10, NobleRules).
     /// </summary>
     [JsonProperty("noble")] public bool Noble { get; set; }
     [JsonProperty("voiceProfile")] public VoiceProfileDefinition? VoiceProfile { get; set; }
