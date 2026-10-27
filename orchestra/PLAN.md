@@ -19,7 +19,8 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - M8 done 2026-10-26 (docs/RUN_REPORT_VANILLA_GUARDS.md): V1–V5, version 0.2.1. Core.Tests 273, Acceptance 631. In-game checklist 1–5 passed (user).
 - After M8 (outside the orchestra, 2026-10-26): all 46 vanilla dialog points are required slots (46c91af); vanilla text
   fallback reported in log + game once per companion and sentence (ee30f89). Version 0.2.2, deployed.
-- M9 plan approved 2026-10-26 with changes (F1/F2/F4/F9 as amended).
+- M9 done 2026-10-27 (docs/RUN_REPORT_SELECTION_AND_EVENTS.md): selection rule, shadowing, simulator + serve, noble, GAME_MAP
+  Q35–Q47 verified, Q34 correction. Version 0.3.0. Core.Tests 281, Acceptance 705. Not tested in game.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M9 — Selection rules + event research (SPEC_SELECTION_AND_EVENTS)
@@ -100,26 +101,34 @@ and a placeholder section committed right before each run. R1 = all 263 `Campaig
 ~30 (themed by name; sub-headed by theme in the answer). Runs as a sequential queue (scratchpad `research_queue.sh`):
 PASS → committed as `docs(NN): draft` (Status DRAFT), FAIL → discarded, diff kept, retried later. I verify each draft
 (spot-check every raising call site / claim), set VERIFIED and log it in WORKER_LOG.
-- [ ] 98-gm-q35-events-1 (worker) — R1 list 1.
-- [ ] 99-gm-q36-events-2 (worker) — R1 list 2.
-- [ ] 100-gm-q37-events-3 (worker) — R1 list 3.
-- [ ] 101-gm-q38-events-4 (worker) — R1 list 4.
-- [ ] 102-gm-q39-events-5 (worker) — R1 list 5.
-- [ ] 103-gm-q40-events-6 (worker) — R1 list 6.
-- [ ] 104-gm-q41-events-7 (worker) — R1 list 7.
-- [ ] 105-gm-q42-events-8 (worker) — R1 list 8 + polling-only signals.
-- [ ] 106-gm-q43-proximity (worker) — R2.
-- [ ] 107-gm-q44-lord-flow (worker) — R3.
-- [ ] 108-gm-q45-roles (worker) — R4.
-- [ ] 109-gm-q46-marriage (worker) — R5.
+- [x] 98-gm-q35-events-1 (worker) — R1 list 1.
+- [x] 99-gm-q36-events-2 (worker) — R1 list 2.
+- [x] 100-gm-q37-events-3 (worker) — R1 list 3.
+- [x] 101-gm-q38-events-4 (worker) — R1 list 4.
+- [x] 102-gm-q39-events-5 (worker) — R1 list 5.
+- [x] 103-gm-q40-events-6 (worker) — R1 list 6.
+- [x] 104-gm-q41-events-7 (worker) — R1 list 7.
+- [x] 105-gm-q42-events-8 (worker) — R1 list 8 + polling-only signals.
+- [x] 106-gm-q43-proximity (worker) — R2.
+- [x] 107-gm-q44-lord-flow (worker) — R3.
+- [x] 108-gm-q45-roles (worker) — R4. Timed out → split: 108a (governor, party, caravan) = Q45, 108b (alley, alternative solution) = Q47.
+- [x] 109-gm-q46-marriage (worker) — R5.
 - Track I runs in a separate git worktree (`../AlbocariusCompanionsSource-m9`, branch `orchestra/m9-track-i`) so the
   worker queue keeps a clean tree; merged back between queue runs.
 
 ### Finish
-- [ ] 110-report (self) — version 0.3.0; `docs/RUN_REPORT_SELECTION_AND_EVENTS.md` (Track I per task, Track R summary
+- [x] 110-report (self) — version 0.3.0; `docs/RUN_REPORT_SELECTION_AND_EVENTS.md` (Track I per task, Track R summary
   with the R1 table event → trigger → usefulness, UNCERTAINs, BLOCKERS, F9 list, 4-item checklist — item 2 per F1: hub
   conversations all listed in priority order; two greetings → higher always opens, equal → both across talks); milestone commit.
   Deploy only if asked.
+
+### M9 Report
+- Built: Track I complete (90–97; 92/93/95 done by self, worker queue busy); Track R Q35–Q47 verified (R1 split in 8,
+  R4 split in 2 after a timeout); Q34 correction (hired companion's Hero.Clan is the player clan, no guard change).
+- Tests: Core.Tests 281/281, Acceptance 705/705. Version 0.3.0.
+- Worker: 14 research runs — 11 PASS, 2 salvaged (104 paths, 109 timeout), 1 timeout → split.
+- Not verified: everything in game (checklist in the report).
+- Open: none blocking; 70 UNCERTAIN items listed per section.
 
 ## M5 rules (SPEC_CORE_GAPS §0–§1, applied to every task)
 - **No new features.** Out of scope: likes/dislikes/relations behavior, flags/conditions/priority/triggers, author dialog

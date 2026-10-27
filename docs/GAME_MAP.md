@@ -3419,6 +3419,16 @@ flag, closed by a finalizer) and `KillCharacterAction.ApplyByRemove` a prefix th
 window is open. Vanilla's loop then `break`s without removing anyone; the daily check retries and can pick a vanilla
 companion another day. With only mod companions above the limit nobody is removed (logged each day).
 
+**Correction (M9, from Q46, verified by the orchestrator).** The "invisible to vanilla" statement above is wrong for
+**hired** companions: `Hero.Clan` is `CompanionOf ?? _clan` (`Hero.cs:498–503`), and `AddCompanionAction` sets
+`CompanionOf`, whose setter calls `Clan.OnCompanionAdded` → `OnHeroAdded` (`Clan.cs:1214–1226`), so a hired mod companion
+has `Clan == Clan.PlayerClan` and is in `Clan.PlayerClan.Heroes` (not in `AliveLords`). Only an unhired mod wanderer has
+`Clan == null`. Re-check of the two rows that relied on it: `OnTournamentFinished` then does show its "companion won the
+prize" toast for a mod companion in the main party — a system message about the hero, not its voice → **keep**;
+`clan_members_gather_on_condition` does list "Gather all my companions…" — the companion's replies
+(`clan_member_gather_clan_members_accept`, `clan_member_follow_accept`, `clan_member(s)_dont_follow_accept`) are already
+required slots (`gather_ok`, `follow_ok`, `follow_stop_ok`) → **keep**. No guard changes.
+
 ### Evidence
 
 - `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` — `IsPlayerCompanion` — `Hero.IsPlayerCompanion => CompanionOf == Clan.PlayerClan`, the identity test most rows key on; in the same file `IsWanderer` is `Occupation == Occupation.Wanderer`.
@@ -3520,7 +3530,7 @@ companion another day. With only mod companions above the limit nobody is remove
 ### Uncertain
 
 - **UNCERTAIN**: which vanilla member chooses the hero that becomes an issue's alternative solution — `IssueBase.AlternativeSolutionHero` is a get-only enumeration of `AlternativeSolutionSentTroops` and `IssueManager` only *reports* the result, so there is no companion-identity gate to prefix. Resolve by tracing the issue option-selection UI in the `TaleWorlds.CampaignSystem.ViewModelCollection` issue-menu VMs (the candidate list that fills `AlternativeSolutionSentTroops`), or by dumping that roster at run time (Q16/Q29).
-- **UNCERTAIN**: whether `Hero.Clan` is null for vanilla-hired companions as well as mod-hired ones — the mod never sets it and `AddCompanionAction` does not either — which decides whether the rows gated on `hero.Clan == Clan.PlayerClan` (`OnTournamentFinished`, `clan_members_gather_on_condition`, parts of `ExpelClanDecisionItemVM`) are inert or live for a mod companion. Resolve in-game by printing `.Clan` for every `Hero.MainHero.CompanionsInParty` entry after hiring through the mod's dialog (Q16).
+- **Resolved in M9 (see the correction above, `Hero.Clan` = `CompanionOf ?? _clan`)** — was: whether `Hero.Clan` is null for vanilla-hired companions as well as mod-hired ones — the mod never sets it and `AddCompanionAction` does not either — which decides whether the rows gated on `hero.Clan == Clan.PlayerClan` (`OnTournamentFinished`, `clan_members_gather_on_condition`, parts of `ExpelClanDecisionItemVM`) are inert or live for a mod companion. Resolve in-game by printing `.Clan` for every `Hero.MainHero.CompanionsInParty` entry after hiring through the mod's dialog (Q16).
 - **UNCERTAIN**: whether `CompanionsCampaignBehavior.OnHeroKilled` really unregisters a mod hero, which additionally requires `!victim.HasMet` — unresolved for heroes built by `HeroCreator.CreateSpecialHero` that were never talked to. Resolve by killing an unhired, never-approached mod companion in a test run and checking whether it still resolves as an encyclopedia page (Q16/Q32).
 - **UNCERTAIN**: whether the "ApplicapleCompanion" overlay highlight (misspelling included) is reachable at all, since it depends on a caller passing that exact condition string; `SettlementMenuOverlayVM` sets `IsHighlightEnabled` and no other file was confirmed to supply the string. Resolve by grepping the VM collection and the `SandBox.GauntletUI` layer for it (Q15/Q17).
 - **UNCERTAIN**: whether the prisoner-release pass also reaches a mod companion that owns no caravan — `ReleasePrisonersForClan` iterates `clan.Companions` but only acts through `companion.OwnedCaravans`, and it is unproven whether vanilla ever gives a mod companion a caravan (the `companion_is_caravan_leader_on_condition` path in Q34 Table 1 suggests it can). Resolve in-game by making a mod companion a caravan leader, starting a war and signing peace, then checking the caravan's prisoner list (Q23/Q30).

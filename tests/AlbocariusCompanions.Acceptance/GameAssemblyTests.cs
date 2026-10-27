@@ -53,6 +53,6 @@ public class GameAssemblyTests
     public void Assembly_version_is_0_2_2()
     {
         using var pe = new PEReader(File.OpenRead(Dll));
-        Assert.Equal(new Version(0, 2, 2, 0), pe.GetMetadataReader().GetAssemblyDefinition().Version);
+        Assert.Equal(new Version(0, 3, 0, 0), pe.GetMetadataReader().GetAssemblyDefinition().Version);
     }
 }
