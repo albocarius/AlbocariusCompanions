@@ -6,6 +6,7 @@ using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Loading;
 using AlbocariusCompanions.Core.Registry;
 using AlbocariusCompanions.Core.Simulation;
+using AlbocariusCompanions.Core.Triggers;
 using AlbocariusCompanions.Core.Validation;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -33,6 +34,8 @@ public static class CliProgram
                 return Validate(args, stdout, stderr);
             case "mermaid":
                 return Mermaid(args, stdout, stderr);
+            case "docs":
+                return Docs(args, stdout, stderr);
             default:
                 stderr.WriteLine($"Unknown command \"{args[0]}\".");
                 return Usage(stderr);
@@ -164,11 +167,37 @@ public static class CliProgram
         return 0;
     }
 
+    /// <summary><c>docs triggers [outFile]</c>: docs/TRIGGERS.md from the trigger registry (M11 T2), to stdout or a file.</summary>
+    private static int Docs(string[] args, TextWriter stdout, TextWriter stderr)
+    {
+        if (args.Length is < 2 or > 3 || args[1] != "triggers")
+            return Usage(stderr);
+
+        var text = TriggerDocs.Render();
+        if (args.Length == 2)
+        {
+            stdout.Write(text);
+            return 0;
+        }
+        try
+        {
+            File.WriteAllText(args[2], text);
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException)
+        {
+            stderr.WriteLine($"Cannot write \"{args[2]}\": {ex.Message}");
+            return 2;
+        }
+        stdout.WriteLine($"Wrote {args[2]} ({TriggerRegistry.All.Count} triggers).");
+        return 0;
+    }
+
     private static int Usage(TextWriter stderr)
     {
         stderr.WriteLine("Usage:");
         stderr.WriteLine("  validate <path>                            a companion folder, or a Companions directory");
         stderr.WriteLine("  mermaid <companionFolder> [conversationId] print the companion's Mermaid flowchart(s)");
+        stderr.WriteLine("  docs triggers [outFile]                    trigger reference (docs/TRIGGERS.md) from the registry");
         stderr.WriteLine("  serve [companionsRoot]                     simulator: JSON lines on stdin/stdout (docs/SIMULATOR_PROTOCOL.md)");
         stderr.WriteLine("Exit codes: 0 ok, 1 validation errors, 2 usage, missing path or unknown conversation.");
         return 2;
