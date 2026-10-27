@@ -5622,3 +5622,17 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `ItemRosterElement.EquipmentElement` | `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemRosterElement.cs` | Q37 | itemGiven trigger (M11) |
 | `ItemRosterElement.Amount` | `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemRosterElement.cs` | Q37 | itemGiven trigger (M11) |
 | `EquipmentElement.Item` | `decomp/TaleWorlds.Core/TaleWorlds.Core/EquipmentElement.cs` | Q37 | itemGiven trigger (M11) |
+| `CampaignEvents.OnPartyJoinedArmyEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | partyJoinedArmy trigger (M11) |
+| `CampaignEvents.PartyRemovedFromArmyEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | partyLeftArmy trigger (M11) |
+| `CampaignEvents.OnPartyLeaderChangedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | partyLeaderChanged trigger (M11) |
+| `CampaignEvents.OnPartyDisbandStartedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | partyDisbandStarted trigger (M11) |
+| `CampaignEvents.OnPartyDisbandedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | partyDisbanded trigger (M11) |
+| `CampaignEvents.PartyVisibilityChangedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | partyVisibilityChanged trigger (M11) |
+| `PartyBase.IsVisible` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` | Q38 | partyVisibilityChanged trigger (M11) |
+| `CampaignEvents.OnUnitRecruitedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | playerRecruitedTroops trigger (M11) |
+| `CampaignEvents.OnTroopRecruitedEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | heroRecruitedTroops trigger (M11) |
+| `CampaignEvents.PlayerUpgradedTroopsEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | troopsUpgraded trigger (M11) |
+| `CampaignEvents.OnTroopGivenToSettlementEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | troopsGivenToSettlement trigger (M11) |
+| `CampaignEvents.OnMainPartyStarvingEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | playerPartyStarving trigger (M11) |
+| `CampaignEvents.PlayerStartTalkFromMenu` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | playerStartedTalkFromMenu trigger (M11) |
+| `CampaignEvents.OnPlayerJoinedTournamentEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q38 | playerJoinedTournament trigger (M11) |

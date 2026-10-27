@@ -19,7 +19,7 @@ public static partial class TriggerRegistry
             fields: new[]
             {
                 F("party", FieldKind.Party, "the party that joined the army", "party"),
-                F("clan", FieldKind.Clan, "the clan owning that party", "party.Clan"),
+                F("clan", FieldKind.Clan, "the clan owning that party", "party.ActualClan"),
             },
             subjectFields: S("party", "clan"), defaultSubject: Subjects.PlayerClan),
         new TriggerDefinition("partyLeftArmy", "party",
@@ -28,7 +28,7 @@ public static partial class TriggerRegistry
             fields: new[]
             {
                 F("party", FieldKind.Party, "the party that left the army", "party"),
-                F("clan", FieldKind.Clan, "the clan owning that party", "party.Clan"),
+                F("clan", FieldKind.Clan, "the clan owning that party", "party.ActualClan"),
             },
             subjectFields: S("party", "clan"), defaultSubject: Subjects.PlayerClan),
         new TriggerDefinition("partyLeaderChanged", "party",
@@ -39,7 +39,7 @@ public static partial class TriggerRegistry
                 F("party", FieldKind.Party, "the party that changed leader", "party"),
                 F("newLeader", FieldKind.Hero, "the hero leading it now", "party.LeaderHero"),
                 F("oldLeader", FieldKind.Hero, "the hero who just stepped down; empty on first assignment", "oldLeader"),
-                F("clan", FieldKind.Clan, "the clan owning the party", "party.Clan"),
+                F("clan", FieldKind.Clan, "the clan owning the party", "party.ActualClan"),
             },
             subjectFields: S("party", "newLeader", "oldLeader", "clan"), defaultSubject: Subjects.PlayerClan),
         new TriggerDefinition("partyDisbandStarted", "party",
@@ -48,7 +48,7 @@ public static partial class TriggerRegistry
             fields: new[]
             {
                 F("party", FieldKind.Party, "the party that began disbanding", "party"),
-                F("clan", FieldKind.Clan, "the clan owning that party", "party.Clan"),
+                F("clan", FieldKind.Clan, "the clan owning that party", "party.ActualClan"),
             },
             subjectFields: S("party", "clan"), defaultSubject: Subjects.PlayerClan),
         new TriggerDefinition("partyDisbanded", "party",
@@ -58,7 +58,7 @@ public static partial class TriggerRegistry
             {
                 F("party", FieldKind.Party, "the party being disbanded, roster still readable", "party"),
                 F("settlement", FieldKind.Settlement, "the fortification where it melts away", "settlement"),
-                F("clan", FieldKind.Clan, "the clan that owned the party; empty for clanless parties", "party.Clan"),
+                F("clan", FieldKind.Clan, "the clan that owned the party; empty for clanless parties", "party.ActualClan"),
                 F("leader", FieldKind.Hero, "the party's leader hero — the companion whose party just ended, if it was a companion's", "party.LeaderHero"),
             },
             subjectFields: S("party", "settlement", "clan", "leader"), defaultSubject: Subjects.PlayerClan),
