@@ -4,7 +4,7 @@
      trigger registry (src/AlbocariusCompanions.Core/Triggers). Do not edit by hand. -->
 
 A conversation or a slot-free line with a `trigger` is started by the game (see docs/SCHEMA.md, "Triggers"). This page
-lists every trigger: 146 in total, grouped by category, with the subjects it accepts, its payload
+lists every trigger: 166 in total, grouped by category, with the subjects it accepts, its payload
 fields (usable in `where` and in `event.<field>` conditions) and an example.
 
 ## Subjects
@@ -60,6 +60,7 @@ Other kinds: Int (whole number), Number (decimal), Bool (`true`/`false`), Text (
 - [`nearSettlement`](#nearsettlement) — The player's party came within `radius` of a settlement; fires again only after it went beyond `rearmRadius`.
 - [`peaceMade`](#peacemade) — Two warring factions made peace — a full kingdom war or a single clan's private feud; `detail` is `ByKingdomDecision` when a council vote ended it.
 - [`playerBattleEnded`](#playerbattleended) — A battle the player fought in ended (winner known; casualties and loot not yet counted).
+- [`questCompleted`](#questcompleted) — A quest the player had ended — succeeded, timed out, failed, was betrayed or cancelled — and its outcome hook has run.
 - [`roleEnded`](#roleended) — A companion left a role.
 - [`roleStarted`](#rolestarted) — A companion took a role (governor, party leader, …).
 - [`settlementEntered`](#settlemententered) — The player entered a settlement (town, castle, village or hideout) with the party; walking in alone as a character fires too, then `party` is empty and `hero` is the player hero.
@@ -522,6 +523,83 @@ A clan earned renown — `hero` is the hero whose deed brought it (usually the c
 "trigger": { "on": "renownGained", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
 ```
 
+## Category: crafting
+
+### craftingOrderCompleted
+
+A weapon-smithing order was completed: its gold reward, quality bonus and perk relation effects are already applied and the order is gone from the town.
+
+- Source: `CampaignEvents.OnCraftingOrderCompletedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerClan` (matched on `completer`, `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `town` | Settlement | the town whose forge ran the order |
+| `item` | Item | the item delivered for the order |
+| `completer` | Hero | the hero who finished it; the player when no crafting hero was chosen |
+
+```json
+"trigger": { "on": "craftingOrderCompleted", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
+```
+
+### craftingPartUnlocked
+
+The player unlocked a new weapon-smithing part with smithing XP; the part itself is not in the payload.
+
+- Source: `CampaignEvents.CraftingPartUnlockedEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "craftingPartUnlocked" }
+```
+
+### itemCrafted
+
+A weapon the player designed was built at a town forge and is already registered; its tier and category are on the item field, the design itself is not in the payload.
+
+- Source: `CampaignEvents.OnNewItemCraftedEvent`
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `item` | Item | the newly crafted weapon |
+| `isCraftingOrder` | Bool | true when it was built to fill a crafting order; then it is not added to the party inventory |
+
+```json
+"trigger": { "on": "itemCrafted" }
+```
+
+### itemSmelted
+
+A hero at the smithing screen melted down a piece of equipment; the materials and the XP are already granted, the stamina cost comes after.
+
+- Source: `CampaignEvents.OnEquipmentSmeltedByHeroEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who smelted it — the hero selected in the crafting screen, not always the player |
+| `item` | Item | the item that was melted down |
+
+```json
+"trigger": { "on": "itemSmelted", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### itemsRefined
+
+Raw materials were refined into other goods and added to the party inventory, and the XP was granted; the input/output formula is not in the payload.
+
+- Source: `CampaignEvents.OnItemsRefinedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who refined — the hero selected in the crafting screen |
+
+```json
+"trigger": { "on": "itemsRefined", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
 ## Category: crime
 
 ### alleyCleared
@@ -642,6 +720,22 @@ A hideout appeared on the campaign map because a party discovered it; in the van
 
 ## Category: economy
 
+### assetIncomeEarned
+
+The player's clan was paid for one of its assets in the daily income pass: fief taxes, a tribute share, a caravan's profit or a workshop's profit.
+
+- Source: `CampaignEvents.OnPlayerEarnedGoldFromAssetEvent`
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `incomeType` | Text | what the money came from: Taxes \| TributesEarned \| Caravan \| Workshop |
+| `amount` | Int | the gold just booked; a tribute site can report a negative amount (the player paid) |
+
+```json
+"trigger": { "on": "assetIncomeEarned" }
+```
+
 ### barterAccepted
 
 A barter offer was accepted and the exchange is already applied — heroes, prisoners, items, gold or a fief changed hands; it also fires for lord-to-lord offers, so gate on the player side.
@@ -674,6 +768,22 @@ A barter offer was refused and closed — nothing changed hands; the relation ef
 "trigger": { "on": "barterCancelled", "subject": "playerClan", "where": { "offerer.culture": "vlandia" } }
 ```
 
+### caravanTradeCompleted
+
+A caravan finished one daily buy/sell round in a town: its goods, gold and rosters are already updated; it fires for every caravan in the world, so gate on the player's own.
+
+- Source: `CampaignEvents.OnCaravanTransactionCompletedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerClan` (matched on `caravan`, `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `caravan` | Party | the caravan party that traded |
+| `town` | Settlement | the town it bought from or sold to |
+
+```json
+"trigger": { "on": "caravanTradeCompleted", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
+```
+
 ### goldGiven
 
 Gold moved between a hero or party and another hero or party — loot, ransoms, bribes, quest rewards and more; it fires for every payment in the world, so gate strictly on the player side and `transactionId`.
@@ -694,6 +804,38 @@ Gold moved between a hero or party and another hero or party — loot, ransoms, 
 "trigger": { "on": "goldGiven", "subject": "playerClan", "where": { "giver.culture": "vlandia" } }
 ```
 
+### inventoryExchanged
+
+The player closed a trade, loot or gift screen and all the items have already changed parties; the counterparty gold is settled right after.
+
+- Source: `CampaignEvents.PlayerInventoryExchangeEvent`
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `isTrading` | Bool | true when the screen was a trade; false for looting, gifting or donating |
+
+```json
+"trigger": { "on": "inventoryExchanged" }
+```
+
+### itemConsumed
+
+A workshop consumed its inputs from the town warehouse or bought them on the town market; it fires for every workshop in the world, so gate on the player's own.
+
+- Source: `CampaignEvents.OnItemConsumedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `settlement`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `item` | Item | the item that was consumed |
+| `settlement` | Settlement | the town whose store lost it |
+| `amount` | Int | how many of the item were consumed |
+
+```json
+"trigger": { "on": "itemConsumed", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
 ### itemGiven
 
 A hero or party handed an item stack to another hero or party (quest trades, gifts); only transfers that ran through a party roster fire.
@@ -712,6 +854,80 @@ A hero or party handed an item stack to another hero or party (quest trades, gif
 
 ```json
 "trigger": { "on": "itemGiven", "subject": "playerClan", "where": { "giver.culture": "vlandia" } }
+```
+
+### itemProduced
+
+A village or a workshop turned goods out into a settlement's store; it fires for every village and workshop in the world each day, so gate on the player's own fiefs.
+
+- Source: `CampaignEvents.OnItemProducedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `settlement`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `item` | Item | the item that was produced |
+| `settlement` | Settlement | the village or town whose store received it |
+| `amount` | Int | how many of the item were produced |
+
+```json
+"trigger": { "on": "itemProduced", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### itemsDiscarded
+
+The player discarded items from the party inventory (loot mode, or with no other party present); the items are already gone and the payload does not say which ones.
+
+- Source: `CampaignEvents.OnItemsDiscardedByPlayerEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "itemsDiscarded" }
+```
+
+### tradeProfitMade
+
+The vanilla trade skill counted the expected resale profit of the trade the player just closed, before the gold for it is settled.
+
+- Source: `CampaignEvents.OnPlayerTradeProfitEvent`
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `profit` | Int | the estimated resale profit of this trade, in gold |
+
+```json
+"trigger": { "on": "tradeProfitMade" }
+```
+
+### workshopOwnerChanged
+
+A workshop changed hands and the price was paid: the player bought or sold one, an heir inherited it, or the old owner died, went bankrupt or lost the town in war.
+
+- Source: `CampaignEvents.WorkshopOwnerChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `owner`, `previousOwner`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `owner` | Hero | the hero who owns it now; player-side means the clan just gained it |
+| `previousOwner` | Hero | the hero who owned it until now; player-side means the clan sold or lost it |
+
+```json
+"trigger": { "on": "workshopOwnerChanged", "subject": "playerClan", "where": { "owner.culture": "vlandia" } }
+```
+
+### workshopTypeChanged
+
+The production line of a workshop was switched and the conversion cost was paid; the payload does not say what it produces now.
+
+- Source: `CampaignEvents.WorkshopTypeChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `owner`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `owner` | Hero | the hero who owns the workshop |
+
+```json
+"trigger": { "on": "workshopTypeChanged", "subject": "playerClan", "where": { "owner.culture": "vlandia" } }
 ```
 
 ## Category: family
@@ -1911,6 +2127,32 @@ A pending ransom offer fell through (2-day expiry or the notification was ignore
 
 ## Category: quests
 
+### incidentResolved
+
+The player chose an option in a map incident pop-up and every consequence of that choice (gold, party morale, relations) has already run.
+
+- Source: `CampaignEvents.OnIncidentResolvedEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "incidentResolved" }
+```
+
+### issueCreated
+
+A new campaign issue appeared for a hero — an ongoing problem with a quest or a troop-sending solution attached; it fires across the world, so gate on the player's side.
+
+- Source: `CampaignEvents.OnNewIssueCreatedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `issueOwner`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `issueOwner` | Hero | the hero the issue belongs to; usually the player |
+
+```json
+"trigger": { "on": "issueCreated", "subject": "playerClan", "where": { "issueOwner.culture": "vlandia" } }
+```
+
 ### issueLogEntryAdded
 
 A campaign issue wrote a new journal entry the player just received — issue-arc progress between the issue's own created/resolved beats.
@@ -1926,6 +2168,39 @@ A campaign issue wrote a new journal entry the player just received — issue-ar
 "trigger": { "on": "issueLogEntryAdded", "subject": "playerClan", "where": { "issueOwner.culture": "vlandia" } }
 ```
 
+### issueUpdated
+
+A campaign issue the player is dealing with moved one step forward: its quest started, troops were sent, or it ended in success, failure, betrayal, timeout or an AI lord's solution.
+
+- Source: `CampaignEvents.OnIssueUpdatedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `issueOwner`, `solver`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `issueOwner` | Hero | the hero the issue belongs to; usually the player |
+| `outcome` | Text | the game's IssueUpdateDetails step, e.g. PlayerStartedIssueQuestClassicSolution, IssueFinishedWithSuccess, IssueTimedOut |
+| `solver` | Hero | the hero credited at this step; empty unless the player had tried before or a quest was started |
+
+```json
+"trigger": { "on": "issueUpdated", "subject": "playerClan", "where": { "issueOwner.culture": "vlandia" } }
+```
+
+### questCompleted
+
+A quest the player had ended — succeeded, timed out, failed, was betrayed or cancelled — and its outcome hook has run.
+
+- Source: `CampaignEvents.OnQuestCompletedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `questGiver`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `questGiver` | Hero | the hero the quest came from |
+| `outcome` | Text | the game's QuestCompleteDetails: Success, Timeout, Fail, FailWithBetrayal or Cancel |
+
+```json
+"trigger": { "on": "questCompleted", "subject": "playerClan", "where": { "questGiver.culture": "vlandia" } }
+```
+
 ### questLogEntryAdded
 
 A quest wrote a new journal entry the player just received — it fires for every journal line of a quest, not only at acceptance or completion.
@@ -1939,6 +2214,21 @@ A quest wrote a new journal entry the player just received — it fires for ever
 
 ```json
 "trigger": { "on": "questLogEntryAdded", "subject": "playerClan", "where": { "questGiver.culture": "vlandia" } }
+```
+
+### questStarted
+
+A quest the player took started and is now ongoing in the quest log; 1.4.8 keeps one global quest list, so every quest is the player's.
+
+- Source: `CampaignEvents.OnQuestStartedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `questGiver`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `questGiver` | Hero | the hero the quest came from — a lord who offered it, or a clan member |
+
+```json
+"trigger": { "on": "questStarted", "subject": "playerClan", "where": { "questGiver.culture": "vlandia" } }
 ```
 
 ## Category: raids
@@ -2113,6 +2403,17 @@ A vanilla game conversation ended and its characters are about to be released; i
 
 ```json
 "trigger": { "on": "conversationEnded" }
+```
+
+### persuasionProgressed
+
+The player used one option in a persuasion conversation and its result was rolled, rerolled by perks and applied; neither the option nor its result is in the payload.
+
+- Source: `CampaignEvents.PersuasionProgressCommittedEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "persuasionProgressed" }
 ```
 
 ### playerStartedTalkFromMenu
