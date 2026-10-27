@@ -81,3 +81,4 @@
 | 122b-game-adapters-q36 | 1 | PASS, reviewed | 22 adapters |
 | 122c-game-adapters-q37 | 1 | PASS, reviewed | 20 adapters; registry from fixed (Alley.State) |
 | 122d-game-adapters-q38 | 1 | PASS, reviewed | 13 adapters; registry from fixed (MobileParty.ActualClan) |
+| 122e-game-adapters-q39 | 1 | PASS, reviewed | 32 adapters |
