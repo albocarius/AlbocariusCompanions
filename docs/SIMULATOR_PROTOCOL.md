@@ -13,6 +13,9 @@ are ignored. The process ends at end of input or after a `quit` request (exit co
 first loads it as a `load` request would and writes that response to **stderr** (stdout carries only answers to
 requests). Engine: `src/AlbocariusCompanions.Core/Simulation` (`SimulatorProtocol`, `SimSession`, `SimState`).
 
+The editor also reads the schema and trigger registry (`export schema`, `export triggers`) and validation results
+(`validate --json`) from the CLI: docs/EXPORTS.md.
+
 ## Requests and responses
 
 Every request has `op` and may have `id` (any JSON value, echoed back). Every response has `id` (null when the

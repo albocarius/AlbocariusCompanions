@@ -15,7 +15,8 @@ namespace AlbocariusCompanions.Cli;
 
 /// <summary>
 /// Authoring CLI (SPEC_BEHAVIOR_FOUNDATION I6): validate companion folders and export their conversations
-/// as Mermaid flowcharts; "serve" runs the simulator for an editor (M9 I3). Only reads; nothing here writes or throws.
+/// as Mermaid flowcharts; "serve" runs the simulator for an editor (M9 I3); "export" writes the schema and trigger registry
+/// as JSON for the editor (SPEC_EDITOR §3). Only reads companion data; nothing here writes it or throws.
 /// </summary>
 public static class CliProgram
 {
@@ -36,6 +37,8 @@ public static class CliProgram
                 return Mermaid(args, stdout, stderr);
             case "docs":
                 return Docs(args, stdout, stderr);
+            case "export":
+                return Export(args, stdout, stderr);
             default:
                 stderr.WriteLine($"Unknown command \"{args[0]}\".");
                 return Usage(stderr);
@@ -43,15 +46,17 @@ public static class CliProgram
     }
 
     /// <summary>
-    /// <c>validate &lt;path&gt;</c>: a folder with a companion.json is one companion (only its issues are reported, the
+    /// <c>validate [--json] &lt;path&gt;</c>: a folder with a companion.json is one companion (only its issues are reported, the
     /// catalog is still loaded from its parent so cross-companion checks run); any other folder is a Companions root.
+    /// <c>--json</c> writes one JSON object (<see cref="DiagnosticExport"/>) instead of the text lines; same exit codes.
     /// </summary>
     private static int Validate(string[] args, TextWriter stdout, TextWriter stderr)
     {
-        if (args.Length != 2)
+        var json = args.Length == 3 && args[1] == "--json";
+        if (args.Length != 2 && !json)
             return Usage(stderr);
 
-        var path = args[1];
+        var path = args[args.Length - 1];
         if (!Directory.Exists(path))
             return NotFound(stderr, path);
 
@@ -63,8 +68,14 @@ public static class CliProgram
         if (folder != null)
             issues = issues.Where(i => i.Folder == folder).ToList();
 
-        WriteIssues(stdout, issues);
         var errors = issues.Count(i => i.IsError);
+        if (json)
+        {
+            stdout.WriteLine(DiagnosticExport.Build(issues).ToString(Formatting.Indented));
+            return errors > 0 ? 1 : 0;
+        }
+
+        WriteIssues(stdout, issues);
         stdout.WriteLine($"{errors} error(s), {issues.Count - errors} warning(s).");
         return errors > 0 ? 1 : 0;
     }
@@ -192,12 +203,54 @@ public static class CliProgram
         return 0;
     }
 
+    /// <summary>
+    /// <c>export schema|triggers [outFile]</c>: the machine-readable schema (<see cref="SchemaExport"/>) or trigger registry
+    /// (<see cref="TriggerExport"/>) for the editor, to stdout or a file (docs/EXPORTS.md).
+    /// </summary>
+    private static int Export(string[] args, TextWriter stdout, TextWriter stderr)
+    {
+        if (args.Length is < 2 or > 3)
+            return Usage(stderr);
+
+        JObject document;
+        switch (args[1])
+        {
+            case "schema":
+                document = SchemaExport.Build();
+                break;
+            case "triggers":
+                document = TriggerExport.Build();
+                break;
+            default:
+                return Usage(stderr);
+        }
+
+        var text = document.ToString(Formatting.Indented) + "\n";
+        if (args.Length == 2)
+        {
+            stdout.Write(text);
+            return 0;
+        }
+        try
+        {
+            File.WriteAllText(args[2], text);
+        }
+        catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException || ex is ArgumentException)
+        {
+            stderr.WriteLine($"Cannot write \"{args[2]}\": {ex.Message}");
+            return 2;
+        }
+        stdout.WriteLine($"Wrote {args[2]}.");
+        return 0;
+    }
+
     private static int Usage(TextWriter stderr)
     {
         stderr.WriteLine("Usage:");
-        stderr.WriteLine("  validate <path>                            a companion folder, or a Companions directory");
+        stderr.WriteLine("  validate [--json] <path>                   a companion folder, or a Companions directory");
         stderr.WriteLine("  mermaid <companionFolder> [conversationId] print the companion's Mermaid flowchart(s)");
         stderr.WriteLine("  docs triggers [outFile]                    trigger reference (docs/TRIGGERS.md) from the registry");
+        stderr.WriteLine("  export schema|triggers [outFile]           machine-readable schema / trigger registry (docs/EXPORTS.md)");
         stderr.WriteLine("  serve [companionsRoot]                     simulator: JSON lines on stdin/stdout (docs/SIMULATOR_PROTOCOL.md)");
         stderr.WriteLine("Exit codes: 0 ok, 1 validation errors, 2 usage, missing path or unknown conversation.");
         return 2;

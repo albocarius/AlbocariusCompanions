@@ -1,0 +1,1831 @@
+{
+  "exportVersion": 1,
+  "schemaVersion": 1,
+  "files": {
+    "companion.json": "companion",
+    "dialogs.json": "dialogs",
+    "lang/<code>.json": "lang"
+  },
+  "objects": {
+    "companion": {
+      "fields": [
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "required": true,
+          "description": "schema version of the file",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "name": "name",
+          "type": "string",
+          "required": true,
+          "description": "display name, non-empty"
+        },
+        {
+          "name": "isFemale",
+          "type": "bool",
+          "required": true,
+          "description": "the hero is female"
+        },
+        {
+          "name": "voice",
+          "type": "string",
+          "required": true,
+          "description": "vanilla voice type",
+          "allowed": [
+            "curt",
+            "earnest",
+            "ironic",
+            "softspoken"
+          ]
+        },
+        {
+          "name": "age",
+          "type": "int",
+          "required": true,
+          "description": "age in years",
+          "min": 18,
+          "max": 80
+        },
+        {
+          "name": "culture",
+          "type": "string",
+          "required": true,
+          "description": "game culture id"
+        },
+        {
+          "name": "bodyProperties",
+          "type": "string",
+          "required": false,
+          "description": "BodyProperties key; null = template default",
+          "default": null
+        },
+        {
+          "name": "attributes",
+          "type": "map<int>",
+          "required": true,
+          "description": "all six attributes, each 1..10",
+          "allowed": [
+            "vigor",
+            "control",
+            "endurance",
+            "cunning",
+            "social",
+            "intelligence"
+          ],
+          "min": 1,
+          "max": 10
+        },
+        {
+          "name": "skills",
+          "type": "map<int>",
+          "required": true,
+          "description": "game skill id → value",
+          "min": 0,
+          "max": 330
+        },
+        {
+          "name": "traits",
+          "type": "map<int>",
+          "required": false,
+          "description": "game trait id → level"
+        },
+        {
+          "name": "equipment",
+          "type": "equipment",
+          "required": true,
+          "description": "equipment template and fixed sets"
+        },
+        {
+          "name": "hireCost",
+          "type": "int",
+          "required": true,
+          "description": "gold the player pays to hire; hireable with exactly this much",
+          "min": 0
+        },
+        {
+          "name": "noble",
+          "type": "bool",
+          "required": false,
+          "description": "noble birth: making a non-noble companion a lord costs relation with the realm's clan leaders",
+          "default": false
+        },
+        {
+          "name": "voiceProfile",
+          "type": "voiceProfile",
+          "required": false,
+          "description": "authoring notes, unused in game"
+        },
+        {
+          "name": "likes",
+          "type": "reaction[]",
+          "required": false,
+          "description": "shape-validated only, no effect yet",
+          "default": []
+        },
+        {
+          "name": "dislikes",
+          "type": "reaction[]",
+          "required": false,
+          "description": "same as likes",
+          "default": []
+        },
+        {
+          "name": "relations",
+          "type": "relation[]",
+          "required": false,
+          "description": "shape only: other companions as friend or rival",
+          "default": []
+        },
+        {
+          "name": "requiredModules",
+          "type": "string[]",
+          "required": false,
+          "description": "module ids from SubModule.xml <Id>; the companion is skipped when one is not loaded",
+          "default": []
+        }
+      ]
+    },
+    "equipment": {
+      "fields": [
+        {
+          "name": "templateId",
+          "type": "string",
+          "required": true,
+          "description": "game equipment roster id"
+        },
+        {
+          "name": "battle",
+          "type": "map<string>",
+          "required": false,
+          "description": "slot → item id",
+          "allowed": [
+            "Item0",
+            "Item1",
+            "Item2",
+            "Item3",
+            "Head",
+            "Body",
+            "Leg",
+            "Gloves",
+            "Cape",
+            "Horse",
+            "HorseHarness"
+          ]
+        },
+        {
+          "name": "civilian",
+          "type": "map<string>",
+          "required": false,
+          "description": "slot → item id",
+          "allowed": [
+            "Item0",
+            "Item1",
+            "Item2",
+            "Item3",
+            "Head",
+            "Body",
+            "Leg",
+            "Gloves",
+            "Cape",
+            "Horse",
+            "HorseHarness"
+          ]
+        }
+      ]
+    },
+    "voiceProfile": {
+      "fields": [
+        {
+          "name": "reference",
+          "type": "string",
+          "required": false,
+          "description": "reference voice (note)",
+          "default": null
+        },
+        {
+          "name": "style",
+          "type": "string",
+          "required": false,
+          "description": "voice style (note)",
+          "default": null
+        }
+      ]
+    },
+    "reaction": {
+      "fields": [
+        {
+          "name": "event",
+          "type": "string",
+          "required": true,
+          "description": "event name"
+        },
+        {
+          "name": "reaction",
+          "type": "int",
+          "required": true,
+          "description": "reaction strength"
+        },
+        {
+          "name": "slot",
+          "type": "string",
+          "required": true,
+          "description": "dialog slot said as the reaction",
+          "allowed": [
+            "intro",
+            "backstory",
+            "hire_offer",
+            "hire_accept",
+            "hire_decline",
+            "player_ask_about",
+            "player_ask_hire",
+            "player_hire_pay",
+            "player_hire_full",
+            "player_hire_later",
+            "greet_recent",
+            "greet",
+            "main_hub",
+            "anything_else",
+            "farewell",
+            "job_status",
+            "role_pretalk",
+            "role_ask",
+            "role_ok",
+            "role_honored",
+            "role_too_many",
+            "mission_offer",
+            "mission_ask",
+            "forage_ask",
+            "rejoin_ok",
+            "fire_reaction",
+            "fire_farewell",
+            "fire_cancel_reply",
+            "lord_offer_busy",
+            "lord_offer_accept",
+            "lord_no_fief",
+            "lord_no_fief_ok",
+            "lord_where",
+            "lord_fief_selected",
+            "lord_name_house",
+            "lord_thanks",
+            "lord_rejected",
+            "grievance_start",
+            "grievance_repeat",
+            "grievance_desert",
+            "grievance_wage",
+            "grievance_starve",
+            "grievance_raid",
+            "rescue_thanks",
+            "rescue_what_now",
+            "rescue_join_reply",
+            "rescue_lead_reply",
+            "rescue_alone_reply",
+            "rescue_party_ok",
+            "rescue_party_what",
+            "rescue_party_go",
+            "prison_break_thanks",
+            "prison_break_rejoin",
+            "follow_ok",
+            "gather_ok",
+            "follow_stop_ok",
+            "leave_threat",
+            "relation_complaint",
+            "like_reaction",
+            "dislike_reaction",
+            "idle"
+          ]
+        }
+      ]
+    },
+    "relation": {
+      "fields": [
+        {
+          "name": "companion",
+          "type": "string",
+          "required": true,
+          "description": "another companion's id",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        {
+          "name": "attitude",
+          "type": "string",
+          "required": true,
+          "description": "attitude towards it",
+          "allowed": [
+            "friend",
+            "rival"
+          ]
+        }
+      ]
+    },
+    "dialogs": {
+      "fields": [
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "required": true,
+          "description": "schema version of the file",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "name": "lines",
+          "type": "line[]",
+          "required": true,
+          "description": "slot lines and triggered lines"
+        },
+        {
+          "name": "conversations",
+          "type": "conversation[]",
+          "required": false,
+          "description": "authored conversations",
+          "default": []
+        },
+        {
+          "name": "variables",
+          "type": "map<variable>",
+          "required": false,
+          "description": "declared conversation variables by name; 'mood' is built in",
+          "default": {}
+        }
+      ]
+    },
+    "line": {
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "local id, unique within the companion (lines and nodes share one namespace)",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        {
+          "name": "slot",
+          "type": "string",
+          "required": false,
+          "description": "dialog slot; required unless the line has a trigger",
+          "allowed": [
+            "intro",
+            "backstory",
+            "hire_offer",
+            "hire_accept",
+            "hire_decline",
+            "player_ask_about",
+            "player_ask_hire",
+            "player_hire_pay",
+            "player_hire_full",
+            "player_hire_later",
+            "greet_recent",
+            "greet",
+            "main_hub",
+            "anything_else",
+            "farewell",
+            "job_status",
+            "role_pretalk",
+            "role_ask",
+            "role_ok",
+            "role_honored",
+            "role_too_many",
+            "mission_offer",
+            "mission_ask",
+            "forage_ask",
+            "rejoin_ok",
+            "fire_reaction",
+            "fire_farewell",
+            "fire_cancel_reply",
+            "lord_offer_busy",
+            "lord_offer_accept",
+            "lord_no_fief",
+            "lord_no_fief_ok",
+            "lord_where",
+            "lord_fief_selected",
+            "lord_name_house",
+            "lord_thanks",
+            "lord_rejected",
+            "grievance_start",
+            "grievance_repeat",
+            "grievance_desert",
+            "grievance_wage",
+            "grievance_starve",
+            "grievance_raid",
+            "rescue_thanks",
+            "rescue_what_now",
+            "rescue_join_reply",
+            "rescue_lead_reply",
+            "rescue_alone_reply",
+            "rescue_party_ok",
+            "rescue_party_what",
+            "rescue_party_go",
+            "prison_break_thanks",
+            "prison_break_rejoin",
+            "follow_ok",
+            "gather_ok",
+            "follow_stop_ok",
+            "leave_threat",
+            "relation_complaint",
+            "like_reaction",
+            "dislike_reaction",
+            "idle"
+          ]
+        },
+        {
+          "name": "trigger",
+          "type": "trigger",
+          "required": false,
+          "description": "a triggered line: no slot, delivered as a notification"
+        },
+        {
+          "name": "when",
+          "type": "conditions",
+          "required": false,
+          "description": "the line is a candidate only while these conditions hold"
+        },
+        {
+          "name": "priority",
+          "type": "int",
+          "required": false,
+          "description": "selection rule: the highest passing priority wins",
+          "default": 0
+        },
+        {
+          "name": "voiced",
+          "type": "bool",
+          "required": false,
+          "description": "the line has recorded audio; never on player slots",
+          "default": false
+        },
+        {
+          "name": "audio",
+          "type": "string",
+          "required": false,
+          "description": "audio path relative to the companion folder, ends in .ogg; default audio/<id>.ogg"
+        }
+      ]
+    },
+    "variable": {
+      "fields": [
+        {
+          "name": "type",
+          "type": "string",
+          "required": true,
+          "description": "value type",
+          "allowed": [
+            "bool",
+            "int"
+          ]
+        },
+        {
+          "name": "scope",
+          "type": "string",
+          "required": false,
+          "description": "local: only this companion; shared: others use it as <companionId>.<name>",
+          "default": "local",
+          "allowed": [
+            "local",
+            "shared"
+          ]
+        },
+        {
+          "name": "default",
+          "type": "any",
+          "required": false,
+          "description": "initial value of the type (false / 0 if absent)"
+        }
+      ]
+    },
+    "conversation": {
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "unique among the companion's conversations",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        {
+          "name": "entry",
+          "type": "string",
+          "required": false,
+          "description": "hub: start player nodes are menu options; greeting: a start npc node opens the talk. Absent for a triggered conversation",
+          "allowed": [
+            "hub",
+            "greeting"
+          ]
+        },
+        {
+          "name": "once",
+          "type": "bool",
+          "required": false,
+          "description": "offered until it has started once per campaign",
+          "default": false
+        },
+        {
+          "name": "when",
+          "type": "conditions",
+          "required": false,
+          "description": "conditions of the conversation"
+        },
+        {
+          "name": "priority",
+          "type": "int",
+          "required": false,
+          "description": "hub: menu order (higher first); greeting: the highest offered greeting opens the talk",
+          "default": 0
+        },
+        {
+          "name": "start",
+          "type": "string[]",
+          "required": true,
+          "description": "start node ids: player nodes (hub) or npc nodes (greeting, triggered)"
+        },
+        {
+          "name": "nodes",
+          "type": "node[]",
+          "required": true,
+          "description": "the conversation's nodes, at least one"
+        },
+        {
+          "name": "trigger",
+          "type": "trigger",
+          "required": false,
+          "description": "started by a game event instead of the menu; then no entry"
+        }
+      ]
+    },
+    "node": {
+      "fields": [
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "local id (same namespace as lines; 'hub' and 'end' are reserved); key of the text in the lang files",
+          "pattern": "^[a-z0-9_]+$"
+        },
+        {
+          "name": "speaker",
+          "type": "string",
+          "required": true,
+          "description": "who says it",
+          "allowed": [
+            "npc",
+            "player"
+          ]
+        },
+        {
+          "name": "voiced",
+          "type": "bool",
+          "required": false,
+          "description": "the line has recorded audio; never on player nodes",
+          "default": false
+        },
+        {
+          "name": "audio",
+          "type": "string",
+          "required": false,
+          "description": "audio path relative to the companion folder, ends in .ogg; default audio/<id>.ogg"
+        },
+        {
+          "name": "next",
+          "type": "string[]",
+          "required": true,
+          "description": "node ids of this conversation, or exactly [\"hub\"] / [\"end\"]"
+        },
+        {
+          "name": "when",
+          "type": "conditions",
+          "required": false,
+          "description": "a node whose condition fails is not offered / not said"
+        },
+        {
+          "name": "priority",
+          "type": "int",
+          "required": false,
+          "description": "npc nodes only: selection rule among the replies of one next list",
+          "default": 0
+        },
+        {
+          "name": "effects",
+          "type": "effects",
+          "required": false,
+          "description": "applied when the node is said"
+        }
+      ]
+    },
+    "conditions": {
+      "fields": [
+        {
+          "name": "met",
+          "type": "bool",
+          "required": false,
+          "description": "the companion has met the player"
+        },
+        {
+          "name": "hired",
+          "type": "bool",
+          "required": false,
+          "description": "the companion is in the player's clan"
+        },
+        {
+          "name": "inParty",
+          "type": "bool",
+          "required": false,
+          "description": "the companion is in the player's party"
+        },
+        {
+          "name": "minRelation",
+          "type": "int",
+          "required": false,
+          "description": "relation with the player at least this",
+          "min": -100,
+          "max": 100
+        },
+        {
+          "name": "maxRelation",
+          "type": "int",
+          "required": false,
+          "description": "relation with the player at most this",
+          "min": -100,
+          "max": 100
+        },
+        {
+          "name": "minGold",
+          "type": "int",
+          "required": false,
+          "description": "the player's gold at least this",
+          "min": 0
+        },
+        {
+          "name": "hasGold",
+          "type": "goldCheck",
+          "required": false,
+          "description": "an actor's own gold at least min"
+        },
+        {
+          "name": "hasItem",
+          "type": "itemCheck",
+          "required": false,
+          "description": "item count in the player's party inventory at least min"
+        },
+        {
+          "name": "flags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables that must all be true"
+        },
+        {
+          "name": "notFlags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables that must all be false"
+        },
+        {
+          "name": "all",
+          "type": "conditions[]",
+          "required": false,
+          "description": "every nested condition object holds (not empty)"
+        },
+        {
+          "name": "any",
+          "type": "conditions[]",
+          "required": false,
+          "description": "at least one nested condition object holds (not empty)"
+        },
+        {
+          "name": "not",
+          "type": "conditions",
+          "required": false,
+          "description": "the nested condition object does not hold"
+        },
+        {
+          "name": "var",
+          "type": "string",
+          "required": false,
+          "description": "variable compared by min/max/eq: <name>, <companionId>.<name> or event.<path>"
+        },
+        {
+          "name": "min",
+          "type": "int",
+          "required": false,
+          "description": "with var: int variable at least this"
+        },
+        {
+          "name": "max",
+          "type": "int",
+          "required": false,
+          "description": "with var: int variable at most this"
+        },
+        {
+          "name": "eq",
+          "type": "any",
+          "required": false,
+          "description": "with var: equals (bool, int, or text/bool/number for event fields); not combined with min/max"
+        },
+        {
+          "name": "role",
+          "type": "string",
+          "required": false,
+          "description": "the companion's current role",
+          "allowed": [
+            "governor",
+            "partyLeader",
+            "caravanLeader",
+            "alleyLeader",
+            "questAlternative"
+          ]
+        }
+      ]
+    },
+    "goldCheck": {
+      "fields": [
+        {
+          "name": "who",
+          "type": "string",
+          "required": true,
+          "description": "whose gold; never world",
+          "allowed": [
+            "player",
+            "self",
+            "<companionId>"
+          ]
+        },
+        {
+          "name": "min",
+          "type": "int",
+          "required": true,
+          "description": "the least gold",
+          "min": 1
+        }
+      ]
+    },
+    "itemCheck": {
+      "fields": [
+        {
+          "name": "who",
+          "type": "string",
+          "required": true,
+          "description": "only player: items live in the party inventory",
+          "allowed": [
+            "player"
+          ]
+        },
+        {
+          "name": "id",
+          "type": "string",
+          "required": true,
+          "description": "item string id"
+        },
+        {
+          "name": "min",
+          "type": "int",
+          "required": false,
+          "description": "the least count",
+          "default": 1,
+          "min": 1
+        }
+      ]
+    },
+    "effects": {
+      "fields": [
+        {
+          "name": "relation",
+          "type": "int",
+          "required": false,
+          "description": "non-zero change of the companion's relation with the player",
+          "min": -100,
+          "max": 100
+        },
+        {
+          "name": "transfer",
+          "type": "transfer",
+          "required": false,
+          "description": "gold or items moved between two actors"
+        },
+        {
+          "name": "setFlags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables set to true"
+        },
+        {
+          "name": "clearFlags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables set to false"
+        },
+        {
+          "name": "set",
+          "type": "map<any>",
+          "required": false,
+          "description": "variable → new value of its type"
+        },
+        {
+          "name": "add",
+          "type": "map<int>",
+          "required": false,
+          "description": "int variable → non-zero amount added"
+        },
+        {
+          "name": "join",
+          "type": "bool",
+          "required": false,
+          "description": "the companion joins the player's clan and party without payment",
+          "default": false
+        },
+        {
+          "name": "partyMorale",
+          "type": "int",
+          "required": false,
+          "description": "non-zero one-off change of the player's party morale",
+          "min": -20,
+          "max": 20
+        }
+      ]
+    },
+    "transfer": {
+      "fields": [
+        {
+          "name": "gold",
+          "type": "int",
+          "required": false,
+          "description": "positive gold amount; exactly one of gold / item",
+          "min": 1
+        },
+        {
+          "name": "item",
+          "type": "string",
+          "required": false,
+          "description": "item string id; exactly one of gold / item; only between player and world"
+        },
+        {
+          "name": "count",
+          "type": "int",
+          "required": false,
+          "description": "item count, only with item",
+          "default": 1,
+          "min": 1
+        },
+        {
+          "name": "from",
+          "type": "string",
+          "required": true,
+          "description": "who gives",
+          "allowed": [
+            "player",
+            "self",
+            "world",
+            "<companionId>"
+          ]
+        },
+        {
+          "name": "to",
+          "type": "string",
+          "required": true,
+          "description": "who receives; differs from from",
+          "allowed": [
+            "player",
+            "self",
+            "world",
+            "<companionId>"
+          ]
+        }
+      ]
+    },
+    "trigger": {
+      "fields": [
+        {
+          "name": "on",
+          "type": "string",
+          "required": true,
+          "description": "trigger name (export triggers)"
+        },
+        {
+          "name": "subject",
+          "type": "string",
+          "required": false,
+          "description": "who/where the event must be about; default: the trigger's",
+          "allowed": [
+            "self",
+            "player",
+            "playerParty",
+            "playerClan",
+            "companion:<id>",
+            "hero:<stringId>",
+            "settlement:<stringId>",
+            "any"
+          ]
+        },
+        {
+          "name": "where",
+          "type": "map<any>",
+          "required": false,
+          "description": "payload path → value that must be equal, e.g. \"village.culture\": \"vlandia\""
+        },
+        {
+          "name": "chance",
+          "type": "number",
+          "required": false,
+          "description": "probability of firing",
+          "default": 1.0,
+          "min": 0,
+          "max": 1
+        },
+        {
+          "name": "delivery",
+          "type": "string",
+          "required": false,
+          "description": "how it reaches the player; conversation (conversations) / notification (lines, the only choice)",
+          "allowed": [
+            "conversation",
+            "notification",
+            "inquiry"
+          ]
+        },
+        {
+          "name": "expiresAfterHours",
+          "type": "number",
+          "required": false,
+          "description": "queued and not delivered by then → dropped",
+          "default": 24.0,
+          "min": 0
+        },
+        {
+          "name": "cooldownDays",
+          "type": "number",
+          "required": false,
+          "description": "in-game days before this item can fire again",
+          "default": 0.0,
+          "min": 0
+        },
+        {
+          "name": "allowAbsent",
+          "type": "bool",
+          "required": false,
+          "description": "fires while the companion is not in the player's party",
+          "default": false
+        },
+        {
+          "name": "params",
+          "type": "map<any>",
+          "required": false,
+          "description": "polling triggers only: their parameters (export triggers)"
+        }
+      ]
+    },
+    "lang": {
+      "fields": [
+        {
+          "name": "schemaVersion",
+          "type": "int",
+          "required": true,
+          "description": "schema version of the file",
+          "min": 1,
+          "max": 1
+        },
+        {
+          "name": "lines",
+          "type": "map<string>",
+          "required": true,
+          "description": "local id → text: every line and conversation node (en: required for all)"
+        }
+      ]
+    }
+  },
+  "conditions": [
+    {
+      "name": "met",
+      "description": "The companion has met the player (true/false).",
+      "params": [
+        {
+          "name": "met",
+          "type": "bool",
+          "required": false,
+          "description": "the companion has met the player"
+        }
+      ]
+    },
+    {
+      "name": "hired",
+      "description": "The companion is in the player's clan (true/false).",
+      "params": [
+        {
+          "name": "hired",
+          "type": "bool",
+          "required": false,
+          "description": "the companion is in the player's clan"
+        }
+      ]
+    },
+    {
+      "name": "inParty",
+      "description": "The companion is in the player's party (true/false).",
+      "params": [
+        {
+          "name": "inParty",
+          "type": "bool",
+          "required": false,
+          "description": "the companion is in the player's party"
+        }
+      ]
+    },
+    {
+      "name": "relation",
+      "description": "The companion's relation with the player is within minRelation..maxRelation (either may be absent).",
+      "params": [
+        {
+          "name": "minRelation",
+          "type": "int",
+          "required": false,
+          "description": "relation with the player at least this",
+          "min": -100,
+          "max": 100
+        },
+        {
+          "name": "maxRelation",
+          "type": "int",
+          "required": false,
+          "description": "relation with the player at most this",
+          "min": -100,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "name": "minGold",
+      "description": "The player has at least this much gold.",
+      "params": [
+        {
+          "name": "minGold",
+          "type": "int",
+          "required": false,
+          "description": "the player's gold at least this",
+          "min": 0
+        }
+      ]
+    },
+    {
+      "name": "hasGold",
+      "description": "An actor (player, self or another companion) holds at least min of its own gold.",
+      "params": [
+        {
+          "name": "hasGold",
+          "type": "goldCheck",
+          "required": false,
+          "description": "an actor's own gold at least min"
+        }
+      ]
+    },
+    {
+      "name": "hasItem",
+      "description": "The player's party inventory holds at least min of an item.",
+      "params": [
+        {
+          "name": "hasItem",
+          "type": "itemCheck",
+          "required": false,
+          "description": "item count in the player's party inventory at least min"
+        }
+      ]
+    },
+    {
+      "name": "flags",
+      "description": "Bool variables that must all be true.",
+      "params": [
+        {
+          "name": "flags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables that must all be true"
+        }
+      ]
+    },
+    {
+      "name": "notFlags",
+      "description": "Bool variables that must all be false.",
+      "params": [
+        {
+          "name": "notFlags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables that must all be false"
+        }
+      ]
+    },
+    {
+      "name": "var",
+      "description": "A variable (or event.<path>) compared with eq, or with min / max.",
+      "params": [
+        {
+          "name": "var",
+          "type": "string",
+          "required": false,
+          "description": "variable compared by min/max/eq: <name>, <companionId>.<name> or event.<path>"
+        },
+        {
+          "name": "min",
+          "type": "int",
+          "required": false,
+          "description": "with var: int variable at least this"
+        },
+        {
+          "name": "max",
+          "type": "int",
+          "required": false,
+          "description": "with var: int variable at most this"
+        },
+        {
+          "name": "eq",
+          "type": "any",
+          "required": false,
+          "description": "with var: equals (bool, int, or text/bool/number for event fields); not combined with min/max"
+        }
+      ]
+    },
+    {
+      "name": "role",
+      "description": "The companion's current role.",
+      "params": [
+        {
+          "name": "role",
+          "type": "string",
+          "required": false,
+          "description": "the companion's current role",
+          "allowed": [
+            "governor",
+            "partyLeader",
+            "caravanLeader",
+            "alleyLeader",
+            "questAlternative"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "all",
+      "description": "Every nested condition object holds.",
+      "params": [
+        {
+          "name": "all",
+          "type": "conditions[]",
+          "required": false,
+          "description": "every nested condition object holds (not empty)"
+        }
+      ]
+    },
+    {
+      "name": "any",
+      "description": "At least one nested condition object holds.",
+      "params": [
+        {
+          "name": "any",
+          "type": "conditions[]",
+          "required": false,
+          "description": "at least one nested condition object holds (not empty)"
+        }
+      ]
+    },
+    {
+      "name": "not",
+      "description": "The nested condition object does not hold.",
+      "params": [
+        {
+          "name": "not",
+          "type": "conditions",
+          "required": false,
+          "description": "the nested condition object does not hold"
+        }
+      ]
+    }
+  ],
+  "effects": [
+    {
+      "name": "relation",
+      "description": "Changes the companion's relation with the player (the game scales positive changes).",
+      "params": [
+        {
+          "name": "relation",
+          "type": "int",
+          "required": false,
+          "description": "non-zero change of the companion's relation with the player",
+          "min": -100,
+          "max": 100
+        }
+      ]
+    },
+    {
+      "name": "transfer",
+      "description": "Moves gold or items between two actors; the node is offered only when the source has them.",
+      "params": [
+        {
+          "name": "transfer",
+          "type": "transfer",
+          "required": false,
+          "description": "gold or items moved between two actors"
+        }
+      ]
+    },
+    {
+      "name": "join",
+      "description": "The companion joins the player's clan and party without payment.",
+      "params": [
+        {
+          "name": "join",
+          "type": "bool",
+          "required": false,
+          "description": "the companion joins the player's clan and party without payment",
+          "default": false
+        }
+      ]
+    },
+    {
+      "name": "partyMorale",
+      "description": "One-off change of the player's party morale (Recent Events, fades 10 % a day).",
+      "params": [
+        {
+          "name": "partyMorale",
+          "type": "int",
+          "required": false,
+          "description": "non-zero one-off change of the player's party morale",
+          "min": -20,
+          "max": 20
+        }
+      ]
+    },
+    {
+      "name": "setFlags",
+      "description": "Sets bool variables to true.",
+      "params": [
+        {
+          "name": "setFlags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables set to true"
+        }
+      ]
+    },
+    {
+      "name": "clearFlags",
+      "description": "Sets bool variables to false.",
+      "params": [
+        {
+          "name": "clearFlags",
+          "type": "string[]",
+          "required": false,
+          "description": "bool variables set to false"
+        }
+      ]
+    },
+    {
+      "name": "set",
+      "description": "Sets variables to a value of their type.",
+      "params": [
+        {
+          "name": "set",
+          "type": "map<any>",
+          "required": false,
+          "description": "variable → new value of its type"
+        }
+      ]
+    },
+    {
+      "name": "add",
+      "description": "Adds a non-zero amount to int variables.",
+      "params": [
+        {
+          "name": "add",
+          "type": "map<int>",
+          "required": false,
+          "description": "int variable → non-zero amount added"
+        }
+      ]
+    }
+  ],
+  "effectOrder": [
+    "relation",
+    "transfer",
+    "join",
+    "partyMorale",
+    "setFlags",
+    "clearFlags",
+    "set",
+    "add"
+  ],
+  "slots": {
+    "companion": [
+      "intro",
+      "backstory",
+      "hire_offer",
+      "hire_accept",
+      "hire_decline"
+    ],
+    "player": [
+      "player_ask_about",
+      "player_ask_hire",
+      "player_hire_pay",
+      "player_hire_full",
+      "player_hire_later"
+    ],
+    "vanilla": [
+      {
+        "slot": "greet_recent",
+        "englishText": "{SALUTATION}...",
+        "sentenceIds": [
+          "start_default_under_24_hours"
+        ]
+      },
+      {
+        "slot": "greet",
+        "englishText": "{STR_SALUTATION}. It's been a while.",
+        "sentenceIds": [
+          "start_default"
+        ]
+      },
+      {
+        "slot": "main_hub",
+        "englishText": "So, then. What is it?",
+        "sentenceIds": [
+          "hero_ask_4"
+        ]
+      },
+      {
+        "slot": "anything_else",
+        "englishText": "Is there anything else?",
+        "sentenceIds": [
+          "hero_pretalk_2"
+        ]
+      },
+      {
+        "slot": "farewell",
+        "englishText": "Until next time, then.",
+        "sentenceIds": [
+          "hero_leave"
+        ]
+      },
+      {
+        "slot": "job_status",
+        "englishText": "Do you have any orders for your alley, {?CONVERSATION_NPC.GENDER}madam{?}sir{\\?}",
+        "sentenceIds": [
+          "wanderer_job_status_1"
+        ]
+      },
+      {
+        "slot": "role_pretalk",
+        "englishText": "Yes?",
+        "sentenceIds": [
+          "companion_pretalk"
+        ]
+      },
+      {
+        "slot": "role_ask",
+        "englishText": "What role do you have in mind?",
+        "sentenceIds": [
+          "companion_assign_new_role"
+        ]
+      },
+      {
+        "slot": "role_ok",
+        "englishText": "Very well.",
+        "sentenceIds": [
+          "companion_role_response",
+          "companion_role_unassign_response"
+        ]
+      },
+      {
+        "slot": "role_honored",
+        "englishText": "I would be honored.",
+        "sentenceIds": [
+          "companion_role_response_2"
+        ]
+      },
+      {
+        "slot": "role_too_many",
+        "englishText": "I already have quite a few duties. Perhaps you could relieve me of one of them, so that I can take on this new responsibility?",
+        "sentenceIds": [
+          "companion_have_too_many_roles"
+        ]
+      },
+      {
+        "slot": "mission_offer",
+        "englishText": "I have a mission for you...",
+        "sentenceIds": [
+          "companion_start_mission"
+        ]
+      },
+      {
+        "slot": "mission_ask",
+        "englishText": "What do you want me to do?",
+        "sentenceIds": [
+          "companion_pretalk_2"
+        ]
+      },
+      {
+        "slot": "forage_ask",
+        "englishText": "As you wish. Will I take some troops with me?",
+        "sentenceIds": [
+          "companion_forage_1"
+        ]
+      },
+      {
+        "slot": "rejoin_ok",
+        "englishText": "As you wish.",
+        "sentenceIds": [
+          "companion_rejoin"
+        ]
+      },
+      {
+        "slot": "fire_reaction",
+        "englishText": "What? Why? Did I do something wrong?[ib:closed]",
+        "sentenceIds": [
+          "companion_fire"
+        ]
+      },
+      {
+        "slot": "fire_farewell",
+        "englishText": "Well... I don't know what to say. Goodbye, then.[ib:nervous2]",
+        "sentenceIds": [
+          "companion_fire_farewell"
+        ]
+      },
+      {
+        "slot": "fire_cancel_reply",
+        "englishText": "Well {PLAYER.NAME}, it is certainly good to see you still retain your sense of humor.[if:convo_nervous][ib:normal2]",
+        "sentenceIds": [
+          "companion_fire_cancel2"
+        ]
+      },
+      {
+        "slot": "lord_offer_busy",
+        "englishText": "I would be honored, my {?PLAYER.GENDER}lady{?}lord{\\?}. But I can't take on any new responsibilities while leading this caravan. If you wish to relieve me of my duties, we can discuss this further.",
+        "sentenceIds": [
+          "turn_companion_to_lord_start_answer_2"
+        ]
+      },
+      {
+        "slot": "lord_offer_accept",
+        "englishText": "Thank you, my {?PLAYER.GENDER}lady{?}lord{\\?}. I have often thought about that. If I had a fief, with revenues, and perhaps a title to go with it, I could marry well and pass my wealth down to my heirs, and of course raise troops to help defend the realm.",
+        "sentenceIds": [
+          "turn_companion_to_lord_start_answer"
+        ]
+      },
+      {
+        "slot": "lord_no_fief",
+        "englishText": "My {?PLAYER.GENDER}lady{?}lord{\\?}, as much as I appreciate the gesture, I am not sure that you have a suitable estate to grant me.",
+        "sentenceIds": [
+          "turn_companion_to_lord_has_no_fief"
+        ]
+      },
+      {
+        "slot": "lord_no_fief_ok",
+        "englishText": "As you wish, my {?PLAYER.GENDER}lady{?}lord{\\?}.",
+        "sentenceIds": [
+          "turn_companion_to_lord_has_no_fief_companion_answer"
+        ]
+      },
+      {
+        "slot": "lord_where",
+        "englishText": "Where exactly did you have in mind?[if:convo_happy]",
+        "sentenceIds": [
+          "turn_companion_to_lord_has_fief_answer"
+        ]
+      },
+      {
+        "slot": "lord_fief_selected",
+        "englishText": "{SETTLEMENT_NAME}? This is a great honor, my {?PLAYER.GENDER}lady{?}lord{\\?}. I will protect it until the last drop of my blood.[ib:hip][if:convo_happy]",
+        "sentenceIds": [
+          "turn_companion_to_lord_fief_selected"
+        ]
+      },
+      {
+        "slot": "lord_name_house",
+        "englishText": "My {?PLAYER.GENDER}lady{?}lord{\\?}, it would be an honor if you were to choose the name of my noble house.",
+        "sentenceIds": [
+          "turn_companion_to_lord_fief_selected_confirm_box"
+        ]
+      },
+      {
+        "slot": "lord_thanks",
+        "englishText": "Thank you my {?PLAYER.GENDER}lady{?}lord{\\?}. I will always remember this grand gesture.[ib:hip][if:convo_happy]",
+        "sentenceIds": [
+          "turn_companion_to_lord_done_answer_thanks"
+        ]
+      },
+      {
+        "slot": "lord_rejected",
+        "englishText": "It's only normal that you have second thoughts. I will be right by your side if you change your mind, my {?PLAYER.GENDER}lady{?}lord{\\?}.",
+        "sentenceIds": [
+          "turn_companion_to_lord_done_answer_rejected"
+        ]
+      },
+      {
+        "slot": "grievance_start",
+        "englishText": "{TITLE}, there is something I wish to discuss with you.",
+        "sentenceIds": [
+          "companion_start_grievance"
+        ]
+      },
+      {
+        "slot": "grievance_repeat",
+        "englishText": "{TITLE}... {GRIEVANCE_SHORT_DESCRIPTION}",
+        "sentenceIds": [
+          "companion_repeat_grievance"
+        ]
+      },
+      {
+        "slot": "grievance_desert",
+        "englishText": "I don't like running away from a battle like that.",
+        "sentenceIds": [
+          "companion_continue_grievance_desert_softspoken"
+        ]
+      },
+      {
+        "slot": "grievance_wage",
+        "englishText": "I should remind you that I expect to be paid as you had promised.",
+        "sentenceIds": [
+          "companion_continue_grievance_wage_softspoken"
+        ]
+      },
+      {
+        "slot": "grievance_starve",
+        "englishText": "I hear we're running low on food. We should watch our stocks better.",
+        "sentenceIds": [
+          "companion_continue_grievance_starve_softspoken"
+        ]
+      },
+      {
+        "slot": "grievance_raid",
+        "englishText": "Pillaging villages is not what I signed up for.",
+        "sentenceIds": [
+          "companion_continue_grievance_raid_softspoken"
+        ]
+      },
+      {
+        "slot": "rescue_thanks",
+        "englishText": "{SALUTATION}... Thank you for freeing me.",
+        "sentenceIds": [
+          "rescue_companion_start"
+        ]
+      },
+      {
+        "slot": "rescue_what_now",
+        "englishText": "What now?",
+        "sentenceIds": [
+          "rescue_companion_preoptions"
+        ]
+      },
+      {
+        "slot": "rescue_join_reply",
+        "englishText": "All right. It's good to be back.",
+        "sentenceIds": [
+          "rescue_companion_join_party_answer"
+        ]
+      },
+      {
+        "slot": "rescue_lead_reply",
+        "englishText": "Tell me who to command.",
+        "sentenceIds": [
+          "rescue_companion_lead_party_answer"
+        ]
+      },
+      {
+        "slot": "rescue_alone_reply",
+        "englishText": "I will go off on my own, then. I can stay busy. But I'll remember - I owe you one!",
+        "sentenceIds": [
+          "rescue_companion_do_nothing_answer"
+        ]
+      },
+      {
+        "slot": "rescue_party_ok",
+        "englishText": "As you wish.",
+        "sentenceIds": [
+          "rescue_companion_lead_party_create_party_continue_0"
+        ]
+      },
+      {
+        "slot": "rescue_party_what",
+        "englishText": "So, what shall I do?",
+        "sentenceIds": [
+          "rescue_companion_lead_party_create_party_continue_1"
+        ]
+      },
+      {
+        "slot": "rescue_party_go",
+        "englishText": "We'll make ready to set out at once.",
+        "sentenceIds": [
+          "rescue_companion_lead_party_create_party_continue_2"
+        ]
+      },
+      {
+        "slot": "prison_break_thanks",
+        "englishText": "{SALUTATION}... You came for me!",
+        "sentenceIds": [
+          "prison_break_start_1",
+          "prison_break_start_2"
+        ]
+      },
+      {
+        "slot": "prison_break_rejoin",
+        "englishText": "I'm ready to rejoin you. I'm in your debt.",
+        "sentenceIds": [
+          "prison_break_next_companion"
+        ]
+      },
+      {
+        "slot": "follow_ok",
+        "englishText": "Lead the way.",
+        "sentenceIds": [
+          "clan_member_follow_accept"
+        ]
+      },
+      {
+        "slot": "gather_ok",
+        "englishText": "I shall do that.",
+        "sentenceIds": [
+          "clan_member_gather_clan_members_accept"
+        ]
+      },
+      {
+        "slot": "follow_stop_ok",
+        "englishText": "As you wish.",
+        "sentenceIds": [
+          "clan_member_dont_follow_accept",
+          "clan_members_dont_follow_accept"
+        ]
+      }
+    ],
+    "required": [
+      "intro",
+      "backstory",
+      "hire_offer",
+      "hire_accept",
+      "hire_decline",
+      "player_ask_about",
+      "player_ask_hire",
+      "player_hire_pay",
+      "player_hire_full",
+      "player_hire_later",
+      "greet_recent",
+      "greet",
+      "main_hub",
+      "anything_else",
+      "farewell",
+      "job_status",
+      "role_pretalk",
+      "role_ask",
+      "role_ok",
+      "role_honored",
+      "role_too_many",
+      "mission_offer",
+      "mission_ask",
+      "forage_ask",
+      "rejoin_ok",
+      "fire_reaction",
+      "fire_farewell",
+      "fire_cancel_reply",
+      "lord_offer_busy",
+      "lord_offer_accept",
+      "lord_no_fief",
+      "lord_no_fief_ok",
+      "lord_where",
+      "lord_fief_selected",
+      "lord_name_house",
+      "lord_thanks",
+      "lord_rejected",
+      "grievance_start",
+      "grievance_repeat",
+      "grievance_desert",
+      "grievance_wage",
+      "grievance_starve",
+      "grievance_raid",
+      "rescue_thanks",
+      "rescue_what_now",
+      "rescue_join_reply",
+      "rescue_lead_reply",
+      "rescue_alone_reply",
+      "rescue_party_ok",
+      "rescue_party_what",
+      "rescue_party_go",
+      "prison_break_thanks",
+      "prison_break_rejoin",
+      "follow_ok",
+      "gather_ok",
+      "follow_stop_ok"
+    ],
+    "optional": [
+      "leave_threat",
+      "relation_complaint",
+      "like_reaction",
+      "dislike_reaction",
+      "idle"
+    ]
+  },
+  "enums": {
+    "voice": [
+      "curt",
+      "earnest",
+      "ironic",
+      "softspoken"
+    ],
+    "attributes": [
+      "vigor",
+      "control",
+      "endurance",
+      "cunning",
+      "social",
+      "intelligence"
+    ],
+    "equipmentSlots": [
+      "Item0",
+      "Item1",
+      "Item2",
+      "Item3",
+      "Head",
+      "Body",
+      "Leg",
+      "Gloves",
+      "Cape",
+      "Horse",
+      "HorseHarness"
+    ],
+    "relationAttitudes": [
+      "friend",
+      "rival"
+    ],
+    "entries": [
+      "hub",
+      "greeting"
+    ],
+    "speakers": [
+      "npc",
+      "player"
+    ],
+    "reservedNext": [
+      "hub",
+      "end"
+    ],
+    "variableTypes": [
+      "bool",
+      "int"
+    ],
+    "variableScopes": [
+      "local",
+      "shared"
+    ],
+    "builtinVariables": [
+      {
+        "name": "mood",
+        "type": "int",
+        "default": 0
+      }
+    ],
+    "roles": [
+      "governor",
+      "partyLeader",
+      "caravanLeader",
+      "alleyLeader",
+      "questAlternative"
+    ],
+    "deliveries": [
+      "conversation",
+      "notification",
+      "inquiry"
+    ],
+    "actors": [
+      "player",
+      "self",
+      "world",
+      "<companionId>"
+    ],
+    "subjects": [
+      "self",
+      "player",
+      "playerParty",
+      "playerClan",
+      "companion:<id>",
+      "hero:<stringId>",
+      "settlement:<stringId>",
+      "any"
+    ]
+  },
+  "patterns": {
+    "companionId": "^[a-z0-9_]+$",
+    "localId": "^[a-z0-9_]+$",
+    "variableName": "^[a-z0-9_]+$",
+    "languageCode": "^[a-z]{2}$",
+    "playerToken": "\\{\\s*PLAYER[^}]*\\}"
+  },
+  "rules": {
+    "englishCode": "en",
+    "fullId": "<companionId>_<localId>",
+    "defaultAudio": "audio/<localId>.ogg",
+    "relationRange": [
+      -100,
+      100
+    ],
+    "partyMoraleRange": [
+      -20,
+      20
+    ],
+    "reservedFolder": "_shared"
+  }
+}

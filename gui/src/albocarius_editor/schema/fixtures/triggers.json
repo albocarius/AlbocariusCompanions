@@ -1,0 +1,6973 @@
+{
+  "exportVersion": 1,
+  "defaults": {
+    "chance": 1.0,
+    "expiresAfterHours": 24.0,
+    "cooldownDays": 0.0,
+    "lineDelivery": "notification",
+    "conversationDelivery": "conversation"
+  },
+  "limits": {
+    "interruptionCooldownDays": 3.0,
+    "interruptionsPerDay": 1,
+    "notificationsPerDay": 3,
+    "standardInquiryMaxOptions": 2
+  },
+  "deliveries": [
+    "conversation",
+    "notification",
+    "inquiry"
+  ],
+  "subjectsWithId": [
+    "companion",
+    "hero",
+    "settlement"
+  ],
+  "entityProperties": {
+    "Hero": {
+      "properties": [
+        "id",
+        "name",
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "companion",
+        "heroId",
+        "culture",
+        "clan",
+        "kingdom",
+        "occupation",
+        "isCompanion",
+        "isAlive"
+      ],
+      "boolProperties": [
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "isCompanion",
+        "isAlive"
+      ]
+    },
+    "Party": {
+      "properties": [
+        "id",
+        "name",
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "companion",
+        "heroId",
+        "leader",
+        "clan",
+        "kingdom",
+        "isMainParty"
+      ],
+      "boolProperties": [
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "isMainParty"
+      ]
+    },
+    "Settlement": {
+      "properties": [
+        "id",
+        "name",
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "companion",
+        "heroId",
+        "culture",
+        "kind",
+        "ownerClan",
+        "kingdom"
+      ],
+      "boolProperties": [
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan"
+      ]
+    },
+    "Clan": {
+      "properties": [
+        "id",
+        "name",
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "companion",
+        "heroId",
+        "culture",
+        "kingdom",
+        "leader"
+      ],
+      "boolProperties": [
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan"
+      ]
+    },
+    "Kingdom": {
+      "properties": [
+        "id",
+        "name",
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "companion",
+        "heroId",
+        "culture",
+        "leader"
+      ],
+      "boolProperties": [
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan"
+      ]
+    },
+    "Faction": {
+      "properties": [
+        "id",
+        "name",
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "companion",
+        "heroId",
+        "culture",
+        "leader",
+        "kingdom",
+        "isKingdom"
+      ],
+      "boolProperties": [
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "isKingdom"
+      ]
+    },
+    "Item": {
+      "properties": [
+        "id",
+        "name",
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan",
+        "companion",
+        "heroId",
+        "type"
+      ],
+      "boolProperties": [
+        "isPlayer",
+        "inPlayerParty",
+        "inPlayerClan"
+      ]
+    }
+  },
+  "roles": [
+    "governor",
+    "partyLeader",
+    "caravanLeader",
+    "alleyLeader",
+    "questAlternative"
+  ],
+  "triggers": [
+    {
+      "name": "nearSettlement",
+      "category": "polling",
+      "common": true,
+      "description": "The player's party came within `radius` of a settlement; fires again only after it went beyond `rearmRadius`.",
+      "polling": true,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement approached"
+        }
+      ],
+      "params": [
+        {
+          "name": "settlement",
+          "kind": "Text",
+          "required": true,
+          "description": "settlement string id, e.g. town_V1"
+        },
+        {
+          "name": "radius",
+          "kind": "Number",
+          "required": true,
+          "description": "fire distance in map units (> 0)"
+        },
+        {
+          "name": "rearmRadius",
+          "kind": "Number",
+          "required": true,
+          "description": "re-arm distance in map units (> radius)"
+        }
+      ],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "daily",
+      "category": "polling",
+      "common": true,
+      "description": "Once per in-game day; combine with `chance` for random comments.",
+      "polling": true,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "varCrossed",
+      "category": "polling",
+      "common": true,
+      "description": "One of this companion's variables crossed `value` in `direction` (up: from below to at-or-above; down: from at-or-above to below).",
+      "polling": true,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "var",
+          "kind": "Text",
+          "entity": false,
+          "description": "the variable name"
+        },
+        {
+          "name": "value",
+          "kind": "Int",
+          "entity": false,
+          "description": "the variable's new value"
+        }
+      ],
+      "params": [
+        {
+          "name": "var",
+          "kind": "Text",
+          "required": true,
+          "description": "an int variable of this companion, e.g. mood"
+        },
+        {
+          "name": "value",
+          "kind": "Int",
+          "required": true,
+          "description": "the threshold"
+        },
+        {
+          "name": "direction",
+          "kind": "Text",
+          "required": true,
+          "description": "up | down"
+        }
+      ],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "roleStarted",
+      "category": "polling",
+      "common": true,
+      "description": "A companion took a role (governor, party leader, …).",
+      "polling": true,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "self",
+      "subjectFields": [
+        "companion"
+      ],
+      "fields": [
+        {
+          "name": "companion",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the companion"
+        },
+        {
+          "name": "role",
+          "kind": "Text",
+          "entity": false,
+          "description": "governor | partyLeader | caravanLeader | alleyLeader | questAlternative"
+        }
+      ],
+      "params": [
+        {
+          "name": "role",
+          "kind": "Text",
+          "required": true,
+          "description": "governor | partyLeader | caravanLeader | alleyLeader | questAlternative"
+        }
+      ],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "roleEnded",
+      "category": "polling",
+      "common": true,
+      "description": "A companion left a role.",
+      "polling": true,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "self",
+      "subjectFields": [
+        "companion"
+      ],
+      "fields": [
+        {
+          "name": "companion",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the companion"
+        },
+        {
+          "name": "role",
+          "kind": "Text",
+          "entity": false,
+          "description": "governor | partyLeader | caravanLeader | alleyLeader | questAlternative"
+        }
+      ],
+      "params": [
+        {
+          "name": "role",
+          "kind": "Text",
+          "required": true,
+          "description": "governor | partyLeader | caravanLeader | alleyLeader | questAlternative"
+        }
+      ],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerBattleEnded",
+      "category": "battle",
+      "common": true,
+      "description": "A battle the player fought in ended (winner known; casualties and loot not yet counted).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement fought at or over; empty in the open field"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the attacking side"
+        },
+        {
+          "name": "defender",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the defending side"
+        },
+        {
+          "name": "winner",
+          "kind": "Text",
+          "entity": false,
+          "description": "attacker | defender | none"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party fought in it"
+        },
+        {
+          "name": "playerWon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's side won"
+        },
+        {
+          "name": "battleType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's map event type: FieldBattle, Raid, Siege, SallyOut, …"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroKilled",
+      "category": "heroes",
+      "common": true,
+      "description": "A hero died (battle, execution, old age, …).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "victim"
+      ],
+      "fields": [
+        {
+          "name": "victim",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who died"
+        },
+        {
+          "name": "killer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "who killed them; empty for natural deaths"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's KillCharacterActionDetail: DiedInBattle, Executed, DiedOfOldAge, …"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "villageLooted",
+      "category": "raids",
+      "common": true,
+      "description": "A village raid finished and the village is now looted.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "village"
+      ],
+      "fields": [
+        {
+          "name": "village",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the looted village"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroWounded",
+      "category": "battle",
+      "common": true,
+      "description": "A hero's health dropped into the wounded state (companion knocked out in a fight; there is no heal event).",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who became wounded"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "battleStarted",
+      "category": "battle",
+      "common": false,
+      "description": "A single battle on an engagement started on the map; sides and place known, no outcome yet.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "attacker",
+        "defender",
+        "settlement"
+      ],
+      "fields": [
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "the attacking party"
+        },
+        {
+          "name": "defender",
+          "kind": "Party",
+          "entity": true,
+          "description": "the defending party"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement the battle is fought for; empty in the open field"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "mapEventStarted",
+      "category": "battle",
+      "common": false,
+      "description": "A battle, raid or siege started anywhere in the world, before any fighting.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker",
+        "defender"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement fought at or over; empty in the open field"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the attacking side"
+        },
+        {
+          "name": "defender",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the defending side"
+        },
+        {
+          "name": "winner",
+          "kind": "Text",
+          "entity": false,
+          "description": "attacker | defender | none"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party fought in it"
+        },
+        {
+          "name": "playerWon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's side won"
+        },
+        {
+          "name": "battleType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's map event type: FieldBattle, Raid, Siege, SallyOut, …"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "mapEventEnded",
+      "category": "battle",
+      "common": false,
+      "description": "A battle, raid or siege anywhere in the world ended, after its casualties, prisoners and loot were committed.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker",
+        "defender"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement fought at or over; empty in the open field"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the attacking side"
+        },
+        {
+          "name": "defender",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the defending side"
+        },
+        {
+          "name": "winner",
+          "kind": "Text",
+          "entity": false,
+          "description": "attacker | defender | none"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party fought in it"
+        },
+        {
+          "name": "playerWon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's side won"
+        },
+        {
+          "name": "battleType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's map event type: FieldBattle, Raid, Siege, SallyOut, …"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerDesertedBattle",
+      "category": "battle",
+      "common": false,
+      "description": "The player abandoned a battle in progress, leaving men behind.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "menLeft",
+          "kind": "Int",
+          "entity": false,
+          "description": "the number of men left behind to escape"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroHitInCombat",
+      "category": "battle",
+      "common": false,
+      "description": "A hero landed one blow during a battle — fires for every hero blow in every battle (very chatty; gate on `fatal`).",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "victim",
+        "attacker",
+        "attackerParty"
+      ],
+      "fields": [
+        {
+          "name": "attacker",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who landed the blow"
+        },
+        {
+          "name": "victim",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero hit; empty when a common troop took the blow"
+        },
+        {
+          "name": "attackerParty",
+          "kind": "Party",
+          "entity": true,
+          "description": "the side the attacker fights on"
+        },
+        {
+          "name": "fatal",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the blow was lethal"
+        },
+        {
+          "name": "xp",
+          "kind": "Int",
+          "entity": false,
+          "description": "the experience the game awarded for the blow"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "siegeStarted",
+      "category": "battle",
+      "common": false,
+      "description": "A siege began on the map, before it runs.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement being besieged"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the besiegers"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerJoinedSiege",
+      "category": "battle",
+      "common": false,
+      "description": "The player entered a siege battle, simulated or real.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "crimeRatingChanged",
+      "category": "crime",
+      "common": false,
+      "description": "The player's crime rating with a faction changed (`delta` > 0 = a new crime; < 0 = daily decay, a fine or peace).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "faction"
+      ],
+      "fields": [
+        {
+          "name": "faction",
+          "kind": "Faction",
+          "entity": true,
+          "description": "the kingdom or clan whose crime rating with the player changed"
+        },
+        {
+          "name": "delta",
+          "kind": "Number",
+          "entity": false,
+          "description": "the change in the rating"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroBecameFugitive",
+      "category": "crime",
+      "common": false,
+      "description": "A hero became a fugitive (a dismissed or released companion now wanders on its own).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who went fugitive"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "banditPartyRecruited",
+      "category": "crime",
+      "common": false,
+      "description": "The player's party absorbed a defeated bandit party just before it is destroyed.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the bandit party whose men joined the player"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "trackSpotted",
+      "category": "party",
+      "common": false,
+      "description": "The player's party spotted a fresh track on the map.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "partyName",
+          "kind": "Text",
+          "entity": false,
+          "description": "display name of the party that left the track"
+        },
+        {
+          "name": "partyType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's PartyTypeEnum of the tracked party (Bandit, Caravan, …)"
+        },
+        {
+          "name": "men",
+          "kind": "Int",
+          "entity": false,
+          "description": "the tracked party's total strength"
+        },
+        {
+          "name": "isEnemy",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the track belongs to a hostile party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "trackLost",
+      "category": "party",
+      "common": false,
+      "description": "A track the player had spotted expired and faded from the map.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "partyName",
+          "kind": "Text",
+          "entity": false,
+          "description": "display name of the party that left the track"
+        },
+        {
+          "name": "partyType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's PartyTypeEnum of the tracked party (Bandit, Caravan, …)"
+        },
+        {
+          "name": "men",
+          "kind": "Int",
+          "entity": false,
+          "description": "the tracked party's total strength"
+        },
+        {
+          "name": "isEnemy",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the track belongs to a hostile party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroCaptured",
+      "category": "prisoners",
+      "common": true,
+      "description": "A hero was taken prisoner anywhere in the world (by the player or by anyone else).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "prisoner",
+        "captor"
+      ],
+      "fields": [
+        {
+          "name": "prisoner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero taken captive"
+        },
+        {
+          "name": "captor",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that took them"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroReleased",
+      "category": "prisoners",
+      "common": true,
+      "description": "A captive hero was set free (`detail` says how); a freed player companion goes fugitive at the same moment.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "prisoner",
+        "formerCaptor",
+        "formerCaptorFaction"
+      ],
+      "fields": [
+        {
+          "name": "prisoner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the released hero"
+        },
+        {
+          "name": "formerCaptor",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that was holding them"
+        },
+        {
+          "name": "formerCaptorFaction",
+          "kind": "Faction",
+          "entity": true,
+          "description": "the faction that was holding them"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's EndCaptivityDetail: Ransom, ReleasedAfterPeace, ReleasedAfterBattle, ReleasedAfterEscape, ReleasedByChoice, Death, ReleasedByCompensation"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "prisonersChangedInSettlement",
+      "category": "prisoners",
+      "common": false,
+      "description": "The prisoners of a settlement's dungeon changed; the event does not say who moved them.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "prisoner"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement whose dungeon changed"
+        },
+        {
+          "name": "prisoner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the single hero moved; empty when a whole prison roster moved"
+        },
+        {
+          "name": "takenFromDungeon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true: prisoners left the dungeon; false: prisoners were added"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "ransomOfferCancelled",
+      "category": "prisoners",
+      "common": false,
+      "description": "A pending ransom offer fell through (2-day expiry or the notification was ignored; killed/released captives have their own triggers).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "captive"
+      ],
+      "fields": [
+        {
+          "name": "captive",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the captive the ransom offer concerned"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "villageRaidStarted",
+      "category": "raids",
+      "common": false,
+      "description": "A raid on a village started; it is being burned and looted now.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "village"
+      ],
+      "fields": [
+        {
+          "name": "village",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the village being raided"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemsLooted",
+      "category": "raids",
+      "common": false,
+      "description": "A raiding party hauled one batch of goods out of a village; fires many times while the raid loots.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "looter"
+      ],
+      "fields": [
+        {
+          "name": "looter",
+          "kind": "Party",
+          "entity": true,
+          "description": "the raiding party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "townRebellionStateChanged",
+      "category": "raids",
+      "common": false,
+      "description": "A town entered or left its rebellious state — open rebellion only follows if loyalty keeps falling.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town whose rebellious state changed"
+        },
+        {
+          "name": "rebellious",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true: the town became rebellious; false: it calmed down"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "rebellionSucceeded",
+      "category": "raids",
+      "common": false,
+      "description": "A rebellion won: the settlement is already owned by the rebels when this fires.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "player",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "oldOwner"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement that broke away"
+        },
+        {
+          "name": "oldOwner",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that lost it"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroAboutToBeKilled",
+      "category": "heroes",
+      "common": false,
+      "description": "A hero is about to be killed; fires before heroKilled, while their live party and prison state can still be read.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "victim"
+      ],
+      "fields": [
+        {
+          "name": "victim",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero about to die"
+        },
+        {
+          "name": "killer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "who is killing them; empty for natural deaths"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's KillCharacterActionDetail (same values as in heroKilled)"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "siegeEnded",
+      "category": "siege",
+      "common": true,
+      "description": "A siege is over and its outcome is decided: the last assault or sally failed, the besiegers broke off, and who holds the settlement is settled.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement that was besieged"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the besieger camp"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "siegeBattleEnded",
+      "category": "siege",
+      "common": false,
+      "description": "One battle of a siege ended with a decided winner — an assault, a sally-out or a blockade battle; the siege itself may go on.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "leader"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the besieged settlement this battle was fought at"
+        },
+        {
+          "name": "leader",
+          "kind": "Party",
+          "entity": true,
+          "description": "the acting side's leading party: the besieger camp for an assault, the sallying garrison for a sally-out"
+        },
+        {
+          "name": "leaderWon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true when that leader party's side won this battle"
+        },
+        {
+          "name": "battleType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's MapEvent.BattleTypes for this battle: Siege, SiegeOutside, SallyOut, BlockadeBattle, …"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "siegeAftermathApplied",
+      "category": "siege",
+      "common": false,
+      "description": "The victors chose what to do with a town or castle they had just taken; the prosperity, loyalty, building and gold losses happen right after this.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker",
+        "previousOwner"
+      ],
+      "fields": [
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that took it"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town or castle that was taken"
+        },
+        {
+          "name": "aftermath",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's SiegeAftermathAction.SiegeAftermath: Devastate, Pillage or ShowMercy"
+        },
+        {
+          "name": "previousOwner",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that held it until now; this is the one that lost the fight"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "blockadeStarted",
+      "category": "siege",
+      "common": false,
+      "description": "A port was sealed off by a naval blockade: its garrison is cut off from the sea and can only be resupplied by a sally.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the blockaded port settlement"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the blockading besieger camp"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "blockadeEnded",
+      "category": "siege",
+      "common": false,
+      "description": "The naval blockade of a port was lifted — the besiegers lost their ships or a blockade battle was decided; the siege itself may continue on land.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the port whose blockade ended"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the besieger camp"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyJoinedSiege",
+      "category": "siege",
+      "common": false,
+      "description": "A party joined a siege camp: the player or one of their clan's parties arriving at the siege works, or any AI besieger reinforcing one.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that joined the siege camp"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyLeftSiege",
+      "category": "siege",
+      "common": false,
+      "description": "A party left the siege camp it was besieging: the player riding off, or the whole camp breaking up at once when the siege is lost.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that left the siege camp"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "villageRaidEnded",
+      "category": "raids",
+      "common": false,
+      "description": "A raid on a village ended with a decided winner; the village is looted when the attackers won, and the loot and casualties are already committed.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker",
+        "defender"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement fought at or over; empty in the open field"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the attacking side"
+        },
+        {
+          "name": "defender",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the defending side"
+        },
+        {
+          "name": "winner",
+          "kind": "Text",
+          "entity": false,
+          "description": "attacker | defender | none"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party fought in it"
+        },
+        {
+          "name": "playerWon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's side won"
+        },
+        {
+          "name": "battleType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's map event type: FieldBattle, Raid, Siege, SallyOut, …"
+        },
+        {
+          "name": "winnerSide",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's BattleSideEnum winner of the raid battle: Attacker, Defender or None"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "volunteersForced",
+      "category": "raids",
+      "common": false,
+      "description": "A forced levying of men at a settlement ended; when the attackers won the men are already taken, otherwise the levy was driven off.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker",
+        "defender"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement fought at or over; empty in the open field"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the attacking side"
+        },
+        {
+          "name": "defender",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the defending side"
+        },
+        {
+          "name": "winner",
+          "kind": "Text",
+          "entity": false,
+          "description": "attacker | defender | none"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party fought in it"
+        },
+        {
+          "name": "playerWon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's side won"
+        },
+        {
+          "name": "battleType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's map event type: FieldBattle, Raid, Siege, SallyOut, …"
+        },
+        {
+          "name": "winnerSide",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's BattleSideEnum winner of the fight over the levy: Attacker, Defender or None"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "suppliesForced",
+      "category": "raids",
+      "common": false,
+      "description": "A forced collection of supplies at a settlement ended; when the attackers won the supplies are already taken.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "attacker",
+        "defender"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement fought at or over; empty in the open field"
+        },
+        {
+          "name": "attacker",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the attacking side"
+        },
+        {
+          "name": "defender",
+          "kind": "Party",
+          "entity": true,
+          "description": "leading party of the defending side"
+        },
+        {
+          "name": "winner",
+          "kind": "Text",
+          "entity": false,
+          "description": "attacker | defender | none"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party fought in it"
+        },
+        {
+          "name": "playerWon",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's side won"
+        },
+        {
+          "name": "battleType",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's map event type: FieldBattle, Raid, Siege, SallyOut, …"
+        },
+        {
+          "name": "winnerSide",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's BattleSideEnum winner of the fight over the supplies: Attacker, Defender or None"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "prisonersTaken",
+      "category": "prisoners",
+      "common": false,
+      "description": "The player's party took a batch of common captives and the party screen was closed (hero captives are reported by heroCaptured).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "prisonersReleased",
+      "category": "prisoners",
+      "common": false,
+      "description": "The player deliberately released a batch of common captives; releasing for a ransom or a peace deal is not reported here.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "prisonersRecruited",
+      "category": "prisoners",
+      "common": false,
+      "description": "The player's party filled its own ranks with captives (they were prisoners before this moment).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "prisonersSold",
+      "category": "prisoners",
+      "common": false,
+      "description": "A party sold its captives to another party; selling to a tavern or a market has no buyer party.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "seller"
+      ],
+      "fields": [
+        {
+          "name": "seller",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that had the captives"
+        },
+        {
+          "name": "buyer",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that bought them; empty when they went to a tavern or a market"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "prisonersDonated",
+      "category": "prisoners",
+      "common": false,
+      "description": "Captives were handed over to a settlement's dungeon: the player donating prisoners, captives sold to same-faction lords, or the captives of a party that disbanded.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement whose dungeon took the captives"
+        },
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party the transfer is tied to: the receiving party for a player donate, the seller for a sell, the disbanding party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "lootDistributed",
+      "category": "battle",
+      "common": false,
+      "description": "A winning party received its share of the defeated party's loot; the player's own share is booked here, before the loot screen opens.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "winner",
+        "defeated"
+      ],
+      "fields": [
+        {
+          "name": "winner",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that received the loot"
+        },
+        {
+          "name": "defeated",
+          "kind": "Party",
+          "entity": true,
+          "description": "the defeated party the loot came from"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "lootCollected",
+      "category": "battle",
+      "common": false,
+      "description": "A winner party's whole loot pile from the defeated party was collected; for the player this fires just before the loot screen hands the items over.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "winner"
+      ],
+      "fields": [
+        {
+          "name": "winner",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that collected the loot"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "hideoutSpotted",
+      "category": "crime",
+      "common": false,
+      "description": "A hideout appeared on the campaign map because a party discovered it; in the vanilla raisers that party is always the player's.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerParty",
+      "subjectFields": [
+        "spotter",
+        "hideout"
+      ],
+      "fields": [
+        {
+          "name": "spotter",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that found it (the player's main party in the vanilla raisers)"
+        },
+        {
+          "name": "hideout",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the hideout settlement that is now visible"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "hideoutEmptied",
+      "category": "crime",
+      "common": false,
+      "description": "A hideout went empty and was removed from the map: its last band left or was destroyed. The event does not say who cleared it.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the hideout settlement that went empty"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "troopsDeserted",
+      "category": "party",
+      "common": false,
+      "description": "Men deserted a party overnight (low morale or unpaid wages); they are already gone from its roster.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that lost men"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "armyCreated",
+      "category": "army",
+      "common": false,
+      "description": "A new army formed somewhere in the world: it has already gathered its parties under a leader when this fires.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "leader",
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "leader",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party leading the army"
+        },
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom that raised the army"
+        },
+        {
+          "name": "playerAttached",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party is part of the army"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "armyDispersed",
+      "category": "army",
+      "common": false,
+      "description": "An army broke up — `reason` says why (cohesion spent, objective finished, leader gone, player captured, …); the member parties can still be read here.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "leader",
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "leader",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that led the army"
+        },
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom the army belonged to"
+        },
+        {
+          "name": "reason",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's ArmyDispersionReason: CohesionDepleted, ObjectiveFinished, PlayerTakenPrisoner, NotEnoughParty, …"
+        },
+        {
+          "name": "playerAttached",
+          "kind": "Bool",
+          "entity": false,
+          "description": "the player's party was part of the army"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyAttached",
+      "category": "army",
+      "common": false,
+      "description": "A party merged into another party on the map: the player joined a lord's host, or a party joined the player's host; it also fires again on save-load re-linking.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "host"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that merged"
+        },
+        {
+          "name": "host",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party it merged into"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyCreated",
+      "category": "party",
+      "common": false,
+      "description": "A new party appeared on the campaign map — most are vanilla caravan, quest or spawn parties, so gate on the owning clan.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the newly created party, fully readable"
+        },
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan owning the party; empty for parties without a clan owner"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyDestroyed",
+      "category": "party",
+      "common": false,
+      "description": "A party was destroyed or disbanded — the last moment its rosters, prisoners and leader are still readable, before the party is wiped.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "destroyer",
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party being destroyed"
+        },
+        {
+          "name": "destroyer",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that destroyed it; empty when the party disbanded"
+        },
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that owned the destroyed party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "settlementEntered",
+      "category": "settlements",
+      "common": true,
+      "description": "The player entered a settlement (town, castle, village or hideout) with the party; walking in alone as a character fires too, then `party` is empty and `hero` is the player hero.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "party",
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement entered"
+        },
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that entered"
+        },
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero on whose behalf the entry happened"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "settlementLeft",
+      "category": "settlements",
+      "common": false,
+      "description": "The player's party left a settlement it was inside; leaving alone as a character fires nothing.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement being left"
+        },
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party leaving"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "villageStateChanged",
+      "category": "settlements",
+      "common": false,
+      "description": "A village's raid state changed somewhere in the world — gate on `newState`: BeingRaided for a raid starting, ForcedForVolunteers/ForcedForSupplies for a levy, Looted when the village was burned out.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "village",
+        "raider"
+      ],
+      "fields": [
+        {
+          "name": "village",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the village whose state changed"
+        },
+        {
+          "name": "oldState",
+          "kind": "Text",
+          "entity": false,
+          "description": "previous state: Normal, BeingRaided, ForcedForVolunteers, ForcedForSupplies, Looted"
+        },
+        {
+          "name": "newState",
+          "kind": "Text",
+          "entity": false,
+          "description": "new state, same values"
+        },
+        {
+          "name": "raider",
+          "kind": "Party",
+          "entity": true,
+          "description": "the raiding or levying party behind the state change"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "buildingLevelChanged",
+      "category": "settlements",
+      "common": false,
+      "description": "A building in a town went up or down a level — normally construction finishing (+1) in a player-owned fief, or an incident/cheat removing a level.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town or castle whose building changed level"
+        },
+        {
+          "name": "building",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's StringId of the building type"
+        },
+        {
+          "name": "level",
+          "kind": "Int",
+          "entity": false,
+          "description": "the building's level after the change"
+        },
+        {
+          "name": "delta",
+          "kind": "Int",
+          "entity": false,
+          "description": "the level change: usually +1 or -1, incident effects move it by more"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "alleyOwnerChanged",
+      "category": "crime",
+      "common": false,
+      "description": "The owner of a town alley (hideout) changed: the player took or lost one, or a gang leader got it; the alley itself is not identifiable in the payload.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "newOwner",
+        "oldOwner"
+      ],
+      "fields": [
+        {
+          "name": "newOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who owns the alley now; empty when the alley went empty"
+        },
+        {
+          "name": "oldOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the previous owner; empty when the alley was empty"
+        },
+        {
+          "name": "areaState",
+          "kind": "Text",
+          "entity": false,
+          "description": "the alley's occupancy now: OccupiedByPlayer, OccupiedByGangLeader, Empty"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "alleyTakenOver",
+      "category": "crime",
+      "common": false,
+      "description": "The player took over a hideout at the end of an alley fight; the takeover and the roster moves are already applied.",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "alleyCleared",
+      "category": "crime",
+      "common": false,
+      "description": "After winning an alley fight the player chose to leave the hideout empty instead of taking it over.",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "tournamentStarted",
+      "category": "tournaments",
+      "common": false,
+      "description": "A tournament was scheduled at a town somewhere on the map and is already active; it fires even when the player is nowhere near.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town holding the tournament"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "tournamentFinished",
+      "category": "tournaments",
+      "common": true,
+      "description": "A town's tournament ended and the prize was paid: the player won only if they attended (`winner.isPlayer`), otherwise the winner is one of the simulated participants.",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "winner",
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "winner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who won the tournament"
+        },
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town that held the tournament"
+        },
+        {
+          "name": "prize",
+          "kind": "Item",
+          "entity": true,
+          "description": "the prize item given to the winner"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "tournamentCancelled",
+      "category": "tournaments",
+      "common": false,
+      "description": "A town's scheduled tournament was cancelled because the town was under siege when its end-time came; it fires instead of tournamentFinished.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town whose tournament was cancelled"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerEliminatedFromTournament",
+      "category": "tournaments",
+      "common": false,
+      "description": "The player lost their match and is out of the town's tournament for good; the lost bet is already paid.",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "round",
+          "kind": "Int",
+          "entity": false,
+          "description": "the tournament round the player lost"
+        },
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town holding the tournament"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "sceneEntered",
+      "category": "scenes",
+      "common": false,
+      "description": "A mission scene the player is in started and is fully live — combat, siege, town, tavern or hideout visit, conversation — and it fires for every one of them.",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "conversationEnded",
+      "category": "scenes",
+      "common": false,
+      "description": "A vanilla game conversation ended and its characters are about to be released; it fires for every conversation in the game.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "goldGiven",
+      "category": "economy",
+      "common": false,
+      "description": "Gold moved between a hero or party and another hero or party — loot, ransoms, bribes, quest rewards and more; it fires for every payment in the world, so gate strictly on the player side and `transactionId`.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "giver",
+        "giverParty",
+        "receiver",
+        "receiverParty"
+      ],
+      "fields": [
+        {
+          "name": "giver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "hero side of the payer; empty for party-only transactions"
+        },
+        {
+          "name": "giverParty",
+          "kind": "Party",
+          "entity": true,
+          "description": "party side of the payer; empty for hero-only transactions"
+        },
+        {
+          "name": "receiver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "hero side of the payee"
+        },
+        {
+          "name": "receiverParty",
+          "kind": "Party",
+          "entity": true,
+          "description": "party side of the payee"
+        },
+        {
+          "name": "amount",
+          "kind": "Int",
+          "entity": false,
+          "description": "the gold that moved, already clamped to what the payer could pay"
+        },
+        {
+          "name": "transactionId",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's id of what was paid for (loot, ransom, bribe, quest reward, …)"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemGiven",
+      "category": "economy",
+      "common": false,
+      "description": "A hero or party handed an item stack to another hero or party (quest trades, gifts); only transfers that ran through a party roster fire.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "giver",
+        "giverParty",
+        "receiver",
+        "receiverParty"
+      ],
+      "fields": [
+        {
+          "name": "giver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "hero side of the giver; empty for party-only transfers"
+        },
+        {
+          "name": "giverParty",
+          "kind": "Party",
+          "entity": true,
+          "description": "party side of the giver"
+        },
+        {
+          "name": "receiver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "hero side of the receiver"
+        },
+        {
+          "name": "receiverParty",
+          "kind": "Party",
+          "entity": true,
+          "description": "party side of the receiver"
+        },
+        {
+          "name": "item",
+          "kind": "Item",
+          "entity": true,
+          "description": "the item that was handed over"
+        },
+        {
+          "name": "amount",
+          "kind": "Int",
+          "entity": false,
+          "description": "how many of the item moved"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyJoinedArmy",
+      "category": "party",
+      "common": false,
+      "description": "A party joined an army somewhere in the world — the player's party joined a host, or a clan's war party went off to war; it is already a member when this fires.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that joined the army"
+        },
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan owning that party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyLeftArmy",
+      "category": "party",
+      "common": false,
+      "description": "A party stopped being part of an army — it left on its own, the leader dismissed it, or it was destroyed; it is already gone from the army when this fires.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that left the army"
+        },
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan owning that party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyLeaderChanged",
+      "category": "party",
+      "common": false,
+      "description": "A party got a new leader hero — a companion took over a party or lost one; `oldLeader` is the hero who gave it up. On load, every re-assigned party leader fires at once, so skip that first wave.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "newLeader",
+        "oldLeader",
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that changed leader"
+        },
+        {
+          "name": "newLeader",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero leading it now"
+        },
+        {
+          "name": "oldLeader",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who just stepped down; empty on first assignment"
+        },
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan owning the party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyDisbandStarted",
+      "category": "party",
+      "common": false,
+      "description": "A party was told to disband: over the following days it walks to the nearest friendly fortification and melts away; its roster is still intact here.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party that began disbanding"
+        },
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan owning that party"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyDisbanded",
+      "category": "party",
+      "common": false,
+      "description": "The disbanding party reached a friendly fortification and is about to be removed from the map — its full roster and leader hero can still be read right here, the last reaction slot before the end.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party",
+        "settlement",
+        "clan",
+        "leader"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party being disbanded, roster still readable"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the fortification where it melts away"
+        },
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that owned the party; empty for clanless parties"
+        },
+        {
+          "name": "leader",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the party's leader hero — the companion whose party just ended, if it was a companion's"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "partyVisibilityChanged",
+      "category": "party",
+      "common": false,
+      "description": "A party became visible or invisible on the campaign map (spotted, fog of war, going to ground). At game start every party fires once — ignore that wave.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party whose visibility changed; a settlement's garrison party can come through here too"
+        },
+        {
+          "name": "visible",
+          "kind": "Bool",
+          "entity": false,
+          "description": "whether the party can be seen on the map now"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerRecruitedTroops",
+      "category": "party",
+      "common": false,
+      "description": "The player recruited `number` men of `troop` into their party; fires once per troop type per batch, so one hiring spree fires many times.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "troop",
+          "kind": "Text",
+          "entity": false,
+          "description": "string id of the recruited troop type"
+        },
+        {
+          "name": "number",
+          "kind": "Int",
+          "entity": false,
+          "description": "how many of that troop type came in this unit batch"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroRecruitedTroops",
+      "category": "party",
+      "common": false,
+      "description": "A hero recruited troops for their party somewhere in the world — keep the subject filter (player, companion) or this fires for every AI lord's hiring too.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "recruiter",
+        "settlement",
+        "source"
+      ],
+      "fields": [
+        {
+          "name": "recruiter",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who recruited"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement of the recruitment; empty for on-map mercenary recruiting"
+        },
+        {
+          "name": "source",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the men came from (volunteers out of a lord's retinue); empty when none"
+        },
+        {
+          "name": "troop",
+          "kind": "Text",
+          "entity": false,
+          "description": "string id of the recruited troop type"
+        },
+        {
+          "name": "number",
+          "kind": "Int",
+          "entity": false,
+          "description": "how many of that troop type in this batch"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "troopsUpgraded",
+      "category": "party",
+      "common": false,
+      "description": "The player upgraded `number` men from `oldTroop` to `newTroop` on the party screen; the whole batch lands when Done is clicked, nothing fires for AI upgrades.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "oldTroop",
+          "kind": "Text",
+          "entity": false,
+          "description": "string id of the troop type the men came from"
+        },
+        {
+          "name": "newTroop",
+          "kind": "Text",
+          "entity": false,
+          "description": "string id of the troop type they became"
+        },
+        {
+          "name": "number",
+          "kind": "Int",
+          "entity": false,
+          "description": "how many men were upgraded"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "troopsGivenToSettlement",
+      "category": "party",
+      "common": false,
+      "description": "A party left men behind as garrison when it entered a friendly fortification outside the player clan — typically a companion's garrison contribution; the lone main party never fires this.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "giver",
+        "settlement"
+      ],
+      "fields": [
+        {
+          "name": "giver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who gave the troops; the event only carries the hero side of the giving party"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement that received the garrison"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerPartyStarving",
+      "category": "party",
+      "common": false,
+      "description": "The player's party is still without food another day — fires once per day from the second day of a starvation streak on, right after the daily starvation morale hit.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerStartedTalkFromMenu",
+      "category": "scenes",
+      "common": false,
+      "description": "The player started a conversation with `hero` from the map or a location menu — hook for a companion to react when addressed directly or when the player talks to someone nearby.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the player is about to talk to"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerJoinedTournament",
+      "category": "tournaments",
+      "common": false,
+      "description": "The player entered the tournament in `town` from its menu; `isParticipant` is true when they compete themselves, false when they only start spectating — no bracket has run yet.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town holding the tournament"
+        },
+        {
+          "name": "isParticipant",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true = the player signed up to compete; false = the player began watching"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroCreated",
+      "category": "heroes",
+      "common": false,
+      "description": "A brand-new hero entered the world somewhere — a wanderer appearing in a tavern, a newborn, a notable; it also fires for heroes other mods (and this one) spawn, so filter by who was created.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the newly created hero"
+        },
+        {
+          "name": "bornNaturally",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true only for naturally born newborns; false for wanderers and every factory-created hero"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroActivated",
+      "category": "heroes",
+      "common": false,
+      "description": "A hero woke up into the active world; `previousState` says where they came from — `Fugitive` marks a dismissed companion reappearing in a tavern.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who became active"
+        },
+        {
+          "name": "previousState",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's Hero.CharacterStates they were in before, e.g. Fugitive"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroOccupationChanged",
+      "category": "heroes",
+      "common": false,
+      "description": "A hero's occupation changed — the classic case is a companion granted a fief turning into a lord; the payload carries the old value, the new one is on the hero (`hero.occupation`).",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who changed occupation"
+        },
+        {
+          "name": "oldOccupation",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's Occupation before the change, e.g. Wanderer"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroLeveledUp",
+      "category": "heroes",
+      "common": true,
+      "description": "A hero gained a level, after the game handed out the focus points (and one attribute point every fourth level); fires for the player, companions and AI heroes alike.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who gained the level"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroGainedSkill",
+      "category": "heroes",
+      "common": false,
+      "description": "A hero's skill ticked up one or more whole skill levels — companion skill-up remarks.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero whose skill improved"
+        },
+        {
+          "name": "skill",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's skill id"
+        },
+        {
+          "name": "change",
+          "kind": "Int",
+          "entity": false,
+          "description": "how much the skill rose"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroJoinedParty",
+      "category": "heroes",
+      "common": false,
+      "description": "A hero joined a party on the map — a just-hired wanderer riding out to their lord, a notable joining a caravan or a garrison turning over; it fires everywhere, not only for the player.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero",
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who joined"
+        },
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party they joined"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "companionAdded",
+      "category": "heroes",
+      "common": true,
+      "description": "The player hired a new companion — when this fires the hero is already in the player's clan and party, so greeting lines can reference them directly.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the new companion"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerMetHero",
+      "category": "heroes",
+      "common": false,
+      "description": "The player met a hero for the first time — a conversation happened or the encyclopedia revealed them; first-meeting chatter.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the player met"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerTraitChanged",
+      "category": "player",
+      "common": false,
+      "description": "One of the player's personality traits crossed a level boundary (only at levels, never for trait XP alone); the five that move at runtime are Mercy, Honor, Valor, Generosity and Calculating.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "trait",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's trait id, e.g. Honor"
+        },
+        {
+          "name": "previousLevel",
+          "kind": "Int",
+          "entity": false,
+          "description": "the trait level before (a jump of two levels still fires once)"
+        },
+        {
+          "name": "newLevel",
+          "kind": "Int",
+          "entity": false,
+          "description": "the trait level now, read live from the player hero"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "perkUnlocked",
+      "category": "player",
+      "common": false,
+      "description": "A hero unlocked a perk — usually the player picking one at a level-up; AI heroes open perks too, so check who it was.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who opened the perk"
+        },
+        {
+          "name": "perk",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's perk id"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "relationChanged",
+      "category": "clan",
+      "common": false,
+      "description": "The relation between two heroes moved by `change` — a player favor or insult, an emissary mission, a marriage, a new clan leader inheriting the old leader's grudge rows; only the game's own relation actions fire it, direct relation writes do not.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero",
+        "other",
+        "actor",
+        "target"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero whose relation moved (the game reroutes some changes to clan leaders or relatives)"
+        },
+        {
+          "name": "other",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the other hero of the effective pair"
+        },
+        {
+          "name": "change",
+          "kind": "Int",
+          "entity": false,
+          "description": "the relation points gained or lost"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's ChangeRelationDetail: Default or Emissary"
+        },
+        {
+          "name": "actor",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the change was really aimed at; differs from `hero` when the game rerouted it"
+        },
+        {
+          "name": "target",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the other hero of the original pair"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "clanTierIncreased",
+      "category": "clan",
+      "common": false,
+      "description": "A clan reached a higher tier — the player clan growing is the moment for pride or companion-slot banter.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that just gained a tier"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "renownGained",
+      "category": "clan",
+      "common": false,
+      "description": "A clan earned renown — `hero` is the hero whose deed brought it (usually the clan leader), `amount` what was gained; the clan is the one to react.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero whose deed gained the renown, usually the clan leader"
+        },
+        {
+          "name": "amount",
+          "kind": "Int",
+          "entity": false,
+          "description": "the renown gained"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "clanCreated",
+      "category": "clan",
+      "common": false,
+      "description": "A new clan formed — `isCompanion` true means a companion raised to a lord just got a clan of their own; false covers rebel factions, kingdoms struck from within and excommunicated clans.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the new clan; read its leader and kingdom live"
+        },
+        {
+          "name": "isCompanion",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true = a promoted companion's clan; false = rebels, breakaways or excommunicated lords"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "clanChangedKingdom",
+      "category": "clan",
+      "common": false,
+      "description": "A clan joined or left a kingdom — the player clan going mercenary or vassal, joining as a rebel faction or being absorbed by force all fire it; `detail` says exactly which move it was.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan",
+        "oldKingdom",
+        "newKingdom"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that changed kingdom"
+        },
+        {
+          "name": "oldKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom left; empty when a kingdom is founded"
+        },
+        {
+          "name": "newKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom joined; empty when leaving without joining one"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's ChangeKingdomActionDetail: JoinAsMercenary, JoinKingdom, JoinKingdomByDefection, LeaveKingdom, LeaveWithRebellion, LeaveAsMercenary, LeaveByClanDestruction, CreateKingdom, LeaveByKingdomDestruction"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "clanDefected",
+      "category": "clan",
+      "common": false,
+      "description": "A clan defected from one kingdom to another, dragging its parties and fiefs along — the narrower `clanChangedKingdom`; `newKingdom` is empty when it only left.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan",
+        "oldKingdom",
+        "newKingdom"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the defecting clan"
+        },
+        {
+          "name": "oldKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom it left"
+        },
+        {
+          "name": "newKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom it joined; empty if it just left"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "kingdomDecisionProposed",
+      "category": "kingdom",
+      "common": false,
+      "description": "A kingdom's council began a vote on a decision — war, peace, exile and the like; the vote only starts here and the decision may still be cancelled, so treat it as news of the plan, not the result.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom whose council is voting"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true when the player is the proposer or sponsor of this vote"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "kingdomDecisionCancelled",
+      "category": "kingdom",
+      "common": false,
+      "description": "A kingdom council vote was cancelled before or during — a participant died, the proposer left the kingdom, or a queued plan went stale; it will never conclude.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom that dropped the decision"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true when the player was proposer or sponsor"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "kingdomDecisionConcluded",
+      "category": "kingdom",
+      "common": false,
+      "description": "A kingdom council finished voting and its outcome is already in force — a decided war has been declared by the time this fires.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom that decided"
+        },
+        {
+          "name": "playerInvolved",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true when the player was proposer, sponsor or a supporter in the vote"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "warDeclared",
+      "category": "kingdom",
+      "common": true,
+      "description": "A war started between any two kingdoms or clans — including the player clan going hostile on its own; `attacker` and `defender` can be a kingdom or a clan, so test both against the player's clan and kingdom.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "attacker",
+        "defender"
+      ],
+      "fields": [
+        {
+          "name": "attacker",
+          "kind": "Faction",
+          "entity": true,
+          "description": "the faction that declared — a kingdom or a clan"
+        },
+        {
+          "name": "defender",
+          "kind": "Faction",
+          "entity": true,
+          "description": "the faction war was declared on"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's DeclareWarDetail: how the war was started"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "peaceMade",
+      "category": "kingdom",
+      "common": true,
+      "description": "Two warring factions made peace — a full kingdom war or a single clan's private feud; `detail` is `ByKingdomDecision` when a council vote ended it.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "firstFaction",
+        "secondFaction"
+      ],
+      "fields": [
+        {
+          "name": "firstFaction",
+          "kind": "Faction",
+          "entity": true,
+          "description": "one side of the peace — a kingdom or a clan"
+        },
+        {
+          "name": "secondFaction",
+          "kind": "Faction",
+          "entity": true,
+          "description": "the other side"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's MakePeaceDetail: Default or ByKingdomDecision"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "rulingClanChanged",
+      "category": "kingdom",
+      "common": false,
+      "description": "A kingdom got a new ruling clan — an elected new ruler or a clan that seized power; the event only carries the old clan, so the payload reads the new ruler from the kingdom itself.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "kingdom",
+        "oldRuler",
+        "newRuler"
+      ],
+      "fields": [
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom with a new ruler"
+        },
+        {
+          "name": "oldRuler",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that loses the crown"
+        },
+        {
+          "name": "newRuler",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan taking over, read live from the kingdom"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "kingdomDestroyed",
+      "category": "kingdom",
+      "common": false,
+      "description": "A kingdom was destroyed and is about to be gone — its clans have already left it and read their new kingdoms live; comment on the end of a realm.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom being destroyed; read its last state now"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "romanticStateChanged",
+      "category": "family",
+      "common": false,
+      "description": "The romance between two heroes moved a step — courting, betrothal, marriage or a broken affair; in vanilla one of the two is the player.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "firstHero",
+        "secondHero"
+      ],
+      "fields": [
+        {
+          "name": "firstHero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "one hero of the pair; the order is not fixed, match either field"
+        },
+        {
+          "name": "secondHero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the other hero of the pair"
+        },
+        {
+          "name": "level",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's Romance.RomanceLevelEnum: the romance step reached"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroesAboutToMarry",
+      "category": "family",
+      "common": false,
+      "description": "Two heroes are about to marry — the wedding action has begun but relations, households and clan moves are not applied yet; a companion is marryable only while single, so react before their status changes. The argument order may be swapped.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "firstHero",
+        "secondHero"
+      ],
+      "fields": [
+        {
+          "name": "firstHero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "one of the two heroes about to wed"
+        },
+        {
+          "name": "secondHero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the other one"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "childEducationCompleted",
+      "category": "family",
+      "common": false,
+      "description": "A child hero finished an education stage — it fires at every stage of a childhood, not only the last, and `age` is the child's age at that moment.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "child"
+      ],
+      "fields": [
+        {
+          "name": "child",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the child who finished the stage"
+        },
+        {
+          "name": "age",
+          "kind": "Int",
+          "entity": false,
+          "description": "the child's age at the moment it fires"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroCameOfAge",
+      "category": "family",
+      "common": false,
+      "description": "A young hero came of age — a child's last stage ended and the adult world opens up.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who came of age"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroGrewOutOfInfancy",
+      "category": "family",
+      "common": false,
+      "description": "An infant hero grew out of infancy into childhood.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the child who grew out of infancy"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroBecameTeenager",
+      "category": "family",
+      "common": false,
+      "description": "A child hero became a teenager — the game may reroll their personality traits right at this moment.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the child who became a teenager"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "kingdomCreated",
+      "category": "kingdom",
+      "common": false,
+      "description": "A new kingdom was founded somewhere in the world — a clan raised its banner; the player clan founding its own realm is the special case, and the outcome (ruling clan, its clans) is already set when this fires.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the new kingdom"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "tradeAgreementSigned",
+      "category": "kingdom",
+      "common": false,
+      "description": "Two kingdoms signed a trade agreement with each other — kingdom news bark.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "firstKingdom",
+        "secondKingdom"
+      ],
+      "fields": [
+        {
+          "name": "firstKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "one kingdom of the pair"
+        },
+        {
+          "name": "secondKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the other kingdom of the pair"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "allianceStarted",
+      "category": "kingdom",
+      "common": false,
+      "description": "Two kingdoms became allies — the receiving kingdom has already accepted, and wars against their enemies follow right after.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "proposerKingdom",
+        "receiverKingdom"
+      ],
+      "fields": [
+        {
+          "name": "proposerKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom that proposed the alliance"
+        },
+        {
+          "name": "receiverKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom that accepted it"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "allianceEnded",
+      "category": "kingdom",
+      "common": false,
+      "description": "The alliance between two kingdoms ended — it expired, the two allies went to war with each other, or one of the kingdoms was destroyed.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "firstKingdom",
+        "secondKingdom"
+      ],
+      "fields": [
+        {
+          "name": "firstKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "one kingdom of the pair"
+        },
+        {
+          "name": "secondKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the other kingdom of the pair"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "callToWarStarted",
+      "category": "kingdom",
+      "common": false,
+      "description": "One kingdom asked its ally to join a war against `targetKingdom` — the agreement is made but the war is not declared yet; when `calledKingdom` is the player's realm it is being dragged in.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "callingKingdom",
+        "calledKingdom",
+        "targetKingdom"
+      ],
+      "fields": [
+        {
+          "name": "callingKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom asking its ally to join the war"
+        },
+        {
+          "name": "calledKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the ally being asked"
+        },
+        {
+          "name": "targetKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom the war will be declared on"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "callToWarEnded",
+      "category": "kingdom",
+      "common": false,
+      "description": "A call-to-war agreement ended — usually straight after the war was declared, later by expiry, by peace, or when the alliance behind it ended.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "callingKingdom",
+        "calledKingdom",
+        "targetKingdom"
+      ],
+      "fields": [
+        {
+          "name": "callingKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom that had asked"
+        },
+        {
+          "name": "calledKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the ally that had been asked"
+        },
+        {
+          "name": "targetKingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom the call to war was against"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "tributeEarned",
+      "category": "kingdom",
+      "common": false,
+      "description": "A clan received gold tribute from a faction it is at war with — fires for every clan in the daily income pass, so gate on the player clan for a purse bark.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan",
+        "payer"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that got the gold"
+        },
+        {
+          "name": "payer",
+          "kind": "Faction",
+          "entity": true,
+          "description": "the clan or kingdom that paid the tribute"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "settlementOwnerChanged",
+      "category": "settlements",
+      "common": true,
+      "description": "A settlement changed hands — taken by siege, or handed over by barter, gift, a king's decision, rebellion, or the old owner's clan being destroyed or leaving its faction.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "newOwner",
+        "oldOwner",
+        "capturer"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement that changed owner"
+        },
+        {
+          "name": "openToClaim",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true when the fortification is now open to claim — the game sets it for changes by siege, clan destruction or the old clan leaving its faction"
+        },
+        {
+          "name": "newOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero of the clan that now owns it; empty when the fief went unassigned"
+        },
+        {
+          "name": "oldOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero of the clan that lost it"
+        },
+        {
+          "name": "capturer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who took it by force; empty for peaceful transfers"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's ChangeOwnerOfSettlementDetail: Default, BySiege, ByBarter, ByLeaveFaction, ByKingDecision, ByGift, ByRebellion, ByClanDestruction"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "governorChanged",
+      "category": "settlements",
+      "common": false,
+      "description": "A town's governor changed — appointed, given up or replaced; on a removal `newGovernor` is empty, and an appointment is followed immediately by `heroGotBusy` with reason BecomeGovernor.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "self",
+        "player",
+        "playerParty",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement",
+        "oldGovernor",
+        "newGovernor"
+      ],
+      "fields": [
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town or castle whose governor changed"
+        },
+        {
+          "name": "oldGovernor",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the governor before; empty on a first appointment"
+        },
+        {
+          "name": "newGovernor",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the new governor; empty when the governor was only removed"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "serviceOfferCancelled",
+      "category": "kingdom",
+      "common": false,
+      "description": "A kingdom's offer to take the player's clan into mercenary or vassal service disappeared before the player decided — it expired or died from war, captivity or a changed allegiance; clicking Decline fires nothing.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "kingdom"
+      ],
+      "fields": [
+        {
+          "name": "kingdom",
+          "kind": "Kingdom",
+          "entity": true,
+          "description": "the kingdom that withdrew the offer"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "mercenaryServiceStarted",
+      "category": "kingdom",
+      "common": false,
+      "description": "A clan went into mercenary service under a kingdom — for the player clan, right after accepting a hire offer; the new kingdom is readable live from the clan.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that entered mercenary service"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's StartMercenaryServiceActionDetail — only ApplyByDefault in 1.4.8"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "mercenaryServiceEnded",
+      "category": "kingdom",
+      "common": false,
+      "description": "A clan's mercenary service ended — it left the kingdom or became a full vassal; for the player clan the hired-sword arc is over.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan that left mercenary service"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's EndMercenaryServiceActionDetail: ApplyByDefault, ApplyByLeavingKingdom, ApplyByBecomingVassal"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "marriageOfferCancelled",
+      "category": "family",
+      "common": false,
+      "description": "A marriage offer to the player's kin was withdrawn — refused, expired, the clans made war, or one of the two was captured or killed; the offer banner vanishes when the game removes it.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "suitor",
+        "maiden"
+      ],
+      "fields": [
+        {
+          "name": "suitor",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who had offered marriage"
+        },
+        {
+          "name": "maiden",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who had been offered marriage"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "childConceived",
+      "category": "family",
+      "common": false,
+      "description": "A hero conceived a child — fires for every couple in the world, so gate on the player clan; `childBorn` follows roughly nine in-game months later.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "mother"
+      ],
+      "fields": [
+        {
+          "name": "mother",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the mother of the unborn child"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "childBorn",
+      "category": "family",
+      "common": true,
+      "description": "A hero gave birth — the in-game birth of newborn children, the player's own family and companions included; the mother can be killed in childbirth right afterwards.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "mother"
+      ],
+      "fields": [
+        {
+          "name": "mother",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who gave birth"
+        },
+        {
+          "name": "stillbornCount",
+          "kind": "Int",
+          "entity": false,
+          "description": "how many of the litter were stillborn; usually 0"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heirSelectionRequested",
+      "category": "clan",
+      "common": false,
+      "description": "The player character just died and the game is asking which clan member takes over — the heir is not chosen yet; the candidate list is not exposed, so pair this with `heirSelected`.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heirSelected",
+      "category": "clan",
+      "common": false,
+      "description": "The new heir of the player clan was chosen after a death — the player character switches right afterwards.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "heir"
+      ],
+      "fields": [
+        {
+          "name": "heir",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero picked as the new heir"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerCharacterAboutToChange",
+      "category": "player",
+      "common": false,
+      "description": "The hero the player controls is about to change — fires before the old hero hands over and while they can still be read.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "oldPlayer",
+        "newPlayer"
+      ],
+      "fields": [
+        {
+          "name": "oldPlayer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero played until now"
+        },
+        {
+          "name": "newPlayer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero played from now on"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "playerCharacterChanged",
+      "category": "player",
+      "common": false,
+      "description": "The player now controls a different hero — `heirSelected` and `clanLeaderChanged` came before; greetings for the new protagonist belong here.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "newPlayer",
+        "oldPlayer",
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "oldPlayer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero played until now"
+        },
+        {
+          "name": "newPlayer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero played from now on"
+        },
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party the new player hero commands"
+        },
+        {
+          "name": "mainPartyChanged",
+          "kind": "Bool",
+          "entity": false,
+          "description": "whether the main party itself changed hands"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "clanLeaderChanged",
+      "category": "clan",
+      "common": false,
+      "description": "A clan got a new leader — succession after a death, the player-chosen heir, or a new clan lord; `newLeader` is already the leader when this fires.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "oldLeader",
+        "newLeader"
+      ],
+      "fields": [
+        {
+          "name": "oldLeader",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the leader before the change; empty on a brand-new clan"
+        },
+        {
+          "name": "newLeader",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the new clan leader"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "clanDestroyed",
+      "category": "clan",
+      "common": false,
+      "description": "A clan was destroyed — its parties, heroes and fiefs are about to be wiped; when the player's clan is destroyed the campaign is effectively over.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan being destroyed; fully readable while this fires"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroChangedClan",
+      "category": "clan",
+      "common": false,
+      "description": "A lord-type hero joined or left a clan — compare `oldClan` and `newClan` for the direction; companions use `companionAdded` / `companionRemoved` instead.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero",
+        "newClan",
+        "oldClan"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who moved"
+        },
+        {
+          "name": "oldClan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan the hero left"
+        },
+        {
+          "name": "newClan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan the hero joined, read live from the hero"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "clanInfluenceChanged",
+      "category": "clan",
+      "common": false,
+      "description": "A clan's influence moved — fires for every clan and every trickle, so gate on the player clan and put a `where` threshold on `change`.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "player",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "player",
+      "subjectFields": [
+        "clan"
+      ],
+      "fields": [
+        {
+          "name": "clan",
+          "kind": "Clan",
+          "entity": true,
+          "description": "the clan whose influence moved"
+        },
+        {
+          "name": "change",
+          "kind": "Number",
+          "entity": false,
+          "description": "influence gained (positive) or lost (negative)"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "companionRemoved",
+      "category": "clan",
+      "common": false,
+      "description": "A companion left the player clan — dismissed, killed, finished by a quest, or turned into a lord; the hero is already off the roster when this fires, so say the goodbye lines here.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "companion"
+      ],
+      "fields": [
+        {
+          "name": "companion",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the companion who left"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's RemoveCompanionDetail: Fire, Death, AfterQuest, ByTurningToLord"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroGotBusy",
+      "category": "heroes",
+      "common": false,
+      "description": "A hero took up a task or role — becoming a governor, emissary, caravan or alley leader, being handed an issue, or starting to travel; the Traveling value fires very often, so filter on `reason`.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who became busy"
+        },
+        {
+          "name": "reason",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's HeroGetsBusyReasons: BecomeGovernor, BecomeEmissary, BecomeCaravanLeader, BecomeAlleyLeader, SolvesIssue, Traveling"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroSharedFood",
+      "category": "heroes",
+      "common": false,
+      "description": "A better-fed hero gave rations to a starving hero of the same army and gained influence for it — gratitude or indignation lines when the player's army is involved.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "supporter",
+        "supported"
+      ],
+      "fields": [
+        {
+          "name": "supporter",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who gave the food"
+        },
+        {
+          "name": "supported",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hungry hero who got the food"
+        },
+        {
+          "name": "influence",
+          "kind": "Number",
+          "entity": false,
+          "description": "the influence the giver earned"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "heroTeleportRequested",
+      "category": "heroes",
+      "common": false,
+      "description": "A hero is about to be teleported on the campaign map — it fires before the move and can still be refused by the game; the typical case is a companion re-placed after being garrisoned or released.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero",
+        "settlement",
+        "party"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who will be teleported"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the settlement teleported to; empty when the target is a party"
+        },
+        {
+          "name": "party",
+          "kind": "Party",
+          "entity": true,
+          "description": "the party teleported to; empty when the target is a settlement"
+        },
+        {
+          "name": "detail",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's TeleportationDetail — immediate or delayed, to a settlement or a party (as governor / party leader)"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "questLogEntryAdded",
+      "category": "quests",
+      "common": false,
+      "description": "A quest wrote a new journal entry the player just received — it fires for every journal line of a quest, not only at acceptance or completion.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "questGiver"
+      ],
+      "fields": [
+        {
+          "name": "questGiver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the quest came from — the player or one of their clan"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "issueLogEntryAdded",
+      "category": "quests",
+      "common": false,
+      "description": "A campaign issue wrote a new journal entry the player just received — issue-arc progress between the issue's own created/resolved beats.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "issueOwner"
+      ],
+      "fields": [
+        {
+          "name": "issueOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the issue belongs to; usually the player"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "barterAccepted",
+      "category": "economy",
+      "common": false,
+      "description": "A barter offer was accepted and the exchange is already applied — heroes, prisoners, items, gold or a fief changed hands; it also fires for lord-to-lord offers, so gate on the player side.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "offerer",
+        "other"
+      ],
+      "fields": [
+        {
+          "name": "offerer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who made the offer"
+        },
+        {
+          "name": "other",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who accepted it"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "barterCancelled",
+      "category": "economy",
+      "common": false,
+      "description": "A barter offer was refused and closed — nothing changed hands; the relation effect of the refusal shows in the relation triggers.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "offerer",
+        "other"
+      ],
+      "fields": [
+        {
+          "name": "offerer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who had made the offer"
+        },
+        {
+          "name": "other",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who refused it"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "portraitOpened",
+      "category": "scenes",
+      "common": false,
+      "description": "The player opened a character portrait pop-up in a settlement or army menu; the campaign is already paused while it is open — idle flavor bark about the inspected hero.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "character"
+      ],
+      "fields": [
+        {
+          "name": "character",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero whose portrait was opened"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "boardGameFinished",
+      "category": "scenes",
+      "common": false,
+      "description": "A board game the player played ended in a win, loss or draw, before the relation and XP consequences are applied; a game the player canceled never fires it.",
+      "polling": false,
+      "inMission": true,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "opponent",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the opponent lord; empty when the opponent agent was not a hero"
+        },
+        {
+          "name": "outcome",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's BoardGameState: Win, Loss or Draw"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "tradeRumorHeard",
+      "category": "scenes",
+      "common": false,
+      "description": "The player asked a caravan captain for trade rumors and a batch of market gossip was heard — the rumor list itself is not in the payload.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "inventoryExchanged",
+      "category": "economy",
+      "common": false,
+      "description": "The player closed a trade, loot or gift screen and all the items have already changed parties; the counterparty gold is settled right after.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "isTrading",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true when the screen was a trade; false for looting, gifting or donating"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemsDiscarded",
+      "category": "economy",
+      "common": false,
+      "description": "The player discarded items from the party inventory (loot mode, or with no other party present); the items are already gone and the payload does not say which ones.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "tradeProfitMade",
+      "category": "economy",
+      "common": false,
+      "description": "The vanilla trade skill counted the expected resale profit of the trade the player just closed, before the gold for it is settled.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "profit",
+          "kind": "Int",
+          "entity": false,
+          "description": "the estimated resale profit of this trade, in gold"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "caravanTradeCompleted",
+      "category": "economy",
+      "common": false,
+      "description": "A caravan finished one daily buy/sell round in a town: its goods, gold and rosters are already updated; it fires for every caravan in the world, so gate on the player's own.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "caravan",
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "caravan",
+          "kind": "Party",
+          "entity": true,
+          "description": "the caravan party that traded"
+        },
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town it bought from or sold to"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "assetIncomeEarned",
+      "category": "economy",
+      "common": false,
+      "description": "The player's clan was paid for one of its assets in the daily income pass: fief taxes, a tribute share, a caravan's profit or a workshop's profit.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "incomeType",
+          "kind": "Text",
+          "entity": false,
+          "description": "what the money came from: Taxes | TributesEarned | Caravan | Workshop"
+        },
+        {
+          "name": "amount",
+          "kind": "Int",
+          "entity": false,
+          "description": "the gold just booked; a tribute site can report a negative amount (the player paid)"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "workshopOwnerChanged",
+      "category": "economy",
+      "common": false,
+      "description": "A workshop changed hands and the price was paid: the player bought or sold one, an heir inherited it, or the old owner died, went bankrupt or lost the town in war.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "owner",
+        "previousOwner"
+      ],
+      "fields": [
+        {
+          "name": "owner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who owns it now; player-side means the clan just gained it"
+        },
+        {
+          "name": "previousOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who owned it until now; player-side means the clan sold or lost it"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "workshopTypeChanged",
+      "category": "economy",
+      "common": false,
+      "description": "The production line of a workshop was switched and the conversion cost was paid; the payload does not say what it produces now.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "owner"
+      ],
+      "fields": [
+        {
+          "name": "owner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who owns the workshop"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemProduced",
+      "category": "economy",
+      "common": false,
+      "description": "A village or a workshop turned goods out into a settlement's store; it fires for every village and workshop in the world each day, so gate on the player's own fiefs.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement"
+      ],
+      "fields": [
+        {
+          "name": "item",
+          "kind": "Item",
+          "entity": true,
+          "description": "the item that was produced"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the village or town whose store received it"
+        },
+        {
+          "name": "amount",
+          "kind": "Int",
+          "entity": false,
+          "description": "how many of the item were produced"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemConsumed",
+      "category": "economy",
+      "common": false,
+      "description": "A workshop consumed its inputs from the town warehouse or bought them on the town market; it fires for every workshop in the world, so gate on the player's own.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "settlement",
+        "playerClan",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "settlement"
+      ],
+      "fields": [
+        {
+          "name": "item",
+          "kind": "Item",
+          "entity": true,
+          "description": "the item that was consumed"
+        },
+        {
+          "name": "settlement",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town whose store lost it"
+        },
+        {
+          "name": "amount",
+          "kind": "Int",
+          "entity": false,
+          "description": "how many of the item were consumed"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemCrafted",
+      "category": "crafting",
+      "common": false,
+      "description": "A weapon the player designed was built at a town forge and is already registered; its tier and category are on the item field, the design itself is not in the payload.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [
+        {
+          "name": "item",
+          "kind": "Item",
+          "entity": true,
+          "description": "the newly crafted weapon"
+        },
+        {
+          "name": "isCraftingOrder",
+          "kind": "Bool",
+          "entity": false,
+          "description": "true when it was built to fill a crafting order; then it is not added to the party inventory"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "craftingPartUnlocked",
+      "category": "crafting",
+      "common": false,
+      "description": "The player unlocked a new weapon-smithing part with smithing XP; the part itself is not in the payload.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemSmelted",
+      "category": "crafting",
+      "common": false,
+      "description": "A hero at the smithing screen melted down a piece of equipment; the materials and the XP are already granted, the stamina cost comes after.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who smelted it — the hero selected in the crafting screen, not always the player"
+        },
+        {
+          "name": "item",
+          "kind": "Item",
+          "entity": true,
+          "description": "the item that was melted down"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "itemsRefined",
+      "category": "crafting",
+      "common": false,
+      "description": "Raw materials were refined into other goods and added to the party inventory, and the XP was granted; the input/output formula is not in the payload.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "hero"
+      ],
+      "fields": [
+        {
+          "name": "hero",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who refined — the hero selected in the crafting screen"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "craftingOrderCompleted",
+      "category": "crafting",
+      "common": false,
+      "description": "A weapon-smithing order was completed: its gold reward, quality bonus and perk relation effects are already applied and the order is gone from the town.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "settlement",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "completer",
+        "town"
+      ],
+      "fields": [
+        {
+          "name": "town",
+          "kind": "Settlement",
+          "entity": true,
+          "description": "the town whose forge ran the order"
+        },
+        {
+          "name": "item",
+          "kind": "Item",
+          "entity": true,
+          "description": "the item delivered for the order"
+        },
+        {
+          "name": "completer",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero who finished it; the player when no crafting hero was chosen"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "questStarted",
+      "category": "quests",
+      "common": false,
+      "description": "A quest the player took started and is now ongoing in the quest log; 1.4.8 keeps one global quest list, so every quest is the player's.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "questGiver"
+      ],
+      "fields": [
+        {
+          "name": "questGiver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the quest came from — a lord who offered it, or a clan member"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "questCompleted",
+      "category": "quests",
+      "common": true,
+      "description": "A quest the player had ended — succeeded, timed out, failed, was betrayed or cancelled — and its outcome hook has run.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "questGiver"
+      ],
+      "fields": [
+        {
+          "name": "questGiver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the quest came from"
+        },
+        {
+          "name": "outcome",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's QuestCompleteDetails: Success, Timeout, Fail, FailWithBetrayal or Cancel"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "issueCreated",
+      "category": "quests",
+      "common": false,
+      "description": "A new campaign issue appeared for a hero — an ongoing problem with a quest or a troop-sending solution attached; it fires across the world, so gate on the player's side.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "issueOwner"
+      ],
+      "fields": [
+        {
+          "name": "issueOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the issue belongs to; usually the player"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "issueUpdated",
+      "category": "quests",
+      "common": false,
+      "description": "A campaign issue the player is dealing with moved one step forward: its quest started, troops were sent, or it ended in success, failure, betrayal, timeout or an AI lord's solution.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "self",
+        "player",
+        "playerParty",
+        "playerClan",
+        "companion",
+        "hero",
+        "any"
+      ],
+      "defaultSubject": "playerClan",
+      "subjectFields": [
+        "issueOwner",
+        "solver"
+      ],
+      "fields": [
+        {
+          "name": "issueOwner",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero the issue belongs to; usually the player"
+        },
+        {
+          "name": "outcome",
+          "kind": "Text",
+          "entity": false,
+          "description": "the game's IssueUpdateDetails step, e.g. PlayerStartedIssueQuestClassicSolution, IssueFinishedWithSuccess, IssueTimedOut"
+        },
+        {
+          "name": "solver",
+          "kind": "Hero",
+          "entity": true,
+          "description": "the hero credited at this step; empty unless the player had tried before or a quest was started"
+        }
+      ],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "incidentResolved",
+      "category": "quests",
+      "common": false,
+      "description": "The player chose an option in a map incident pop-up and every consequence of that choice (gold, party morale, relations) has already run.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    },
+    {
+      "name": "persuasionProgressed",
+      "category": "scenes",
+      "common": false,
+      "description": "The player used one option in a persuasion conversation and its result was rolled, rerolled by perks and applied; neither the option nor its result is in the payload.",
+      "polling": false,
+      "inMission": false,
+      "subjects": [
+        "any"
+      ],
+      "defaultSubject": "any",
+      "subjectFields": [],
+      "fields": [],
+      "params": [],
+      "deliveries": [
+        "conversation",
+        "notification",
+        "inquiry"
+      ]
+    }
+  ]
+}
