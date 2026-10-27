@@ -24,6 +24,8 @@ public sealed class ConversationDefinition
     /// <summary>Node ids the conversation starts with: player options (hub) or NPC alternatives (greeting).</summary>
     [JsonProperty("start")] public List<string>? Start { get; set; }
     [JsonProperty("nodes")] public List<ConversationNode>? Nodes { get; set; }
+    /// <summary>Started by a game event instead of the menu (M11): then no <see cref="Entry"/>, and <see cref="Start"/> holds npc nodes.</summary>
+    [JsonProperty("trigger")] public TriggerSpec? Trigger { get; set; }
 }
 
 public sealed class ConversationNode : ISpokenLine

@@ -44,7 +44,14 @@ public static class DialogChecks
             }
 
             var isPlayer = PlayerSlots.IsKnown(line.Slot);
-            if (!DialogSlots.IsKnown(line.Slot))
+            if (line.Trigger != null)
+            {
+                // A triggered line is not part of a fixed dialog (M11 G6).
+                if (line.Slot != null)
+                    issues.Add(ValidationIssue.Error(IssueCodes.InvalidTrigger, folder,
+                        LineRef(line) + " has both 'slot' and 'trigger'; a triggered line has no slot."));
+            }
+            else if (!DialogSlots.IsKnown(line.Slot))
                 issues.Add(ValidationIssue.Error(IssueCodes.UnknownSlot, folder, line.Slot == null
                     ? LineRef(line) + " is missing 'slot'."
                     : $"Dialog slot '{line.Slot}' is not a known companion slot (known: {string.Join(", ", DialogSlots.All)})."));
@@ -97,6 +104,7 @@ public static class DialogChecks
                 ValidateAudio(node, folder, issues);
         }
 
+        TriggerChecks.Validate(package, issues);
         SelectionChecks.Validate(package, issues);
         LangChecks.Validate(folder, textLines, package.Languages, issues);
     }
