@@ -29,12 +29,20 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
     /// <summary>Written conversation variables ("owner.name=value", VariableStore), saved as a List&lt;string&gt; (GAME_MAP Q20).</summary>
     private List<string> _variables = new List<string>();
 
+    /// <summary>Trigger queue, cooldowns and day counters (TriggerEngine.Save, M11 G9), saved as a List&lt;string&gt;.</summary>
+    private List<string> _triggerQueue = new List<string>();
+
+    /// <summary>Polling latches and last values (TriggerPolling.Save, M11 G9).</summary>
+    private List<string> _triggerPolling = new List<string>();
+
     public AlbocariusCompanionsCampaignBehavior() : base(BehaviorId)
     {
         // One behavior per campaign: a new game starts with no markers and default variables, a load replaces them in SyncData.
         ModRuntime.Flags = new Core.Dialogs.ConversationFlags();
         ModRuntime.Variables = new Core.Dialogs.VariableStore(ModRuntime.Registry.All);
         ModRuntime.HeroOf = id => _companionHeroes != null && _companionHeroes.TryGetValue(id, out var hero) ? hero : null;
+        ModRuntime.ActiveTrigger = null;
+        ModRuntime.Triggers = new TriggerHost(ModRuntime.Registry.All);
     }
 
     public override void RegisterEvents()
@@ -44,7 +52,13 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
         CampaignEvents.OnGameLoadFinishedEvent.AddNonSerializedListener(this, OnGameLoadFinished);
         CampaignEvents.OnSessionLaunchedEvent.AddNonSerializedListener(this, OnSessionLaunched);
         // Selection picks live for one talk (M9 F2, GAME_MAP Q20 addendum).
-        CampaignEvents.ConversationEnded.AddNonSerializedListener(this, _ => ModRuntime.Selections.Clear());
+        CampaignEvents.ConversationEnded.AddNonSerializedListener(this, _ =>
+        {
+            ModRuntime.Selections.Clear();
+            ModRuntime.ActiveTrigger = null;
+        });
+        // Trigger listeners only for triggers loaded content uses (M11 G11).
+        Safe.Run(ModRuntime.Log, "register trigger listeners", () => ModRuntime.Triggers?.RegisterEvents(this));
         // Commoner made a lord costs relation (M10, GAME_MAP Q44).
         CampaignEvents.OnClanCreatedEvent.AddNonSerializedListener(this, (clan, isCompanion) =>
             Safe.Run(ModRuntime.Log, "noble relation change", () => NoblePenalty.OnClanCreated(clan, isCompanion)));
@@ -86,6 +100,17 @@ internal sealed class AlbocariusCompanionsCampaignBehavior : CampaignBehaviorBas
                 var imported = ModRuntime.Variables.ImportLegacyFlags(ModRuntime.Flags.TakeLegacyFlags(), ModRuntime.Log.Warning);
                 ModRuntime.Log.Info($"Conversation variables loaded: {restored}" + (imported > 0 ? $", {imported} imported from old flags." : "."));
             }
+
+            // Saves made before M11 have no trigger keys: the fields keep their empty initializers (GAME_MAP Q9).
+            if (dataStore.IsSaving && ModRuntime.Triggers != null)
+            {
+                _triggerQueue = ModRuntime.Triggers.SaveQueue();
+                _triggerPolling = ModRuntime.Triggers.SavePolling();
+            }
+            dataStore.SyncData("_triggerQueue", ref _triggerQueue);
+            dataStore.SyncData("_triggerPolling", ref _triggerPolling);
+            if (dataStore.IsLoading)
+                ModRuntime.Triggers?.Load(_triggerQueue, _triggerPolling);
         });
     }
 

@@ -30,6 +30,7 @@ internal static class ConsoleCommands
         {
             var result = DebugCommands.Set(ModRuntime.Variables, args);
             ModRuntime.Log.Info($"Console albocarius.set {string.Join(" ", args)} -> {result}");
+            ModRuntime.Triggers?.VariablesChanged(); // varCrossed (spec checklist 6)
             return result;
         });
 
@@ -52,6 +53,31 @@ internal static class ConsoleCommands
             if (args.Count == 3)
                 ModRuntime.Log.Info($"Console albocarius.relation {string.Join(" ", args)} -> {result}");
             return result;
+        });
+
+    /// <summary>M11 T7: fire a trigger now, e.g. <c>albocarius.fire heroKilled victim=lord_1_1 detail=Executed</c>.</summary>
+    [CommandLineFunctionality.CommandLineArgumentFunction("fire", Group)]
+    public static string Fire(List<string> args) =>
+        InCampaign("albocarius.fire", () =>
+        {
+            var result = ModRuntime.Triggers?.FireFromConsole(args) ?? "Triggers are not running.";
+            ModRuntime.Log.Info($"Console albocarius.fire {string.Join(" ", args)} -> {result}");
+            return result;
+        });
+
+    [CommandLineFunctionality.CommandLineArgumentFunction("queue", Group)]
+    public static string Queue(List<string> args) =>
+        InCampaign("albocarius.queue", () => ModRuntime.Triggers?.QueueText() ?? "Triggers are not running.");
+
+    [CommandLineFunctionality.CommandLineArgumentFunction("clearcooldowns", Group)]
+    public static string ClearCooldowns(List<string> args) =>
+        InCampaign("albocarius.clearcooldowns", () =>
+        {
+            if (ModRuntime.Triggers == null)
+                return "Triggers are not running.";
+            ModRuntime.Triggers.ClearCooldowns();
+            ModRuntime.Log.Info("Console albocarius.clearcooldowns");
+            return "Trigger cooldowns and today's counters cleared.";
         });
 
     /// <summary>Variables exist per campaign, so every command needs a running one.</summary>

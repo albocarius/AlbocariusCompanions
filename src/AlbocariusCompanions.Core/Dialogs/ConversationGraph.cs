@@ -32,7 +32,8 @@ public static class ConversationGraph
         var edges = new List<ConversationEdge>();
         var sentencePrefix = TokenPrefix(companionId) + conversation.Id + ":";
 
-        var entryToken = conversation.Entry == ConversationRules.EntryGreeting ? StartToken : HubToken;
+        // Greetings and triggered conversations (M11) open with the companion speaking; hub conversations are menu options.
+        var entryToken = conversation.Entry == ConversationRules.EntryGreeting || conversation.Trigger != null ? StartToken : HubToken;
         foreach (var id in conversation.Start ?? new List<string>())
             if (id != null && nodes.TryGetValue(id, out var node))
                 edges.Add(new ConversationEdge(sentencePrefix + "start:" + id, entryToken, OutputToken(companionId, node), node,

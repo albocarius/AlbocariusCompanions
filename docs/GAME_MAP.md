@@ -5471,3 +5471,72 @@ source path and symbol are checked by `tests/AlbocariusCompanions.Acceptance/Api
 | `ConversationManager.OneToOneConversationHero` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` | Q18 | the hero being talked to |
 | `ConversationSentence.Id` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationSentence.cs` | Q18 | vanilla sentence id → slot |
 | `ConversationSentence.IsPlayer` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationSentence.cs` | Q18 | only NPC sentences are replaced |
+| `Hero.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q4 | payload hero culture (M11) |
+| `Hero.Clan` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q21 | payload hero clan / player-clan flag (M11) |
+| `Hero.Occupation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q2 | payload hero occupation (M11) |
+| `Hero.GovernorOf` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q45 | governor role (M11) |
+| `Hero.CharacterObject` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Hero.cs` | Q25 | map conversation partner (M11) |
+| `CharacterObject.HeroObject` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CharacterObject.cs` | Q37 | hero behind a CharacterObject event argument (M11) |
+| `Clan.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Clan.cs` | Q40 | payload clan culture (M11) |
+| `Kingdom.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Kingdom.cs` | Q40 | payload kingdom name (M11) |
+| `Kingdom.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Kingdom.cs` | Q40 | payload kingdom culture (M11) |
+| `Kingdom.Leader` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Kingdom.cs` | Q40 | payload kingdom leader (M11) |
+| `IFaction.IsKingdomFaction` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IFaction.cs` | Q39 | payload faction kind (M11) |
+| `IFaction.Leader` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IFaction.cs` | Q39 | payload faction leader (M11) |
+| `IFaction.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IFaction.cs` | Q39 | payload faction culture (M11) |
+| `IFaction.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/IFaction.cs` | Q39 | payload faction name (M11) |
+| `Settlement.Culture` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | payload settlement culture (M11) |
+| `Settlement.IsTown` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | payload settlement kind (M11) |
+| `Settlement.IsCastle` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | payload settlement kind (M11) |
+| `Settlement.IsVillage` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q3 | payload settlement kind (M11) |
+| `Settlement.IsHideout` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q36 | payload settlement kind (M11) |
+| `Settlement.OwnerClan` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q44 | payload owner clan / player-clan flag (M11) |
+| `Settlement.Find` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q43 | nearSettlement target; console ids (M11) |
+| `Settlement.GatePosition` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Settlements/Settlement.cs` | Q43 | nearSettlement distance (M11) |
+| `MobileParty.Name` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q37 | payload party name (M11) |
+| `MobileParty.LeaderHero` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q45 | payload party leader; roles (M11) |
+| `MobileParty.ActualClan` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q44 | payload party clan (M11) |
+| `MobileParty.IsMainParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q23 | payload player-party flag (M11) |
+| `MobileParty.IsCaravan` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q45 | caravan leader role (M11) |
+| `MobileParty.MapEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q25 | delivery: no conversation during a map event (M11) |
+| `MobileParty.Position` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q43 | nearSettlement distance (M11) |
+| `MobileParty.IsCurrentlyAtSea` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q25 | delivery: no map conversation at sea (M11) |
+| `MobileParty.All` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/MobileParty.cs` | Q37 | console party ids (M11) |
+| `PartyBase.MobileParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` | Q35 | PartyBase argument → mobile party (M11) |
+| `PartyBase.MainParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` | Q23 | player side; map conversation player data (M11) |
+| `PartyBase.Side` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Party/PartyBase.cs` | Q23 | playerWon (M11) |
+| `MapEvent.MapEventSettlement` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEvent.cs` | Q23 | MapEvent payload settlement (M11) |
+| `MapEvent.AttackerSide` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEvent.cs` | Q23 | MapEvent payload attacker (M11) |
+| `MapEvent.DefenderSide` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEvent.cs` | Q23 | MapEvent payload defender (M11) |
+| `MapEvent.WinningSide` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEvent.cs` | Q23 | MapEvent payload winner (M11) |
+| `MapEvent.IsPlayerMapEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEvent.cs` | Q23 | MapEvent payload playerInvolved (M11) |
+| `MapEvent.EventType` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEvent.cs` | Q23 | MapEvent payload battleType (M11) |
+| `MapEventSide.LeaderParty` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.MapEvents/MapEventSide.cs` | Q23 | side leader party (M11) |
+| `BattleSideEnum` | `decomp/TaleWorlds.Core/TaleWorlds.Core/BattleSideEnum.cs` | Q23 | winner side (M11) |
+| `ItemObject.ItemType` | `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemObject.cs` | Q29 | payload item type (M11) |
+| `ItemObject.Name` | `decomp/TaleWorlds.Core/TaleWorlds.Core/ItemObject.cs` | Q29 | payload item name (M11) |
+| `CampaignVec2.Distance` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignVec2.cs` | Q43 | nearSettlement distance (M11) |
+| `CampaignTime.Now` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignTime.cs` | Q27 | trigger clock (M11) |
+| `CampaignTime.ToHours` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignTime.cs` | Q27 | trigger clock in hours (M11) |
+| `CampaignEvents.HourlyTickEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q43 | internal hourly tick: polling + delivery (M11) |
+| `CampaignEvents.DailyTickEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q41 | internal daily tick: daily + varCrossed (M11) |
+| `CampaignEvents.HeroKilledEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | heroKilled trigger (M11) |
+| `CampaignEvents.OnPlayerBattleEndEvent` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | playerBattleEnded trigger (M11) |
+| `CampaignEvents.VillageLooted` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` | Q35 | villageLooted trigger (M11) |
+| `GameStateManager.Current` | `decomp/TaleWorlds.Core/TaleWorlds.Core/GameStateManager.cs` | Q25 | delivery: active state (M11) |
+| `GameStateManager.ActiveState` | `decomp/TaleWorlds.Core/TaleWorlds.Core/GameStateManager.cs` | Q25 | delivery: map state check (M11) |
+| `MapState` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.GameState/MapState.cs` | Q25 | delivery: on the map (M11) |
+| `Campaign.ConversationManager` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` | Q25 | delivery: no conversation in progress (M11) |
+| `ConversationManager.IsConversationInProgress` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationManager.cs` | Q25 | delivery: no conversation in progress (M11) |
+| `Campaign.IssueManager` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` | Q47 | quest alternative role (M11) |
+| `IssueManager.IssueSolvingCompanionList` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Issues/IssueManager.cs` | Q47 | quest alternative role (M11) |
+| `Campaign.GetCampaignBehavior` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/Campaign.cs` | Q47 | alley behavior lookup (M11) |
+| `IAlleyCampaignBehavior.IsHeroAlleyLeaderOfAnyPlayerAlley` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.CampaignBehaviors/IAlleyCampaignBehavior.cs` | Q47 | alley leader role (M11) |
+| `CampaignMapConversation.OpenConversation` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/CampaignMapConversation.cs` | Q25 | conversation delivery (M11) |
+| `ConversationCharacterData` | `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem.Conversation/ConversationCharacterData.cs` | Q25 | map conversation participants (M11) |
+| `InformationManager.ShowInquiry` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` | Q26 | inquiry delivery, 1–2 options (M11) |
+| `InformationManager.IsAnyInquiryActive` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InformationManager.cs` | Q26 | delivery: no pop-up open (M11) |
+| `InquiryData` | `decomp/TaleWorlds.Library/TaleWorlds.Library/InquiryData.cs` | Q26 | standard pop-up data (M11) |
+| `MBInformationManager.ShowMultiSelectionInquiry` | `decomp/TaleWorlds.Core/TaleWorlds.Core/MBInformationManager.cs` | Q26 | inquiry delivery, 3+ options (M11) |
+| `MultiSelectionInquiryData` | `decomp/TaleWorlds.Core/TaleWorlds.Core/MultiSelectionInquiryData.cs` | Q26 | multi-choice pop-up data (M11) |
+| `InquiryElement` | `decomp/TaleWorlds.Core/TaleWorlds.Core/InquiryElement.cs` | Q26 | multi-choice pop-up rows (M11) |

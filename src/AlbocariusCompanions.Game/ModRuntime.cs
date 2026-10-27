@@ -39,6 +39,12 @@ internal static class ModRuntime
     /// <summary>Companion id → registered template for the current campaign (AfterRegisterSubModuleObjects).</summary>
     public static IReadOnlyDictionary<string, CharacterObject> Templates { get; set; } = new Dictionary<string, CharacterObject>();
 
+    /// <summary>The triggered conversation delivered on the map right now (M11 T5); cleared when the conversation ends.</summary>
+    public static ActiveTrigger? ActiveTrigger { get; set; }
+
+    /// <summary>Trigger engine host of the running campaign (M11); null before the campaign behavior is created.</summary>
+    public static TriggerHost? Triggers { get; set; }
+
     /// <summary>
     /// True for heroes created from a mod template: the template id equals the companion id (GAME_MAP Q2/Q10/Q11).
     /// Null-safe: Hero.Template is null for heroes whose character is not derived from a template.
@@ -48,4 +54,19 @@ internal static class ModRuntime
         var templateId = hero?.Template?.StringId;
         return templateId != null && Registry.Contains(templateId);
     }
+}
+
+/// <summary>A triggered conversation being shown: whose, which, and the payload its conditions read.</summary>
+internal sealed class ActiveTrigger
+{
+    public ActiveTrigger(string companionId, string conversationId, Core.Triggers.TriggerPayload payload)
+    {
+        CompanionId = companionId;
+        ConversationId = conversationId;
+        Payload = payload;
+    }
+
+    public string CompanionId { get; }
+    public string ConversationId { get; }
+    public Core.Triggers.TriggerPayload Payload { get; }
 }
