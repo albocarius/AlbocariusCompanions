@@ -69,3 +69,6 @@
 | 108a-gm-q45-roles-1 | 1 | PASS, verified | ChangeGovernorAction events checked |
 | 108b-gm-q47-roles-2 | 1 | PASS, verified | IAlleyCampaignBehavior, IssueBase.AlternativeSolutionHero, IssueManager.IssueSolvingCompanionList checked |
 | 109-gm-q46-marriage | 1 | timeout → salvaged | complete section written before the limit; wrapped evidence lines joined, 5 symbols fixed; IsLord gate (companions cannot marry) verified |
+| 114a-trigger-registry-q35 | 1 | PASS, reviewed | 25 entries; IFaction args exposed as Clan → orchestrator added FieldKind.Faction and fixed 2 fields |
+| 114b-trigger-registry-q36 | 1 | PASS, reviewed | 22 entries; FlattenedTroopRoster events have no fields (no GAME_MAP member for a count) |
+| 114c-trigger-registry-q37 | 1 | PASS, reviewed | 20 entries; alley events carry no alley field (no GAME_MAP member for the alley's town) |
