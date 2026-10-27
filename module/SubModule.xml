@@ -2,7 +2,7 @@
 <Module>
   <Name value="Albocarius's Companions" />
   <Id value="AlbocariusCompanions" />
-  <Version value="v0.3.1" />
+  <Version value="v0.4.0" />
   <DefaultModule value="false" />
   <ModuleCategory value="Singleplayer" />
   <ModuleType value="Community" />

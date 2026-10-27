@@ -83,3 +83,4 @@
 | 122d-game-adapters-q38 | 1 | PASS, reviewed | 13 adapters; registry from fixed (MobileParty.ActualClan) |
 | 122e-game-adapters-q39 | 1 | PASS, reviewed | 32 adapters |
 | 122f-game-adapters-q40 | 1 | stuck (25 min, no edit, looping on test logic) → stopped, done by orchestrator | 27 adapters |
+| 122g/h-game-adapters-q41/q42 | 0 | done by orchestrator (worker queue too slow after 122f stall) | 7 + 21 adapters |

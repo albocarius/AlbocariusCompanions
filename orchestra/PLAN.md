@@ -22,9 +22,8 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 - M9 done 2026-10-27 (docs/RUN_REPORT_SELECTION_AND_EVENTS.md): selection rule, shadowing, simulator + serve, noble, GAME_MAP
   Q35–Q47 verified, Q34 correction. Version 0.3.0. Core.Tests 281, Acceptance 705. Not tested in game.
 - M10 done 2026-10-27 (docs/RUN_REPORT_NOBLE.md): noble mechanic. Version 0.3.1. Core.Tests 281, Acceptance 709. Not tested in game.
-- M11 in progress (2026-10-27): Core done (registry model, schema, conditions, engine, polling, docs, simulator, console text,
-  morale); Game host/delivery/payload builders done (build-only); registry batches Q35–Q39 done, Q40–Q42 on the worker;
-  then adapter batches 122a–h, sample content 126, report 127. Track I branch orchestra/m11-track-i merged into foundation.
+- M11 done 2026-10-27 (docs/RUN_REPORT_TRIGGERS_DELIVERY.md): 166 triggers, schema, engine, delivery, polling, morale, docs,
+  simulator, console, sample. Version 0.4.0. Core.Tests 281, Acceptance 884. Not tested in game.
 - Helpers live in the session scratchpad only (next_core.sh, winrun.sh, xsdcheck); nothing depends on them.
 
 ## M11 — Triggers & delivery (SPEC_TRIGGERS_DELIVERY)
@@ -78,6 +77,11 @@ Version `0.3.1` → **`0.4.0`** at the end. Plan approved at the gate 2026-10-27
   (`TriggerEngine.UsedTriggers`); the Game subscribes through one gate that takes that set. Tests: Core used-set tests +
   a source/metadata test that adapters subscribe only through the gate.
 
+### M11 Report
+- Built: see docs/RUN_REPORT_TRIGGERS_DELIVERY.md. Tests: Core.Tests 281/281, Acceptance 884/884; validate sample 0/0.
+- Worker: 13 tasks; 12 PASS first attempt, 1 stalled (122f) and redone by the orchestrator.
+- Not verified in game; UNCERTAINs in the report (absent-companion map conversation, start priority 121, multi-choice pop-up).
+
 ### Tasks (owner; worker tasks get acceptance tests first)
 - [x] 112-trigger-names (self) — done: 161 events + 5 polling = 166 triggers, 15 excluded with reasons (UI-raised 4, ticks 4,
   lifecycle 1, duplicates 4, DLC 2). One event = one trigger (TournamentFinished is `tournamentFinished`; filter the winner by subject).
@@ -86,7 +90,7 @@ Version `0.3.1` → **`0.4.0`** at the end. Plan approved at the gate 2026-10-27
   `orchestra/triggers.tsv` (event, old name, new name, category, Q). Feeds 114 and the report table.
 - [x] 113-trigger-core-model (self) — Core `Triggers/`: `TriggerDefinition`, field/entity kinds (G2), `TriggerPayload`,
   subject matching (G3), `where` + `event.` path resolution, `TriggerRegistry` with 3 seed entries. Accept: Acceptance tests.
-- [~] 114a–h-trigger-registry-<category> (worker ×8, one per Q35–Q42) — a–e done (Q35–Q39, PASS first attempt each); f–h next. — registry entries for that batch from
+- [x] 114a–h-trigger-registry-<category> (worker ×8) — all PASS on the first attempt; registry 166 triggers. — registry entries for that batch from
   `triggers.tsv` + the GAME_MAP row (fields from the event signature, subject fields, default subject, `inMission`, common).
   Accept (shared, staged): names = tsv, source member exists in `CampaignEvents.cs`, field count = signature arity, subject
   defaults never `any` for world events, descriptions non-empty.
@@ -105,14 +109,14 @@ Version `0.3.1` → **`0.4.0`** at the end. Plan approved at the gate 2026-10-27
   accessors the adapters use (list given in the task). Accept: ApiIndexTests + a test that every registry source has a row.
 - [x] 122-game-payload-helper (self) — Game `PayloadBuilder` (Hero/Settlement/Clan/Kingdom/IFaction/MobileParty/Item →
   Core entity) + adapter pattern + the battle category adapters as the worked example.
-- [ ] 122a–h-game-adapters-<category> (worker ×8, one per Q; Q35 has 3 worked examples) — one adapter per registry entry of the category, subscribed only when used
+- [x] 122a–h-game-adapters-<category> — a–e worker (PASS first attempt), f worker stalled → self, g–h self. — one adapter per registry entry of the category, subscribed only when used
   (G11). Accept: a metadata/source test that every registry entry has exactly one adapter and builds; review vs GAME_MAP.
 - [x] 123-game-delivery (self) — build-only — engine host behavior: listeners, internal hourly/daily ticks, polling inputs (Q43/Q45/Q47),
   delivery (Q25 map conversation with the triggered start, Q17 message, Q26 inquiries), SyncData (G9). Build-only.
 - [x] 124-console (self) — `albocarius.fire <trigger> [k=v …]`, `.queue`, `.clearcooldowns`; parsing in Core, tested.
 - [x] 125-serve-triggers (self) — protocol ops `fire`, `queue`, `deliver` (docs/SIMULATOR_PROTOCOL.md first); ServeTests.
-- [ ] 126-sample-content (self) — T8 items in test_companion; zero warnings (acceptance).
-- [ ] 127-report (self) — `docs/RUN_REPORT_TRIGGERS_DELIVERY.md` (naming table, excluded UI triggers + checks, constants,
+- [x] 126-sample-content (self) — T8 items in test_companion; zero warnings (acceptance).
+- [x] 127-report (self) — `docs/RUN_REPORT_TRIGGERS_DELIVERY.md` (naming table, excluded UI triggers + checks, constants,
   UNCERTAINs, BLOCKERS, 8-item checklist), version 0.4.0, milestone commit.
 Order: 112 → 113 → (114a–h, 119, 121 on the worker queue) ∥ (116, 117, 118, 120 self) → 115 → 122 → 122a–g → 123 → 124,
 125 → 126 → 127.
