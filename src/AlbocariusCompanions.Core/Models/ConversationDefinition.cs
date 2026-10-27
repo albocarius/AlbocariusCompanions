@@ -74,7 +74,10 @@ public sealed class ConditionSet
     [JsonProperty("any")] public List<ConditionSet>? Any { get; set; }
     /// <summary>A nested condition object that must not hold.</summary>
     [JsonProperty("not")] public ConditionSet? Not { get; set; }
-    /// <summary>The variable compared by <see cref="Min"/>, <see cref="Max"/> or <see cref="Eq"/>.</summary>
+    /// <summary>
+    /// The variable compared by <see cref="Min"/>, <see cref="Max"/> or <see cref="Eq"/>; or <c>event.&lt;path&gt;</c>, a field
+    /// of the trigger that started this content (M11 G4; <c>eq</c> may then also be a string).
+    /// </summary>
     [JsonProperty("var")] public string? Var { get; set; }
     /// <summary>Int variable at least this.</summary>
     [JsonProperty("min")] public int? Min { get; set; }
@@ -82,6 +85,8 @@ public sealed class ConditionSet
     [JsonProperty("max")] public int? Max { get; set; }
     /// <summary>Variable equals this: a JSON bool for a bool variable, an integer for an int one.</summary>
     [JsonProperty("eq")] public JToken? Eq { get; set; }
+    /// <summary>The companion's current role (governor, partyLeader, caravanLeader, alleyLeader, questAlternative; M11 T4).</summary>
+    [JsonProperty("role")] public string? Role { get; set; }
 }
 
 /// <summary>A <c>hasGold</c> condition: one actor's own gold (actors and the game's gold rules: GAME_MAP Q29).</summary>

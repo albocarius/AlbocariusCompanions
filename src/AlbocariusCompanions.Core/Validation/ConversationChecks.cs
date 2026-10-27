@@ -4,6 +4,7 @@ using System.Linq;
 using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Rules;
+using AlbocariusCompanions.Core.Triggers;
 
 namespace AlbocariusCompanions.Core.Validation;
 
@@ -220,7 +221,7 @@ public static class ConversationChecks
         when != null && (when.Met != null || when.Hired != null || when.InParty != null || when.MinRelation != null ||
             when.MaxRelation != null || when.MinGold != null || when.HasGold != null || when.HasItem != null ||
             when.Flags?.Count > 0 || when.NotFlags?.Count > 0 ||
-            when.All?.Any(IsSet) == true || when.Any != null || when.Not != null || when.Var != null);
+            when.All?.Any(IsSet) == true || when.Any != null || when.Not != null || when.Var != null || when.Role != null);
 
     private static void ReportUnreachable(ConversationDefinition conversation, Dictionary<string, ConversationNode> byId, string folder,
         string name, List<ValidationIssue> issues)
@@ -322,6 +323,8 @@ public static class ConversationChecks
             Bad($"'var' '{when.Var}': use either 'eq' or 'min'/'max'.");
         if (when.Min > when.Max)
             Bad($"'var' '{when.Var}': min {when.Min} is greater than max {when.Max}.");
+        if (when.Role != null && !TriggerRegistry.Roles.Contains(when.Role))
+            Bad($"role '{when.Role}' is unknown; use one of: {string.Join(", ", TriggerRegistry.Roles)}.");
 
         void Nested(List<ConditionSet>? list, string key)
         {

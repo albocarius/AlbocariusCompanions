@@ -177,6 +177,10 @@ Relation ≤ 20: both hold, `coin_refuse` wins by priority; above 20 only `coin_
 - `flags` (bool variables that must all be true), `notFlags` (bool variables that must all be false; a name may not be in both);
 - `var` + `min` / `max` (int variable within the bounds, min ≤ max) or `var` + `eq` (equals: `true`/`false` for a bool, a
   whole number for an int); `min`/`max`/`eq` need a `var`, `eq` is not combined with `min`/`max`;
+- `var: "event.<path>"` + `eq` / `min` / `max`: a field of the trigger that started this content (triggered content only;
+  see "Triggers"), e.g. `{ "var": "event.village.culture", "eq": "vlandia" }`; `eq` is text, `true`/`false` or a number as
+  the field needs, `min`/`max` only on number fields. Checked when the trigger fires and again at delivery;
+- `role`: the companion's current role, one of `governor`, `partyLeader`, `caravanLeader`, `alleyLeader`, `questAlternative`;
 - `all: [ … ]` (every object holds), `any: [ … ]` (at least one holds), `not: { … }` (the object does not hold); each element
   is again a condition object, nestable; `all`/`any` may not be empty.
 

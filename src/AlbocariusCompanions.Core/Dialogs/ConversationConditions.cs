@@ -70,7 +70,12 @@ public static class ConversationConditions
         foreach (var flag in when.NotFlags ?? new List<string>())
             if (context.GetVariable(flag) != 0)
                 return false;
-        if (when.Var != null)
+        if (when.Var != null && TriggerConditions.IsEventReference(when.Var))
+        {
+            if (!TriggerConditions.EventHolds(when, (context as ITriggerContext)?.Event))
+                return false;
+        }
+        else if (when.Var != null)
         {
             var value = context.GetVariable(when.Var) ?? 0;
             if (when.Min is { } min && value < min)
@@ -80,6 +85,8 @@ public static class ConversationConditions
             if (when.Eq != null && VariableUses.TypeOf(when.Eq) != null && value != VariableUses.ValueOf(when.Eq))
                 return false;
         }
+        if (when.Role != null && (context as ITriggerContext)?.Role != when.Role)
+            return false;
         foreach (var nested in when.All ?? new List<ConditionSet>())
             if (nested != null && !Evaluate(nested, context))
                 return false;

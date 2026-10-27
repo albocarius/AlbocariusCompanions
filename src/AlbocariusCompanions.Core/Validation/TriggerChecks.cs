@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using AlbocariusCompanions.Core.Dialogs;
 using AlbocariusCompanions.Core.Models;
 using AlbocariusCompanions.Core.Rules;
 using AlbocariusCompanions.Core.Triggers;
@@ -19,6 +20,14 @@ public static class TriggerChecks
     public static void Validate(CompanionPackage package, List<ValidationIssue> issues)
     {
         var folder = package.FolderName;
+        foreach (var conversation in package.Conversations)
+            ValidateEventConditions(conversation.Trigger,
+                new[] { conversation.When }.Concat((conversation.Nodes ?? new List<ConversationNode>()).Select(n => n?.When)),
+                $"Conversation '{conversation.Id ?? "(no id)"}'", folder, issues);
+        foreach (var line in package.Dialogs?.Lines ?? new List<DialogLine>())
+            if (line != null)
+                ValidateEventConditions(line.Trigger, new[] { line.When }, $"Line '{line.Id ?? "(no id)"}'", folder, issues);
+
         foreach (var conversation in package.Conversations.Where(c => c.Trigger != null))
         {
             var where = $"Conversation '{conversation.Id ?? "(no id)"}'";
@@ -34,6 +43,34 @@ public static class TriggerChecks
             if (line.Trigger.Delivery != null && line.Trigger.Delivery != DeliveryRules.Notification)
                 issues.Add(ValidationIssue.Error(IssueCodes.InvalidTrigger, folder,
                     $"{where} is a triggered line with delivery '{line.Trigger.Delivery}'; a line can only be a '{DeliveryRules.Notification}'."));
+        }
+    }
+
+    /// <summary>
+    /// <c>event.&lt;path&gt;</c> conditions (G4): only in triggered content, on a field of its trigger, with a value of the
+    /// field's type (<c>min</c>/<c>max</c> only on numbers).
+    /// </summary>
+    private static void ValidateEventConditions(TriggerSpec? spec, IEnumerable<ConditionSet?> conditions, string where, string folder,
+        List<ValidationIssue> issues)
+    {
+        TriggerRegistry.TryGet(spec?.On, out var trigger);
+        foreach (var c in conditions.SelectMany(TriggerConditions.EventConditions))
+        {
+            void Error(string message) => issues.Add(ValidationIssue.Error(IssueCodes.InvalidCondition, folder, $"{where}: '{c.Var}' {message}"));
+            if (spec == null)
+            {
+                Error("reads a trigger field, but this content has no 'trigger'.");
+                continue;
+            }
+            if (trigger == null)
+                continue; // the unknown trigger is reported already
+            var kind = trigger.KindOfPath(TriggerConditions.PathOf(c.Var!));
+            if (kind == null)
+                Error($"is not a field of '{trigger.Name}'; fields: {string.Join(", ", trigger.Fields.Select(f => f.Name))}.");
+            else if (c.Eq != null && !ValueFits(kind.Value, c.Eq))
+                Error($"needs a {KindName(kind.Value)} 'eq'.");
+            else if ((c.Min != null || c.Max != null) && kind != FieldKind.Int && kind != FieldKind.Number)
+                Error("is not a number; use 'eq'.");
         }
     }
 
