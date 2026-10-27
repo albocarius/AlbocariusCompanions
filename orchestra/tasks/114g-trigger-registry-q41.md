@@ -20,7 +20,7 @@ react to game events (orchestra/SPEC_TRIGGERS_DELIVERY.md T1). This is data only
   `MapEventFields` in TriggerRegistry.cs; worked examples in TriggerRegistry.Q35.cs), the `## Q41 — Campaign events catalog 7 (time, lifecycle, quests)` section of
   `docs/GAME_MAP.md` (the row at the tsv `line` gives signature, raise site, filter, notes), and Q23/Q32 rows it refers to.
   `decomp/TaleWorlds.CampaignSystem/TaleWorlds.CampaignSystem/CampaignEvents.cs` for the exact signature.
-- Edit: ONLY `src/AlbocariusCompanions.Core/Triggers/TriggerRegistry.Q41.cs`.
+- Edit: ONLY `src/AlbocariusCompanions.Core/Triggers/TriggerRegistry.Q41.cs`, and `docs/TRIGGERS.md` only by regenerating it (below).
 
 ## How to write an entry
 ```csharp
@@ -46,6 +46,11 @@ new TriggerDefinition("<name>", "<category>", "<one line: what happened, for aut
 - **inMission**: true only when the GAME_MAP raise site is inside a mission/scene (battle, tournament, alley fight,
   Mission*/Agent* classes); false for map/campaign code.
 - **description**: one plain line for mod authors (what happened, from the player's point of view where it matters).
+
+## Regenerate the docs (required)
+`docs/TRIGGERS.md` is generated from the registry and a test compares it. After your edits:
+`dotnet build AlbocariusCompanions.sln && dotnet tools/AlbocariusCompanions.Cli/bin/Debug/net8.0/AlbocariusCompanions.Cli.dll docs triggers docs/TRIGGERS.md`
+Never edit docs/TRIGGERS.md by hand.
 
 ## Check
 `dotnet build AlbocariusCompanions.sln && dotnet test AlbocariusCompanions.sln --no-build` — in particular

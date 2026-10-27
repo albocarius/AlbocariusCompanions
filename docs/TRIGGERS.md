@@ -4,7 +4,7 @@
      trigger registry (src/AlbocariusCompanions.Core/Triggers). Do not edit by hand. -->
 
 A conversation or a slot-free line with a `trigger` is started by the game (see docs/SCHEMA.md, "Triggers"). This page
-lists every trigger: 30 in total, grouped by category, with the subjects it accepts, its payload
+lists every trigger: 112 in total, grouped by category, with the subjects it accepts, its payload
 fields (usable in `where` and in `event.<field>` conditions) and an example.
 
 ## Subjects
@@ -49,17 +49,77 @@ Other kinds: Int (whole number), Number (decimal), Bool (`true`/`false`), Text (
 
 ## Common triggers
 
+- [`companionAdded`](#companionadded) — The player hired a new companion — when this fires the hero is already in the player's clan and party, so greeting lines can reference them directly.
 - [`daily`](#daily) — Once per in-game day; combine with `chance` for random comments.
 - [`heroCaptured`](#herocaptured) — A hero was taken prisoner anywhere in the world (by the player or by anyone else).
 - [`heroKilled`](#herokilled) — A hero died (battle, execution, old age, …).
+- [`heroLeveledUp`](#heroleveledup) — A hero gained a level, after the game handed out the focus points (and one attribute point every fourth level); fires for the player, companions and AI heroes alike.
 - [`heroReleased`](#heroreleased) — A captive hero was set free (`detail` says how); a freed player companion goes fugitive at the same moment.
 - [`heroWounded`](#herowounded) — A hero's health dropped into the wounded state (companion knocked out in a fight; there is no heal event).
 - [`nearSettlement`](#nearsettlement) — The player's party came within `radius` of a settlement; fires again only after it went beyond `rearmRadius`.
+- [`peaceMade`](#peacemade) — Two warring factions made peace — a full kingdom war or a single clan's private feud; `detail` is `ByKingdomDecision` when a council vote ended it.
 - [`playerBattleEnded`](#playerbattleended) — A battle the player fought in ended (winner known; casualties and loot not yet counted).
 - [`roleEnded`](#roleended) — A companion left a role.
 - [`roleStarted`](#rolestarted) — A companion took a role (governor, party leader, …).
+- [`settlementEntered`](#settlemententered) — The player entered a settlement (town, castle, village or hideout) with the party; walking in alone as a character fires too, then `party` is empty and `hero` is the player hero.
+- [`siegeEnded`](#siegeended) — A siege is over and its outcome is decided: the last assault or sally failed, the besiegers broke off, and who holds the settlement is settled.
+- [`tournamentFinished`](#tournamentfinished) — A town's tournament ended and the prize was paid: the player won only if they attended (`winner.isPlayer`), otherwise the winner is one of the simulated participants.
 - [`varCrossed`](#varcrossed) — One of this companion's variables crossed `value` in `direction` (up: from below to at-or-above; down: from at-or-above to below).
 - [`villageLooted`](#villagelooted) — A village raid finished and the village is now looted.
+- [`warDeclared`](#wardeclared) — A war started between any two kingdoms or clans — including the player clan going hostile on its own; `attacker` and `defender` can be a kingdom or a clan, so test both against the player's clan and kingdom.
+
+## Category: army
+
+### armyCreated
+
+A new army formed somewhere in the world: it has already gathered its parties under a leader when this fires.
+
+- Source: `CampaignEvents.ArmyCreated`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `player` (matched on `leader`, `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `leader` | Party | the party leading the army |
+| `kingdom` | Kingdom | the kingdom that raised the army |
+| `playerAttached` | Bool | the player's party is part of the army |
+
+```json
+"trigger": { "on": "armyCreated", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### armyDispersed
+
+An army broke up — `reason` says why (cohesion spent, objective finished, leader gone, player captured, …); the member parties can still be read here.
+
+- Source: `CampaignEvents.ArmyDispersed`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `player` (matched on `leader`, `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `leader` | Party | the party that led the army |
+| `kingdom` | Kingdom | the kingdom the army belonged to |
+| `reason` | Text | the game's ArmyDispersionReason: CohesionDepleted, ObjectiveFinished, PlayerTakenPrisoner, NotEnoughParty, … |
+| `playerAttached` | Bool | the player's party was part of the army |
+
+```json
+"trigger": { "on": "armyDispersed", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### partyAttached
+
+A party merged into another party on the map: the player joined a lord's host, or a party joined the player's host; it also fires again on save-load re-linking.
+
+- Source: `CampaignEvents.PartyAttachedAnotherParty`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`, `host`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that merged |
+| `host` | Party | the party it merged into |
+
+```json
+"trigger": { "on": "partyAttached", "subject": "playerClan" }
+```
 
 ## Category: battle
 
@@ -112,6 +172,37 @@ A hero's health dropped into the wounded state (companion knocked out in a fight
 
 ```json
 "trigger": { "on": "heroWounded", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### lootCollected
+
+A winner party's whole loot pile from the defeated party was collected; for the player this fires just before the loot screen hands the items over.
+
+- Source: `CampaignEvents.OnCollectLootsItemsEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `winner`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `winner` | Party | the party that collected the loot |
+
+```json
+"trigger": { "on": "lootCollected", "subject": "playerClan" }
+```
+
+### lootDistributed
+
+A winning party received its share of the defeated party's loot; the player's own share is booked here, before the loot screen opens.
+
+- Source: `CampaignEvents.OnLootDistributedToPartyEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `winner`, `defeated`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `winner` | Party | the party that received the loot |
+| `defeated` | Party | the defeated party the loot came from |
+
+```json
+"trigger": { "on": "lootDistributed", "subject": "playerClan" }
 ```
 
 ### mapEventEnded
@@ -219,7 +310,150 @@ A siege began on the map, before it runs.
 "trigger": { "on": "siegeStarted", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
 ```
 
+## Category: clan
+
+### clanChangedKingdom
+
+A clan joined or left a kingdom — the player clan going mercenary or vassal, joining as a rebel faction or being absorbed by force all fire it; `detail` says exactly which move it was.
+
+- Source: `CampaignEvents.OnClanChangedKingdomEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`, `oldKingdom`, `newKingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the clan that changed kingdom |
+| `oldKingdom` | Kingdom | the kingdom left; empty when a kingdom is founded |
+| `newKingdom` | Kingdom | the kingdom joined; empty when leaving without joining one |
+| `detail` | Text | the game's ChangeKingdomActionDetail: JoinAsMercenary, JoinKingdom, JoinKingdomByDefection, LeaveKingdom, LeaveWithRebellion, LeaveAsMercenary, LeaveByClanDestruction, CreateKingdom, LeaveByKingdomDestruction |
+
+```json
+"trigger": { "on": "clanChangedKingdom", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### clanCreated
+
+A new clan formed — `isCompanion` true means a companion raised to a lord just got a clan of their own; false covers rebel factions, kingdoms struck from within and excommunicated clans.
+
+- Source: `CampaignEvents.OnClanCreatedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the new clan; read its leader and kingdom live |
+| `isCompanion` | Bool | true = a promoted companion's clan; false = rebels, breakaways or excommunicated lords |
+
+```json
+"trigger": { "on": "clanCreated", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### clanDefected
+
+A clan defected from one kingdom to another, dragging its parties and fiefs along — the narrower `clanChangedKingdom`; `newKingdom` is empty when it only left.
+
+- Source: `CampaignEvents.OnClanDefectedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`, `oldKingdom`, `newKingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the defecting clan |
+| `oldKingdom` | Kingdom | the kingdom it left |
+| `newKingdom` | Kingdom | the kingdom it joined; empty if it just left |
+
+```json
+"trigger": { "on": "clanDefected", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### clanTierIncreased
+
+A clan reached a higher tier — the player clan growing is the moment for pride or companion-slot banter.
+
+- Source: `CampaignEvents.ClanTierIncrease`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the clan that just gained a tier |
+
+```json
+"trigger": { "on": "clanTierIncreased", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### relationChanged
+
+The relation between two heroes moved by `change` — a player favor or insult, an emissary mission, a marriage, a new clan leader inheriting the old leader's grudge rows; only the game's own relation actions fire it, direct relation writes do not.
+
+- Source: `CampaignEvents.HeroRelationChanged`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`, `other`, `actor`, `target`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero whose relation moved (the game reroutes some changes to clan leaders or relatives) |
+| `other` | Hero | the other hero of the effective pair |
+| `change` | Int | the relation points gained or lost |
+| `detail` | Text | the game's ChangeRelationDetail: Default or Emissary |
+| `actor` | Hero | the hero the change was really aimed at; differs from `hero` when the game rerouted it |
+| `target` | Hero | the other hero of the original pair |
+
+```json
+"trigger": { "on": "relationChanged", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### renownGained
+
+A clan earned renown — `hero` is the hero whose deed brought it (usually the clan leader), `amount` what was gained; the clan is the one to react.
+
+- Source: `CampaignEvents.RenownGained`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero whose deed gained the renown, usually the clan leader |
+| `amount` | Int | the renown gained |
+
+```json
+"trigger": { "on": "renownGained", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
 ## Category: crime
+
+### alleyCleared
+
+After winning an alley fight the player chose to leave the hideout empty instead of taking it over.
+
+- Source: `CampaignEvents.AlleyClearedByPlayer` — fires in a battle or scene (in mission)
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "alleyCleared" }
+```
+
+### alleyOwnerChanged
+
+The owner of a town alley (hideout) changed: the player took or lost one, or a gang leader got it; the alley itself is not identifiable in the payload.
+
+- Source: `CampaignEvents.AlleyOwnerChanged`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `newOwner`, `oldOwner`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `newOwner` | Hero | the hero who owns the alley now; empty when the alley went empty |
+| `oldOwner` | Hero | the previous owner; empty when the alley was empty |
+| `areaState` | Text | the alley's occupancy now: OccupiedByPlayer, OccupiedByGangLeader, Empty |
+
+```json
+"trigger": { "on": "alleyOwnerChanged", "subject": "playerClan", "where": { "newOwner.culture": "vlandia" } }
+```
+
+### alleyTakenOver
+
+The player took over a hideout at the end of an alley fight; the takeover and the roster moves are already applied.
+
+- Source: `CampaignEvents.AlleyOccupiedByPlayer` — fires in a battle or scene (in mission)
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "alleyTakenOver" }
+```
 
 ### banditPartyRecruited
 
@@ -267,7 +501,191 @@ A hero became a fugitive (a dismissed or released companion now wanders on its o
 "trigger": { "on": "heroBecameFugitive", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
 ```
 
+### hideoutEmptied
+
+A hideout went empty and was removed from the map: its last band left or was destroyed. The event does not say who cleared it.
+
+- Source: `CampaignEvents.OnHideoutDeactivatedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `settlement`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the hideout settlement that went empty |
+
+```json
+"trigger": { "on": "hideoutEmptied", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### hideoutSpotted
+
+A hideout appeared on the campaign map because a party discovered it; in the vanilla raisers that party is always the player's.
+
+- Source: `CampaignEvents.OnHideoutSpottedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerParty` (matched on `spotter`, `hideout`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `spotter` | Party | the party that found it (the player's main party in the vanilla raisers) |
+| `hideout` | Settlement | the hideout settlement that is now visible |
+
+```json
+"trigger": { "on": "hideoutSpotted", "subject": "playerParty", "where": { "hideout.culture": "vlandia" } }
+```
+
+## Category: economy
+
+### goldGiven
+
+Gold moved between a hero or party and another hero or party — loot, ransoms, bribes, quest rewards and more; it fires for every payment in the world, so gate strictly on the player side and `transactionId`.
+
+- Source: `CampaignEvents.HeroOrPartyTradedGold`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `giver`, `giverParty`, `receiver`, `receiverParty`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `giver` | Hero | hero side of the payer; empty for party-only transactions |
+| `giverParty` | Party | party side of the payer; empty for hero-only transactions |
+| `receiver` | Hero | hero side of the payee |
+| `receiverParty` | Party | party side of the payee |
+| `amount` | Int | the gold that moved, already clamped to what the payer could pay |
+| `transactionId` | Text | the game's id of what was paid for (loot, ransom, bribe, quest reward, …) |
+
+```json
+"trigger": { "on": "goldGiven", "subject": "playerClan", "where": { "giver.culture": "vlandia" } }
+```
+
+### itemGiven
+
+A hero or party handed an item stack to another hero or party (quest trades, gifts); only transfers that ran through a party roster fire.
+
+- Source: `CampaignEvents.HeroOrPartyGaveItem`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `giver`, `giverParty`, `receiver`, `receiverParty`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `giver` | Hero | hero side of the giver; empty for party-only transfers |
+| `giverParty` | Party | party side of the giver |
+| `receiver` | Hero | hero side of the receiver |
+| `receiverParty` | Party | party side of the receiver |
+| `item` | Item | the item that was handed over |
+| `amount` | Int | how many of the item moved |
+
+```json
+"trigger": { "on": "itemGiven", "subject": "playerClan", "where": { "giver.culture": "vlandia" } }
+```
+
+## Category: family
+
+### childEducationCompleted
+
+A child hero finished an education stage — it fires at every stage of a childhood, not only the last, and `age` is the child's age at that moment.
+
+- Source: `CampaignEvents.ChildEducationCompletedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `child`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `child` | Hero | the child who finished the stage |
+| `age` | Int | the child's age at the moment it fires |
+
+```json
+"trigger": { "on": "childEducationCompleted", "subject": "playerClan", "where": { "child.culture": "vlandia" } }
+```
+
+### heroBecameTeenager
+
+A child hero became a teenager — the game may reroll their personality traits right at this moment.
+
+- Source: `CampaignEvents.HeroReachesTeenAgeEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the child who became a teenager |
+
+```json
+"trigger": { "on": "heroBecameTeenager", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### heroCameOfAge
+
+A young hero came of age — a child's last stage ended and the adult world opens up.
+
+- Source: `CampaignEvents.HeroComesOfAgeEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who came of age |
+
+```json
+"trigger": { "on": "heroCameOfAge", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### heroGrewOutOfInfancy
+
+An infant hero grew out of infancy into childhood.
+
+- Source: `CampaignEvents.HeroGrowsOutOfInfancyEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the child who grew out of infancy |
+
+```json
+"trigger": { "on": "heroGrewOutOfInfancy", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### heroesAboutToMarry
+
+Two heroes are about to marry — the wedding action has begun but relations, households and clan moves are not applied yet; a companion is marryable only while single, so react before their status changes. The argument order may be swapped.
+
+- Source: `CampaignEvents.BeforeHeroesMarried`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `firstHero`, `secondHero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `firstHero` | Hero | one of the two heroes about to wed |
+| `secondHero` | Hero | the other one |
+
+```json
+"trigger": { "on": "heroesAboutToMarry", "subject": "playerClan", "where": { "firstHero.culture": "vlandia" } }
+```
+
+### romanticStateChanged
+
+The romance between two heroes moved a step — courting, betrothal, marriage or a broken affair; in vanilla one of the two is the player.
+
+- Source: `CampaignEvents.RomanticStateChanged`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `firstHero`, `secondHero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `firstHero` | Hero | one hero of the pair; the order is not fixed, match either field |
+| `secondHero` | Hero | the other hero of the pair |
+| `level` | Text | the game's Romance.RomanceLevelEnum: the romance step reached |
+
+```json
+"trigger": { "on": "romanticStateChanged", "subject": "playerClan", "where": { "firstHero.culture": "vlandia" } }
+```
+
 ## Category: heroes
+
+### companionAdded
+
+The player hired a new companion — when this fires the hero is already in the player's clan and party, so greeting lines can reference them directly.
+
+- Source: `CampaignEvents.NewCompanionAdded`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the new companion |
+
+```json
+"trigger": { "on": "companionAdded", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
 
 ### heroAboutToBeKilled
 
@@ -284,6 +702,71 @@ A hero is about to be killed; fires before heroKilled, while their live party an
 
 ```json
 "trigger": { "on": "heroAboutToBeKilled", "subject": "playerClan", "where": { "victim.culture": "vlandia" } }
+```
+
+### heroActivated
+
+A hero woke up into the active world; `previousState` says where they came from — `Fugitive` marks a dismissed companion reappearing in a tavern.
+
+- Source: `CampaignEvents.OnHeroActivatedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who became active |
+| `previousState` | Text | the game's Hero.CharacterStates they were in before, e.g. Fugitive |
+
+```json
+"trigger": { "on": "heroActivated", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### heroCreated
+
+A brand-new hero entered the world somewhere — a wanderer appearing in a tavern, a newborn, a notable; it also fires for heroes other mods (and this one) spawn, so filter by who was created.
+
+- Source: `CampaignEvents.HeroCreated`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the newly created hero |
+| `bornNaturally` | Bool | true only for naturally born newborns; false for wanderers and every factory-created hero |
+
+```json
+"trigger": { "on": "heroCreated", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### heroGainedSkill
+
+A hero's skill ticked up one or more whole skill levels — companion skill-up remarks.
+
+- Source: `CampaignEvents.HeroGainedSkill`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero whose skill improved |
+| `skill` | Text | the game's skill id |
+| `change` | Int | how much the skill rose |
+
+```json
+"trigger": { "on": "heroGainedSkill", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### heroJoinedParty
+
+A hero joined a party on the map — a just-hired wanderer riding out to their lord, a notable joining a caravan or a garrison turning over; it fires everywhere, not only for the player.
+
+- Source: `CampaignEvents.OnHeroJoinedPartyEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`, `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who joined |
+| `party` | Party | the party they joined |
+
+```json
+"trigger": { "on": "heroJoinedParty", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
 ```
 
 ### heroKilled
@@ -303,7 +786,348 @@ A hero died (battle, execution, old age, …).
 "trigger": { "on": "heroKilled", "subject": "playerClan", "where": { "victim.culture": "vlandia" } }
 ```
 
+### heroLeveledUp
+
+A hero gained a level, after the game handed out the focus points (and one attribute point every fourth level); fires for the player, companions and AI heroes alike.
+
+- Source: `CampaignEvents.HeroLevelledUp`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who gained the level |
+
+```json
+"trigger": { "on": "heroLeveledUp", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### heroOccupationChanged
+
+A hero's occupation changed — the classic case is a companion granted a fief turning into a lord; the payload carries the old value, the new one is on the hero (`hero.occupation`).
+
+- Source: `CampaignEvents.HeroOccupationChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who changed occupation |
+| `oldOccupation` | Text | the game's Occupation before the change, e.g. Wanderer |
+
+```json
+"trigger": { "on": "heroOccupationChanged", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### playerMetHero
+
+The player met a hero for the first time — a conversation happened or the encyclopedia revealed them; first-meeting chatter.
+
+- Source: `CampaignEvents.OnPlayerMetHeroEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero the player met |
+
+```json
+"trigger": { "on": "playerMetHero", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+## Category: kingdom
+
+### kingdomDecisionCancelled
+
+A kingdom council vote was cancelled before or during — a participant died, the proposer left the kingdom, or a queued plan went stale; it will never conclude.
+
+- Source: `CampaignEvents.KingdomDecisionCancelled`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `kingdom` | Kingdom | the kingdom that dropped the decision |
+| `playerInvolved` | Bool | true when the player was proposer or sponsor |
+
+```json
+"trigger": { "on": "kingdomDecisionCancelled", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### kingdomDecisionConcluded
+
+A kingdom council finished voting and its outcome is already in force — a decided war has been declared by the time this fires.
+
+- Source: `CampaignEvents.KingdomDecisionConcluded`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `kingdom` | Kingdom | the kingdom that decided |
+| `playerInvolved` | Bool | true when the player was proposer, sponsor or a supporter in the vote |
+
+```json
+"trigger": { "on": "kingdomDecisionConcluded", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### kingdomDecisionProposed
+
+A kingdom's council began a vote on a decision — war, peace, exile and the like; the vote only starts here and the decision may still be cancelled, so treat it as news of the plan, not the result.
+
+- Source: `CampaignEvents.KingdomDecisionAdded`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `kingdom` | Kingdom | the kingdom whose council is voting |
+| `playerInvolved` | Bool | true when the player is the proposer or sponsor of this vote |
+
+```json
+"trigger": { "on": "kingdomDecisionProposed", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### kingdomDestroyed
+
+A kingdom was destroyed and is about to be gone — its clans have already left it and read their new kingdoms live; comment on the end of a realm.
+
+- Source: `CampaignEvents.KingdomDestroyedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `kingdom` | Kingdom | the kingdom being destroyed; read its last state now |
+
+```json
+"trigger": { "on": "kingdomDestroyed", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### peaceMade
+
+Two warring factions made peace — a full kingdom war or a single clan's private feud; `detail` is `ByKingdomDecision` when a council vote ended it.
+
+- Source: `CampaignEvents.MakePeace`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `firstFaction`, `secondFaction`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `firstFaction` | Faction | one side of the peace — a kingdom or a clan |
+| `secondFaction` | Faction | the other side |
+| `detail` | Text | the game's MakePeaceDetail: Default or ByKingdomDecision |
+
+```json
+"trigger": { "on": "peaceMade", "subject": "player", "where": { "firstFaction.culture": "vlandia" } }
+```
+
+### rulingClanChanged
+
+A kingdom got a new ruling clan — an elected new ruler or a clan that seized power; the event only carries the old clan, so the payload reads the new ruler from the kingdom itself.
+
+- Source: `CampaignEvents.RulingClanChanged`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `kingdom`, `oldRuler`, `newRuler`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `kingdom` | Kingdom | the kingdom with a new ruler |
+| `oldRuler` | Clan | the clan that loses the crown |
+| `newRuler` | Clan | the clan taking over, read live from the kingdom |
+
+```json
+"trigger": { "on": "rulingClanChanged", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### warDeclared
+
+A war started between any two kingdoms or clans — including the player clan going hostile on its own; `attacker` and `defender` can be a kingdom or a clan, so test both against the player's clan and kingdom.
+
+- Source: `CampaignEvents.WarDeclared`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `attacker`, `defender`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `attacker` | Faction | the faction that declared — a kingdom or a clan |
+| `defender` | Faction | the faction war was declared on |
+| `detail` | Text | the game's DeclareWarDetail: how the war was started |
+
+```json
+"trigger": { "on": "warDeclared", "subject": "player", "where": { "attacker.culture": "vlandia" } }
+```
+
 ## Category: party
+
+### heroRecruitedTroops
+
+A hero recruited troops for their party somewhere in the world — keep the subject filter (player, companion) or this fires for every AI lord's hiring too.
+
+- Source: `CampaignEvents.OnTroopRecruitedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerClan` (matched on `recruiter`, `settlement`, `source`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `recruiter` | Hero | the hero who recruited |
+| `settlement` | Settlement | the settlement of the recruitment; empty for on-map mercenary recruiting |
+| `source` | Hero | the hero the men came from (volunteers out of a lord's retinue); empty when none |
+| `troop` | Text | string id of the recruited troop type |
+| `number` | Int | how many of that troop type in this batch |
+
+```json
+"trigger": { "on": "heroRecruitedTroops", "subject": "playerClan", "where": { "recruiter.culture": "vlandia" } }
+```
+
+### partyCreated
+
+A new party appeared on the campaign map — most are vanilla caravan, quest or spawn parties, so gate on the owning clan.
+
+- Source: `CampaignEvents.MobilePartyCreated`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`, `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the newly created party, fully readable |
+| `clan` | Clan | the clan owning the party; empty for parties without a clan owner |
+
+```json
+"trigger": { "on": "partyCreated", "subject": "playerClan", "where": { "clan.culture": "vlandia" } }
+```
+
+### partyDestroyed
+
+A party was destroyed or disbanded — the last moment its rosters, prisoners and leader are still readable, before the party is wiped.
+
+- Source: `CampaignEvents.MobilePartyDestroyed`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`, `destroyer`, `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party being destroyed |
+| `destroyer` | Party | the party that destroyed it; empty when the party disbanded |
+| `clan` | Clan | the clan that owned the destroyed party |
+
+```json
+"trigger": { "on": "partyDestroyed", "subject": "playerClan", "where": { "clan.culture": "vlandia" } }
+```
+
+### partyDisbandStarted
+
+A party was told to disband: over the following days it walks to the nearest friendly fortification and melts away; its roster is still intact here.
+
+- Source: `CampaignEvents.OnPartyDisbandStartedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`, `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that began disbanding |
+| `clan` | Clan | the clan owning that party |
+
+```json
+"trigger": { "on": "partyDisbandStarted", "subject": "playerClan", "where": { "clan.culture": "vlandia" } }
+```
+
+### partyDisbanded
+
+The disbanding party reached a friendly fortification and is about to be removed from the map — its full roster and leader hero can still be read right here, the last reaction slot before the end.
+
+- Source: `CampaignEvents.OnPartyDisbandedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerClan` (matched on `party`, `settlement`, `clan`, `leader`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party being disbanded, roster still readable |
+| `settlement` | Settlement | the fortification where it melts away |
+| `clan` | Clan | the clan that owned the party; empty for clanless parties |
+| `leader` | Hero | the party's leader hero — the companion whose party just ended, if it was a companion's |
+
+```json
+"trigger": { "on": "partyDisbanded", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### partyJoinedArmy
+
+A party joined an army somewhere in the world — the player's party joined a host, or a clan's war party went off to war; it is already a member when this fires.
+
+- Source: `CampaignEvents.OnPartyJoinedArmyEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`, `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that joined the army |
+| `clan` | Clan | the clan owning that party |
+
+```json
+"trigger": { "on": "partyJoinedArmy", "subject": "playerClan", "where": { "clan.culture": "vlandia" } }
+```
+
+### partyLeaderChanged
+
+A party got a new leader hero — a companion took over a party or lost one; `oldLeader` is the hero who gave it up. On load, every re-assigned party leader fires at once, so skip that first wave.
+
+- Source: `CampaignEvents.OnPartyLeaderChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`, `newLeader`, `oldLeader`, `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that changed leader |
+| `newLeader` | Hero | the hero leading it now |
+| `oldLeader` | Hero | the hero who just stepped down; empty on first assignment |
+| `clan` | Clan | the clan owning the party |
+
+```json
+"trigger": { "on": "partyLeaderChanged", "subject": "playerClan", "where": { "newLeader.culture": "vlandia" } }
+```
+
+### partyLeftArmy
+
+A party stopped being part of an army — it left on its own, the leader dismissed it, or it was destroyed; it is already gone from the army when this fires.
+
+- Source: `CampaignEvents.PartyRemovedFromArmyEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`, `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that left the army |
+| `clan` | Clan | the clan owning that party |
+
+```json
+"trigger": { "on": "partyLeftArmy", "subject": "playerClan", "where": { "clan.culture": "vlandia" } }
+```
+
+### partyVisibilityChanged
+
+A party became visible or invisible on the campaign map (spotted, fog of war, going to ground). At game start every party fires once — ignore that wave.
+
+- Source: `CampaignEvents.PartyVisibilityChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party whose visibility changed; a settlement's garrison party can come through here too |
+| `visible` | Bool | whether the party can be seen on the map now |
+
+```json
+"trigger": { "on": "partyVisibilityChanged", "subject": "playerClan" }
+```
+
+### playerPartyStarving
+
+The player's party is still without food another day — fires once per day from the second day of a starvation streak on, right after the daily starvation morale hit.
+
+- Source: `CampaignEvents.OnMainPartyStarvingEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "playerPartyStarving" }
+```
+
+### playerRecruitedTroops
+
+The player recruited `number` men of `troop` into their party; fires once per troop type per batch, so one hiring spree fires many times.
+
+- Source: `CampaignEvents.OnUnitRecruitedEvent`
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `troop` | Text | string id of the recruited troop type |
+| `number` | Int | how many of that troop type came in this unit batch |
+
+```json
+"trigger": { "on": "playerRecruitedTroops" }
+```
 
 ### trackLost
 
@@ -339,6 +1163,89 @@ The player's party spotted a fresh track on the map.
 
 ```json
 "trigger": { "on": "trackSpotted" }
+```
+
+### troopsDeserted
+
+Men deserted a party overnight (low morale or unpaid wages); they are already gone from its roster.
+
+- Source: `CampaignEvents.OnTroopsDesertedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that lost men |
+
+```json
+"trigger": { "on": "troopsDeserted", "subject": "playerClan" }
+```
+
+### troopsGivenToSettlement
+
+A party left men behind as garrison when it entered a friendly fortification outside the player clan — typically a companion's garrison contribution; the lone main party never fires this.
+
+- Source: `CampaignEvents.OnTroopGivenToSettlementEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerClan` (matched on `giver`, `settlement`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `giver` | Hero | the hero who gave the troops; the event only carries the hero side of the giving party |
+| `settlement` | Settlement | the settlement that received the garrison |
+
+```json
+"trigger": { "on": "troopsGivenToSettlement", "subject": "playerClan", "where": { "giver.culture": "vlandia" } }
+```
+
+### troopsUpgraded
+
+The player upgraded `number` men from `oldTroop` to `newTroop` on the party screen; the whole batch lands when Done is clicked, nothing fires for AI upgrades.
+
+- Source: `CampaignEvents.PlayerUpgradedTroopsEvent`
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `oldTroop` | Text | string id of the troop type the men came from |
+| `newTroop` | Text | string id of the troop type they became |
+| `number` | Int | how many men were upgraded |
+
+```json
+"trigger": { "on": "troopsUpgraded" }
+```
+
+## Category: player
+
+### perkUnlocked
+
+A hero unlocked a perk — usually the player picking one at a level-up; AI heroes open perks too, so check who it was.
+
+- Source: `CampaignEvents.PerkOpenedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who opened the perk |
+| `perk` | Text | the game's perk id |
+
+```json
+"trigger": { "on": "perkUnlocked", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### playerTraitChanged
+
+One of the player's personality traits crossed a level boundary (only at levels, never for trait XP alone); the five that move at runtime are Mercy, Honor, Valor, Generosity and Calculating.
+
+- Source: `CampaignEvents.PlayerTraitChangedEvent`
+- Subjects: `any`; default `any`
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `trait` | Text | the game's trait id, e.g. Honor |
+| `previousLevel` | Int | the trait level before (a jump of two levels still fires once) |
+| `newLevel` | Int | the trait level now, read live from the player hero |
+
+```json
+"trigger": { "on": "playerTraitChanged" }
 ```
 
 ## Category: polling
@@ -490,6 +1397,71 @@ The prisoners of a settlement's dungeon changed; the event does not say who move
 "trigger": { "on": "prisonersChangedInSettlement", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
 ```
 
+### prisonersDonated
+
+Captives were handed over to a settlement's dungeon: the player donating prisoners, captives sold to same-faction lords, or the captives of a party that disbanded.
+
+- Source: `CampaignEvents.OnPrisonerDonatedToSettlementEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement whose dungeon took the captives |
+| `party` | Party | the party the transfer is tied to: the receiving party for a player donate, the seller for a sell, the disbanding party |
+
+```json
+"trigger": { "on": "prisonersDonated", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### prisonersRecruited
+
+The player's party filled its own ranks with captives (they were prisoners before this moment).
+
+- Source: `CampaignEvents.OnMainPartyPrisonerRecruitedEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "prisonersRecruited" }
+```
+
+### prisonersReleased
+
+The player deliberately released a batch of common captives; releasing for a ransom or a peace deal is not reported here.
+
+- Source: `CampaignEvents.OnPrisonerReleasedEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "prisonersReleased" }
+```
+
+### prisonersSold
+
+A party sold its captives to another party; selling to a tavern or a market has no buyer party.
+
+- Source: `CampaignEvents.OnPrisonerSoldEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `seller`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `seller` | Party | the party that had the captives |
+| `buyer` | Party | the party that bought them; empty when they went to a tavern or a market |
+
+```json
+"trigger": { "on": "prisonersSold", "subject": "playerClan" }
+```
+
+### prisonersTaken
+
+The player's party took a batch of common captives and the party screen was closed (hero captives are reported by heroCaptured).
+
+- Source: `CampaignEvents.OnPrisonerTakenEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "prisonersTaken" }
+```
+
 ### ransomOfferCancelled
 
 A pending ransom offer fell through (2-day expiry or the notification was ignored; killed/released captives have their own triggers).
@@ -538,6 +1510,28 @@ A rebellion won: the settlement is already owned by the rebels when this fires.
 "trigger": { "on": "rebellionSucceeded", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
 ```
 
+### suppliesForced
+
+A forced collection of supplies at a settlement ended; when the attackers won the supplies are already taken.
+
+- Source: `CampaignEvents.ForceSuppliesCompletedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `attacker`, `defender`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement fought at or over; empty in the open field |
+| `attacker` | Party | leading party of the attacking side |
+| `defender` | Party | leading party of the defending side |
+| `winner` | Text | attacker \| defender \| none |
+| `playerInvolved` | Bool | the player's party fought in it |
+| `playerWon` | Bool | the player's side won |
+| `battleType` | Text | the game's map event type: FieldBattle, Raid, Siege, SallyOut, … |
+| `winnerSide` | Text | the game's BattleSideEnum winner of the fight over the supplies: Attacker, Defender or None |
+
+```json
+"trigger": { "on": "suppliesForced", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
 ### townRebellionStateChanged
 
 A town entered or left its rebellious state — open rebellion only follows if loyalty keeps falling.
@@ -569,6 +1563,28 @@ A village raid finished and the village is now looted.
 "trigger": { "on": "villageLooted", "subject": "playerClan", "where": { "village.culture": "vlandia" } }
 ```
 
+### villageRaidEnded
+
+A raid on a village ended with a decided winner; the village is looted when the attackers won, and the loot and casualties are already committed.
+
+- Source: `CampaignEvents.RaidCompletedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `attacker`, `defender`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement fought at or over; empty in the open field |
+| `attacker` | Party | leading party of the attacking side |
+| `defender` | Party | leading party of the defending side |
+| `winner` | Text | attacker \| defender \| none |
+| `playerInvolved` | Bool | the player's party fought in it |
+| `playerWon` | Bool | the player's side won |
+| `battleType` | Text | the game's map event type: FieldBattle, Raid, Siege, SallyOut, … |
+| `winnerSide` | Text | the game's BattleSideEnum winner of the raid battle: Attacker, Defender or None |
+
+```json
+"trigger": { "on": "villageRaidEnded", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
 ### villageRaidStarted
 
 A raid on a village started; it is being burned and looted now.
@@ -582,5 +1598,334 @@ A raid on a village started; it is being burned and looted now.
 
 ```json
 "trigger": { "on": "villageRaidStarted", "subject": "playerClan", "where": { "village.culture": "vlandia" } }
+```
+
+### volunteersForced
+
+A forced levying of men at a settlement ended; when the attackers won the men are already taken, otherwise the levy was driven off.
+
+- Source: `CampaignEvents.ForceVolunteersCompletedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `attacker`, `defender`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement fought at or over; empty in the open field |
+| `attacker` | Party | leading party of the attacking side |
+| `defender` | Party | leading party of the defending side |
+| `winner` | Text | attacker \| defender \| none |
+| `playerInvolved` | Bool | the player's party fought in it |
+| `playerWon` | Bool | the player's side won |
+| `battleType` | Text | the game's map event type: FieldBattle, Raid, Siege, SallyOut, … |
+| `winnerSide` | Text | the game's BattleSideEnum winner of the fight over the levy: Attacker, Defender or None |
+
+```json
+"trigger": { "on": "volunteersForced", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+## Category: scenes
+
+### conversationEnded
+
+A vanilla game conversation ended and its characters are about to be released; it fires for every conversation in the game.
+
+- Source: `CampaignEvents.ConversationEnded`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "conversationEnded" }
+```
+
+### playerStartedTalkFromMenu
+
+The player started a conversation with `hero` from the map or a location menu — hook for a companion to react when addressed directly or when the player talks to someone nearby.
+
+- Source: `CampaignEvents.PlayerStartTalkFromMenu`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero the player is about to talk to |
+
+```json
+"trigger": { "on": "playerStartedTalkFromMenu", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### sceneEntered
+
+A mission scene the player is in started and is fully live — combat, siege, town, tavern or hideout visit, conversation — and it fires for every one of them.
+
+- Source: `CampaignEvents.AfterMissionStarted` — fires in a battle or scene (in mission)
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "sceneEntered" }
+```
+
+## Category: settlements
+
+### buildingLevelChanged
+
+A building in a town went up or down a level — normally construction finishing (+1) in a player-owned fief, or an incident/cheat removing a level.
+
+- Source: `CampaignEvents.OnBuildingLevelChangedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `town` | Settlement | the town or castle whose building changed level |
+| `building` | Text | the game's StringId of the building type |
+| `level` | Int | the building's level after the change |
+| `delta` | Int | the level change: usually +1 or -1, incident effects move it by more |
+
+```json
+"trigger": { "on": "buildingLevelChanged", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
+```
+
+### settlementEntered
+
+The player entered a settlement (town, castle, village or hideout) with the party; walking in alone as a character fires too, then `party` is empty and `hero` is the player hero.
+
+- Source: `CampaignEvents.SettlementEntered`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `party`, `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement entered |
+| `party` | Party | the party that entered |
+| `hero` | Hero | the hero on whose behalf the entry happened |
+
+```json
+"trigger": { "on": "settlementEntered", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### settlementLeft
+
+The player's party left a settlement it was inside; leaving alone as a character fires nothing.
+
+- Source: `CampaignEvents.OnSettlementLeftEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement being left |
+| `party` | Party | the party leaving |
+
+```json
+"trigger": { "on": "settlementLeft", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### villageStateChanged
+
+A village's raid state changed somewhere in the world — gate on `newState`: BeingRaided for a raid starting, ForcedForVolunteers/ForcedForSupplies for a levy, Looted when the village was burned out.
+
+- Source: `CampaignEvents.VillageStateChanged`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `village`, `raider`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `village` | Settlement | the village whose state changed |
+| `oldState` | Text | previous state: Normal, BeingRaided, ForcedForVolunteers, ForcedForSupplies, Looted |
+| `newState` | Text | new state, same values |
+| `raider` | Party | the raiding or levying party behind the state change |
+
+```json
+"trigger": { "on": "villageStateChanged", "subject": "playerClan", "where": { "village.culture": "vlandia" } }
+```
+
+## Category: siege
+
+### blockadeEnded
+
+The naval blockade of a port was lifted — the besiegers lost their ships or a blockade battle was decided; the siege itself may continue on land.
+
+- Source: `CampaignEvents.OnBlockadeDeactivatedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `attacker`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the port whose blockade ended |
+| `attacker` | Party | leading party of the besieger camp |
+
+```json
+"trigger": { "on": "blockadeEnded", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### blockadeStarted
+
+A port was sealed off by a naval blockade: its garrison is cut off from the sea and can only be resupplied by a sally.
+
+- Source: `CampaignEvents.OnBlockadeActivatedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `attacker`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the blockaded port settlement |
+| `attacker` | Party | leading party of the blockading besieger camp |
+
+```json
+"trigger": { "on": "blockadeStarted", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### partyJoinedSiege
+
+A party joined a siege camp: the player or one of their clan's parties arriving at the siege works, or any AI besieger reinforcing one.
+
+- Source: `CampaignEvents.OnMobilePartyJoinedToSiegeEventEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that joined the siege camp |
+
+```json
+"trigger": { "on": "partyJoinedSiege", "subject": "playerClan" }
+```
+
+### partyLeftSiege
+
+A party left the siege camp it was besieging: the player riding off, or the whole camp breaking up at once when the siege is lost.
+
+- Source: `CampaignEvents.OnMobilePartyLeftSiegeEventEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `party` | Party | the party that left the siege camp |
+
+```json
+"trigger": { "on": "partyLeftSiege", "subject": "playerClan" }
+```
+
+### siegeAftermathApplied
+
+The victors chose what to do with a town or castle they had just taken; the prosperity, loyalty, building and gold losses happen right after this.
+
+- Source: `CampaignEvents.OnSiegeAftermathAppliedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `attacker`, `previousOwner`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `attacker` | Party | the party that took it |
+| `settlement` | Settlement | the town or castle that was taken |
+| `aftermath` | Text | the game's SiegeAftermathAction.SiegeAftermath: Devastate, Pillage or ShowMercy |
+| `previousOwner` | Clan | the clan that held it until now; this is the one that lost the fight |
+
+```json
+"trigger": { "on": "siegeAftermathApplied", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### siegeBattleEnded
+
+One battle of a siege ended with a decided winner — an assault, a sally-out or a blockade battle; the siege itself may go on.
+
+- Source: `CampaignEvents.SiegeCompletedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `leader`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the besieged settlement this battle was fought at |
+| `leader` | Party | the acting side's leading party: the besieger camp for an assault, the sallying garrison for a sally-out |
+| `leaderWon` | Bool | true when that leader party's side won this battle |
+| `battleType` | Text | the game's MapEvent.BattleTypes for this battle: Siege, SiegeOutside, SallyOut, BlockadeBattle, … |
+
+```json
+"trigger": { "on": "siegeBattleEnded", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### siegeEnded
+
+A siege is over and its outcome is decided: the last assault or sally failed, the besiegers broke off, and who holds the settlement is settled.
+
+- Source: `CampaignEvents.OnSiegeEventEndedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `attacker`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement that was besieged |
+| `attacker` | Party | leading party of the besieger camp |
+
+```json
+"trigger": { "on": "siegeEnded", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+## Category: tournaments
+
+### playerEliminatedFromTournament
+
+The player lost their match and is out of the town's tournament for good; the lost bet is already paid.
+
+- Source: `CampaignEvents.PlayerEliminatedFromTournament` — fires in a battle or scene (in mission)
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `round` | Int | the tournament round the player lost |
+| `town` | Settlement | the town holding the tournament |
+
+```json
+"trigger": { "on": "playerEliminatedFromTournament", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
+```
+
+### playerJoinedTournament
+
+The player entered the tournament in `town` from its menu; `isParticipant` is true when they compete themselves, false when they only start spectating — no bracket has run yet.
+
+- Source: `CampaignEvents.OnPlayerJoinedTournamentEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `town` | Settlement | the town holding the tournament |
+| `isParticipant` | Bool | true = the player signed up to compete; false = the player began watching |
+
+```json
+"trigger": { "on": "playerJoinedTournament", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
+```
+
+### tournamentCancelled
+
+A town's scheduled tournament was cancelled because the town was under siege when its end-time came; it fires instead of tournamentFinished.
+
+- Source: `CampaignEvents.TournamentCancelled`
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `town` | Settlement | the town whose tournament was cancelled |
+
+```json
+"trigger": { "on": "tournamentCancelled", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
+```
+
+### tournamentFinished
+
+A town's tournament ended and the prize was paid: the player won only if they attended (`winner.isPlayer`), otherwise the winner is one of the simulated participants.
+
+- Source: `CampaignEvents.TournamentFinished` — fires in a battle or scene (in mission)
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerClan` (matched on `winner`, `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `winner` | Hero | the hero who won the tournament |
+| `town` | Settlement | the town that held the tournament |
+| `prize` | Item | the prize item given to the winner |
+
+```json
+"trigger": { "on": "tournamentFinished", "subject": "playerClan", "where": { "winner.culture": "vlandia" } }
+```
+
+### tournamentStarted
+
+A tournament was scheduled at a town somewhere on the map and is already active; it fires even when the player is nowhere near.
+
+- Source: `CampaignEvents.TournamentStarted`
+- Subjects: `settlement:<id>`, `playerClan`, `any`; default `playerClan` (matched on `town`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `town` | Settlement | the town holding the tournament |
+
+```json
+"trigger": { "on": "tournamentStarted", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
 ```
 
