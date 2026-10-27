@@ -1,112 +1,561 @@
 {
   "schemaVersion": 1,
   "variables": {
-    "told_scar": { "type": "bool", "scope": "shared" },
-    "got_coin": { "type": "bool" }
+    "told_scar": {
+      "type": "bool",
+      "scope": "shared"
+    },
+    "got_coin": {
+      "type": "bool"
+    }
   },
   "lines": [
-    {"id": "intro_01", "slot": "intro", "voiced": true},
-    {"id": "backstory_01", "slot": "backstory", "voiced": true},
-    {"id": "hire_offer_01", "slot": "hire_offer", "voiced": true},
-    {"id": "hire_accept_01", "slot": "hire_accept", "voiced": true},
-    {"id": "hire_decline_01", "slot": "hire_decline", "voiced": false},
-    {"id": "p_ask_about_01", "slot": "player_ask_about"},
-    {"id": "p_ask_hire_01", "slot": "player_ask_hire"},
-    {"id": "p_hire_pay_01", "slot": "player_hire_pay"},
-    {"id": "p_hire_full_01", "slot": "player_hire_full"},
-    {"id": "p_hire_later_01", "slot": "player_hire_later"},
-    {"id": "greet_recent_01", "slot": "greet_recent"},
-    {"id": "greet_01", "slot": "greet"},
-    {"id": "main_hub_01", "slot": "main_hub"},
-    {"id": "anything_else_01", "slot": "anything_else"},
-    {"id": "farewell_01", "slot": "farewell"},
-    {"id": "job_status_01", "slot": "job_status"},
-    {"id": "role_pretalk_01", "slot": "role_pretalk"},
-    {"id": "role_ask_01", "slot": "role_ask"},
-    {"id": "role_ok_01", "slot": "role_ok"},
-    {"id": "role_honored_01", "slot": "role_honored"},
-    {"id": "role_too_many_01", "slot": "role_too_many"},
-    {"id": "mission_offer_01", "slot": "mission_offer"},
-    {"id": "mission_ask_01", "slot": "mission_ask"},
-    {"id": "forage_ask_01", "slot": "forage_ask"},
-    {"id": "rejoin_ok_01", "slot": "rejoin_ok"},
-    {"id": "fire_reaction_01", "slot": "fire_reaction"},
-    {"id": "fire_farewell_01", "slot": "fire_farewell"},
-    {"id": "fire_cancel_reply_01", "slot": "fire_cancel_reply"},
-    {"id": "lord_offer_busy_01", "slot": "lord_offer_busy"},
-    {"id": "lord_offer_accept_01", "slot": "lord_offer_accept"},
-    {"id": "lord_no_fief_01", "slot": "lord_no_fief"},
-    {"id": "lord_no_fief_ok_01", "slot": "lord_no_fief_ok"},
-    {"id": "lord_where_01", "slot": "lord_where"},
-    {"id": "lord_fief_selected_01", "slot": "lord_fief_selected"},
-    {"id": "lord_name_house_01", "slot": "lord_name_house"},
-    {"id": "lord_thanks_01", "slot": "lord_thanks"},
-    {"id": "lord_rejected_01", "slot": "lord_rejected"},
-    {"id": "grievance_start_01", "slot": "grievance_start"},
-    {"id": "grievance_repeat_01", "slot": "grievance_repeat"},
-    {"id": "grievance_desert_01", "slot": "grievance_desert"},
-    {"id": "grievance_wage_01", "slot": "grievance_wage"},
-    {"id": "grievance_starve_01", "slot": "grievance_starve"},
-    {"id": "grievance_raid_01", "slot": "grievance_raid"},
-    {"id": "rescue_thanks_01", "slot": "rescue_thanks"},
-    {"id": "rescue_what_now_01", "slot": "rescue_what_now"},
-    {"id": "rescue_join_reply_01", "slot": "rescue_join_reply"},
-    {"id": "rescue_lead_reply_01", "slot": "rescue_lead_reply"},
-    {"id": "rescue_alone_reply_01", "slot": "rescue_alone_reply"},
-    {"id": "rescue_party_ok_01", "slot": "rescue_party_ok"},
-    {"id": "rescue_party_what_01", "slot": "rescue_party_what"},
-    {"id": "rescue_party_go_01", "slot": "rescue_party_go"},
-    {"id": "prison_break_thanks_01", "slot": "prison_break_thanks"},
-    {"id": "prison_break_rejoin_01", "slot": "prison_break_rejoin"},
-    {"id": "follow_ok_01", "slot": "follow_ok"},
-    {"id": "gather_ok_01", "slot": "gather_ok"},
-    {"id": "follow_stop_ok_01", "slot": "follow_stop_ok"}
+    {
+      "id": "intro_01",
+      "slot": "intro",
+      "voiced": true
+    },
+    {
+      "id": "backstory_01",
+      "slot": "backstory",
+      "voiced": true
+    },
+    {
+      "id": "hire_offer_01",
+      "slot": "hire_offer",
+      "voiced": true
+    },
+    {
+      "id": "hire_accept_01",
+      "slot": "hire_accept",
+      "voiced": true
+    },
+    {
+      "id": "hire_decline_01",
+      "slot": "hire_decline",
+      "voiced": false
+    },
+    {
+      "id": "p_ask_about_01",
+      "slot": "player_ask_about"
+    },
+    {
+      "id": "p_ask_hire_01",
+      "slot": "player_ask_hire"
+    },
+    {
+      "id": "p_hire_pay_01",
+      "slot": "player_hire_pay"
+    },
+    {
+      "id": "p_hire_full_01",
+      "slot": "player_hire_full"
+    },
+    {
+      "id": "p_hire_later_01",
+      "slot": "player_hire_later"
+    },
+    {
+      "id": "greet_recent_01",
+      "slot": "greet_recent"
+    },
+    {
+      "id": "greet_01",
+      "slot": "greet"
+    },
+    {
+      "id": "main_hub_01",
+      "slot": "main_hub"
+    },
+    {
+      "id": "anything_else_01",
+      "slot": "anything_else"
+    },
+    {
+      "id": "farewell_01",
+      "slot": "farewell"
+    },
+    {
+      "id": "job_status_01",
+      "slot": "job_status"
+    },
+    {
+      "id": "role_pretalk_01",
+      "slot": "role_pretalk"
+    },
+    {
+      "id": "role_ask_01",
+      "slot": "role_ask"
+    },
+    {
+      "id": "role_ok_01",
+      "slot": "role_ok"
+    },
+    {
+      "id": "role_honored_01",
+      "slot": "role_honored"
+    },
+    {
+      "id": "role_too_many_01",
+      "slot": "role_too_many"
+    },
+    {
+      "id": "mission_offer_01",
+      "slot": "mission_offer"
+    },
+    {
+      "id": "mission_ask_01",
+      "slot": "mission_ask"
+    },
+    {
+      "id": "forage_ask_01",
+      "slot": "forage_ask"
+    },
+    {
+      "id": "rejoin_ok_01",
+      "slot": "rejoin_ok"
+    },
+    {
+      "id": "fire_reaction_01",
+      "slot": "fire_reaction"
+    },
+    {
+      "id": "fire_farewell_01",
+      "slot": "fire_farewell"
+    },
+    {
+      "id": "fire_cancel_reply_01",
+      "slot": "fire_cancel_reply"
+    },
+    {
+      "id": "lord_offer_busy_01",
+      "slot": "lord_offer_busy"
+    },
+    {
+      "id": "lord_offer_accept_01",
+      "slot": "lord_offer_accept"
+    },
+    {
+      "id": "lord_no_fief_01",
+      "slot": "lord_no_fief"
+    },
+    {
+      "id": "lord_no_fief_ok_01",
+      "slot": "lord_no_fief_ok"
+    },
+    {
+      "id": "lord_where_01",
+      "slot": "lord_where"
+    },
+    {
+      "id": "lord_fief_selected_01",
+      "slot": "lord_fief_selected"
+    },
+    {
+      "id": "lord_name_house_01",
+      "slot": "lord_name_house"
+    },
+    {
+      "id": "lord_thanks_01",
+      "slot": "lord_thanks"
+    },
+    {
+      "id": "lord_rejected_01",
+      "slot": "lord_rejected"
+    },
+    {
+      "id": "grievance_start_01",
+      "slot": "grievance_start"
+    },
+    {
+      "id": "grievance_repeat_01",
+      "slot": "grievance_repeat"
+    },
+    {
+      "id": "grievance_desert_01",
+      "slot": "grievance_desert"
+    },
+    {
+      "id": "grievance_wage_01",
+      "slot": "grievance_wage"
+    },
+    {
+      "id": "grievance_starve_01",
+      "slot": "grievance_starve"
+    },
+    {
+      "id": "grievance_raid_01",
+      "slot": "grievance_raid"
+    },
+    {
+      "id": "rescue_thanks_01",
+      "slot": "rescue_thanks"
+    },
+    {
+      "id": "rescue_what_now_01",
+      "slot": "rescue_what_now"
+    },
+    {
+      "id": "rescue_join_reply_01",
+      "slot": "rescue_join_reply"
+    },
+    {
+      "id": "rescue_lead_reply_01",
+      "slot": "rescue_lead_reply"
+    },
+    {
+      "id": "rescue_alone_reply_01",
+      "slot": "rescue_alone_reply"
+    },
+    {
+      "id": "rescue_party_ok_01",
+      "slot": "rescue_party_ok"
+    },
+    {
+      "id": "rescue_party_what_01",
+      "slot": "rescue_party_what"
+    },
+    {
+      "id": "rescue_party_go_01",
+      "slot": "rescue_party_go"
+    },
+    {
+      "id": "prison_break_thanks_01",
+      "slot": "prison_break_thanks"
+    },
+    {
+      "id": "prison_break_rejoin_01",
+      "slot": "prison_break_rejoin"
+    },
+    {
+      "id": "follow_ok_01",
+      "slot": "follow_ok"
+    },
+    {
+      "id": "gather_ok_01",
+      "slot": "gather_ok"
+    },
+    {
+      "id": "follow_stop_ok_01",
+      "slot": "follow_stop_ok"
+    },
+    {
+      "id": "idle_daily_01",
+      "trigger": {
+        "on": "daily",
+        "chance": 0.3
+      }
+    },
+    {
+      "id": "near_town_01",
+      "trigger": {
+        "on": "nearSettlement",
+        "params": {
+          "settlement": "town_EN1",
+          "radius": 5,
+          "rearmRadius": 15
+        }
+      }
+    },
+    {
+      "id": "mood_up_01",
+      "trigger": {
+        "on": "varCrossed",
+        "params": {
+          "var": "mood",
+          "value": 10,
+          "direction": "up"
+        }
+      }
+    }
   ],
   "conversations": [
     {
       "id": "the_scar",
       "entry": "hub",
       "once": true,
-      "when": {"hired": true},
-      "start": ["p_scar_ask"],
+      "when": {
+        "hired": true
+      },
+      "start": [
+        "p_scar_ask"
+      ],
       "nodes": [
-        {"id": "p_scar_ask", "speaker": "player", "next": ["scar_story"]},
-        {"id": "scar_story", "speaker": "npc", "next": ["p_scar_sorry", "p_scar_enough"]},
-        {"id": "p_scar_sorry", "speaker": "player", "next": ["scar_thanks"],
-         "effects": {"relation": 2, "setFlags": ["told_scar"]}},
-        {"id": "p_scar_enough", "speaker": "player", "next": ["scar_shrug"]},
-        {"id": "scar_thanks", "speaker": "npc", "next": ["hub"]},
-        {"id": "scar_shrug", "speaker": "npc", "next": ["hub"]}
+        {
+          "id": "p_scar_ask",
+          "speaker": "player",
+          "next": [
+            "scar_story"
+          ]
+        },
+        {
+          "id": "scar_story",
+          "speaker": "npc",
+          "next": [
+            "p_scar_sorry",
+            "p_scar_enough"
+          ]
+        },
+        {
+          "id": "p_scar_sorry",
+          "speaker": "player",
+          "next": [
+            "scar_thanks"
+          ],
+          "effects": {
+            "relation": 2,
+            "setFlags": [
+              "told_scar"
+            ]
+          }
+        },
+        {
+          "id": "p_scar_enough",
+          "speaker": "player",
+          "next": [
+            "scar_shrug"
+          ]
+        },
+        {
+          "id": "scar_thanks",
+          "speaker": "npc",
+          "next": [
+            "hub"
+          ]
+        },
+        {
+          "id": "scar_shrug",
+          "speaker": "npc",
+          "next": [
+            "hub"
+          ]
+        }
       ]
     },
     {
       "id": "spare_coin",
       "entry": "hub",
-      "when": {"hired": true, "flags": ["told_scar"], "notFlags": ["got_coin"]},
-      "start": ["p_coin_offer", "p_coin_ask"],
+      "when": {
+        "hired": true,
+        "flags": [
+          "told_scar"
+        ],
+        "notFlags": [
+          "got_coin"
+        ]
+      },
+      "start": [
+        "p_coin_offer",
+        "p_coin_ask"
+      ],
       "nodes": [
-        {"id": "p_coin_offer", "speaker": "player", "next": ["coin_thanks"],
-         "when": {"hasGold": {"who": "player", "min": 100}},
-         "effects": {"transfer": {"gold": 100, "from": "player", "to": "self"}, "relation": 1, "setFlags": ["got_coin"]}},
-        {"id": "p_coin_ask", "speaker": "player", "when": {"minRelation": 10}, "next": ["coin_refuse", "coin_fine"]},
-        {"id": "coin_refuse", "speaker": "npc", "when": {"maxRelation": 20}, "priority": 1, "next": ["hub"]},
-        {"id": "coin_fine", "speaker": "npc", "next": ["end"],
-         "effects": {"transfer": {"gold": 50, "from": "world", "to": "player"}, "setFlags": ["got_coin"]}},
-        {"id": "coin_thanks", "speaker": "npc", "next": ["end"]}
+        {
+          "id": "p_coin_offer",
+          "speaker": "player",
+          "next": [
+            "coin_thanks"
+          ],
+          "when": {
+            "hasGold": {
+              "who": "player",
+              "min": 100
+            }
+          },
+          "effects": {
+            "transfer": {
+              "gold": 100,
+              "from": "player",
+              "to": "self"
+            },
+            "relation": 1,
+            "setFlags": [
+              "got_coin"
+            ]
+          }
+        },
+        {
+          "id": "p_coin_ask",
+          "speaker": "player",
+          "when": {
+            "minRelation": 10
+          },
+          "next": [
+            "coin_refuse",
+            "coin_fine"
+          ]
+        },
+        {
+          "id": "coin_refuse",
+          "speaker": "npc",
+          "when": {
+            "maxRelation": 20
+          },
+          "priority": 1,
+          "next": [
+            "hub"
+          ]
+        },
+        {
+          "id": "coin_fine",
+          "speaker": "npc",
+          "next": [
+            "end"
+          ],
+          "effects": {
+            "transfer": {
+              "gold": 50,
+              "from": "world",
+              "to": "player"
+            },
+            "setFlags": [
+              "got_coin"
+            ]
+          }
+        },
+        {
+          "id": "coin_thanks",
+          "speaker": "npc",
+          "next": [
+            "end"
+          ]
+        }
       ]
     },
     {
       "id": "after_scar",
       "entry": "greeting",
       "once": true,
-      "when": {"inParty": true, "flags": ["told_scar"]},
-      "start": ["greet_scar"],
+      "when": {
+        "inParty": true,
+        "flags": [
+          "told_scar"
+        ]
+      },
+      "start": [
+        "greet_scar"
+      ],
       "nodes": [
-        {"id": "greet_scar", "speaker": "npc", "next": ["p_greet_glad", "p_greet_busy"]},
-        {"id": "p_greet_glad", "speaker": "player", "next": ["greet_glad_reply"]},
-        {"id": "p_greet_busy", "speaker": "player", "next": ["greet_busy_reply"]},
-        {"id": "greet_glad_reply", "speaker": "npc", "next": ["hub"]},
-        {"id": "greet_busy_reply", "speaker": "npc", "next": ["end"]}
+        {
+          "id": "greet_scar",
+          "speaker": "npc",
+          "next": [
+            "p_greet_glad",
+            "p_greet_busy"
+          ]
+        },
+        {
+          "id": "p_greet_glad",
+          "speaker": "player",
+          "next": [
+            "greet_glad_reply"
+          ]
+        },
+        {
+          "id": "p_greet_busy",
+          "speaker": "player",
+          "next": [
+            "greet_busy_reply"
+          ]
+        },
+        {
+          "id": "greet_glad_reply",
+          "speaker": "npc",
+          "next": [
+            "hub"
+          ]
+        },
+        {
+          "id": "greet_busy_reply",
+          "speaker": "npc",
+          "next": [
+            "end"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "battle_won",
+      "trigger": {
+        "on": "playerBattleEnded",
+        "expiresAfterHours": 12
+      },
+      "when": {
+        "var": "event.playerWon",
+        "eq": true
+      },
+      "start": [
+        "bw_hail"
+      ],
+      "nodes": [
+        {
+          "id": "bw_hail",
+          "speaker": "npc",
+          "next": [
+            "p_bw_cheer",
+            "p_bw_quiet"
+          ]
+        },
+        {
+          "id": "p_bw_cheer",
+          "speaker": "player",
+          "next": [
+            "end"
+          ],
+          "effects": {
+            "add": {
+              "mood": 2
+            }
+          }
+        },
+        {
+          "id": "p_bw_quiet",
+          "speaker": "player",
+          "next": [
+            "end"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "campfire",
+      "trigger": {
+        "on": "daily",
+        "chance": 0.2,
+        "delivery": "inquiry",
+        "cooldownDays": 5
+      },
+      "start": [
+        "cf_ask"
+      ],
+      "nodes": [
+        {
+          "id": "cf_ask",
+          "speaker": "npc",
+          "next": [
+            "p_cf_sing",
+            "p_cf_march"
+          ]
+        },
+        {
+          "id": "p_cf_sing",
+          "speaker": "player",
+          "next": [
+            "end"
+          ],
+          "effects": {
+            "partyMorale": 3
+          }
+        },
+        {
+          "id": "p_cf_march",
+          "speaker": "player",
+          "next": [
+            "end"
+          ],
+          "effects": {
+            "partyMorale": -2
+          }
+        }
       ]
     }
   ]

@@ -72,6 +72,15 @@
     "prison_break_rejoin_01": "Yeniden sana katılmaya hazırım. Sana borçluyum.",
     "follow_ok_01": "Yolu göster.",
     "gather_ok_01": "Öyle yapacağım.",
-    "follow_stop_ok_01": "Nasıl istersen."
+    "follow_stop_ok_01": "Nasıl istersen.",
+    "idle_daily_01": "Bugün yol sakin, Kaptan.",
+    "near_town_01": "Epikrotea'nın surları, Kaptan. Onları yeniden görmek güzel.",
+    "mood_up_01": "Uzun zamandır kendimi bu kadar iyi hissetmemiştim, Kaptan.",
+    "bw_hail": "Dayandık, Kaptan! Kaçışlarını gördün mü?",
+    "p_bw_cheer": "Hepiniz iyi dövüştünüz!",
+    "p_bw_quiet": "Önce yaralıları sayın.",
+    "cf_ask": "Adamlar bu gece huzursuz. Ateş başında bir şarkı mı, yoksa karanlıkta yola devam mı?",
+    "p_cf_sing": "Şarkı söyleyin. Bu gece dinleniyoruz.",
+    "p_cf_march": "Şarkı yok. Yürüyoruz."
   }
 }

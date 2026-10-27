@@ -72,6 +72,15 @@
     "prison_break_rejoin_01": "I'm ready to rejoin you. I'm in your debt.",
     "follow_ok_01": "Lead the way.",
     "gather_ok_01": "I shall do that.",
-    "follow_stop_ok_01": "As you wish."
+    "follow_stop_ok_01": "As you wish.",
+    "idle_daily_01": "Quiet road today, Captain.",
+    "near_town_01": "Epicrotea's walls, Captain. Good to see them again.",
+    "mood_up_01": "I haven't felt this good in a long while, Captain.",
+    "bw_hail": "We held, Captain! Did you see them run?",
+    "p_bw_cheer": "Well fought, all of you!",
+    "p_bw_quiet": "Count the wounded first.",
+    "cf_ask": "The men are restless tonight. A song by the fire, or press on in the dark?",
+    "p_cf_sing": "Sing. We rest tonight.",
+    "p_cf_march": "No songs. We march."
   }
 }

@@ -74,6 +74,27 @@ public class TriggerGameWiringTests
         }
     }
 
+    [Fact]
+    public void Adapter_payload_fields_are_registry_fields()
+    {
+        foreach (var file in AdapterFiles())
+        {
+            var text = Read(file);
+            var starts = Entry.Matches(text).Cast<Match>().ToList();
+            for (var i = 0; i < starts.Count; i++)
+            {
+                var name = starts[i].Groups["name"].Value;
+                var end = i + 1 < starts.Count ? starts[i + 1].Index : text.Length;
+                var body = text[starts[i].Index..end];
+                if (!TriggerRegistry.TryGet(name, out var t)) continue;
+                foreach (Match f in Regex.Matches(body, @"\(""(?<field>[a-zA-Z]+)"",\s"))
+                    Assert.True(t.Field(f.Groups["field"].Value) != null, $"{file}: '{name}' sets field '{f.Groups["field"].Value}', which the registry entry does not have");
+                if (body.Contains("MapEvent("))
+                    Assert.True(t.Field("battleType") != null, $"{file}: '{name}' uses MapEvent(...) but its registry entry has no MapEventFields");
+            }
+        }
+    }
+
     internal static string QOf(string trigger) =>
         File.ReadAllLines(Path.Combine(RepoPaths.Root, "orchestra", "triggers.tsv")).Select(l => l.Split('\t'))
             .First(c => c.Length > 4 && c[4] == trigger)[1];
