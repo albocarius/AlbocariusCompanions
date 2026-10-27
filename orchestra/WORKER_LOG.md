@@ -74,3 +74,4 @@
 | 114c-trigger-registry-q37 | 1 | PASS, reviewed | 20 entries; alley events carry no alley field (no GAME_MAP member for the alley's town) |
 | 114d-trigger-registry-q38 | 1 | PASS, reviewed | 13 entries |
 | 114e-trigger-registry-q39 | 1 | PASS, reviewed | 32 entries; IFaction args as Faction |
+| 114f-trigger-registry-q40 | 1 | PASS, reviewed | 28 entries; regenerated TRIGGERS.md as told |

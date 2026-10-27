@@ -4,7 +4,7 @@
      trigger registry (src/AlbocariusCompanions.Core/Triggers). Do not edit by hand. -->
 
 A conversation or a slot-free line with a `trigger` is started by the game (see docs/SCHEMA.md, "Triggers"). This page
-lists every trigger: 112 in total, grouped by category, with the subjects it accepts, its payload
+lists every trigger: 139 in total, grouped by category, with the subjects it accepts, its payload
 fields (usable in `where` and in `event.<field>` conditions) and an example.
 
 ## Subjects
@@ -49,6 +49,7 @@ Other kinds: Int (whole number), Number (decimal), Bool (`true`/`false`), Text (
 
 ## Common triggers
 
+- [`childBorn`](#childborn) — A hero gave birth — the in-game birth of newborn children, the player's own family and companions included; the mother can be killed in childbirth right afterwards.
 - [`companionAdded`](#companionadded) — The player hired a new companion — when this fires the hero is already in the player's clan and party, so greeting lines can reference them directly.
 - [`daily`](#daily) — Once per in-game day; combine with `chance` for random comments.
 - [`heroCaptured`](#herocaptured) — A hero was taken prisoner anywhere in the world (by the player or by anyone else).
@@ -62,6 +63,7 @@ Other kinds: Int (whole number), Number (decimal), Bool (`true`/`false`), Text (
 - [`roleEnded`](#roleended) — A companion left a role.
 - [`roleStarted`](#rolestarted) — A companion took a role (governor, party leader, …).
 - [`settlementEntered`](#settlemententered) — The player entered a settlement (town, castle, village or hideout) with the party; walking in alone as a character fires too, then `party` is empty and `hero` is the player hero.
+- [`settlementOwnerChanged`](#settlementownerchanged) — A settlement changed hands — taken by siege, or handed over by barter, gift, a king's decision, rebellion, or the old owner's clan being destroyed or leaving its faction.
 - [`siegeEnded`](#siegeended) — A siege is over and its outcome is decided: the last assault or sally failed, the besiegers broke off, and who holds the settlement is settled.
 - [`tournamentFinished`](#tournamentfinished) — A town's tournament ended and the prize was paid: the player won only if they attended (`winner.isPlayer`), otherwise the winner is one of the simulated participants.
 - [`varCrossed`](#varcrossed) — One of this companion's variables crossed `value` in `direction` (up: from below to at-or-above; down: from at-or-above to below).
@@ -363,6 +365,53 @@ A clan defected from one kingdom to another, dragging its parties and fiefs alon
 "trigger": { "on": "clanDefected", "subject": "player", "where": { "clan.culture": "vlandia" } }
 ```
 
+### clanDestroyed
+
+A clan was destroyed — its parties, heroes and fiefs are about to be wiped; when the player's clan is destroyed the campaign is effectively over.
+
+- Source: `CampaignEvents.OnClanDestroyedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the clan being destroyed; fully readable while this fires |
+
+```json
+"trigger": { "on": "clanDestroyed", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### clanInfluenceChanged
+
+A clan's influence moved — fires for every clan and every trickle, so gate on the player clan and put a `where` threshold on `change`.
+
+- Source: `CampaignEvents.OnClanInfluenceChangedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the clan whose influence moved |
+| `change` | Number | influence gained (positive) or lost (negative) |
+
+```json
+"trigger": { "on": "clanInfluenceChanged", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### clanLeaderChanged
+
+A clan got a new leader — succession after a death, the player-chosen heir, or a new clan lord; `newLeader` is already the leader when this fires.
+
+- Source: `CampaignEvents.OnClanLeaderChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `oldLeader`, `newLeader`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `oldLeader` | Hero | the leader before the change; empty on a brand-new clan |
+| `newLeader` | Hero | the new clan leader |
+
+```json
+"trigger": { "on": "clanLeaderChanged", "subject": "playerClan", "where": { "oldLeader.culture": "vlandia" } }
+```
+
 ### clanTierIncreased
 
 A clan reached a higher tier — the player clan growing is the moment for pride or companion-slot banter.
@@ -376,6 +425,65 @@ A clan reached a higher tier — the player clan growing is the moment for pride
 
 ```json
 "trigger": { "on": "clanTierIncreased", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### companionRemoved
+
+A companion left the player clan — dismissed, killed, finished by a quest, or turned into a lord; the hero is already off the roster when this fires, so say the goodbye lines here.
+
+- Source: `CampaignEvents.CompanionRemoved`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `companion`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `companion` | Hero | the companion who left |
+| `detail` | Text | the game's RemoveCompanionDetail: Fire, Death, AfterQuest, ByTurningToLord |
+
+```json
+"trigger": { "on": "companionRemoved", "subject": "playerClan", "where": { "companion.culture": "vlandia" } }
+```
+
+### heirSelected
+
+The new heir of the player clan was chosen after a death — the player character switches right afterwards.
+
+- Source: `CampaignEvents.OnHeirSelectionOverEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `heir`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `heir` | Hero | the hero picked as the new heir |
+
+```json
+"trigger": { "on": "heirSelected", "subject": "playerClan", "where": { "heir.culture": "vlandia" } }
+```
+
+### heirSelectionRequested
+
+The player character just died and the game is asking which clan member takes over — the heir is not chosen yet; the candidate list is not exposed, so pair this with `heirSelected`.
+
+- Source: `CampaignEvents.OnHeirSelectionRequestedEvent`
+- Subjects: `any`; default `any`
+
+```json
+"trigger": { "on": "heirSelectionRequested" }
+```
+
+### heroChangedClan
+
+A lord-type hero joined or left a clan — compare `oldClan` and `newClan` for the direction; companions use `companionAdded` / `companionRemoved` instead.
+
+- Source: `CampaignEvents.OnHeroChangedClanEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`, `newClan`, `oldClan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who moved |
+| `oldClan` | Clan | the clan the hero left |
+| `newClan` | Clan | the clan the hero joined, read live from the hero |
+
+```json
+"trigger": { "on": "heroChangedClan", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
 ```
 
 ### relationChanged
@@ -576,6 +684,37 @@ A hero or party handed an item stack to another hero or party (quest trades, gif
 
 ## Category: family
 
+### childBorn
+
+A hero gave birth — the in-game birth of newborn children, the player's own family and companions included; the mother can be killed in childbirth right afterwards.
+
+- Source: `CampaignEvents.OnGivenBirthEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `mother`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `mother` | Hero | the hero who gave birth |
+| `stillbornCount` | Int | how many of the litter were stillborn; usually 0 |
+
+```json
+"trigger": { "on": "childBorn", "subject": "playerClan", "where": { "mother.culture": "vlandia" } }
+```
+
+### childConceived
+
+A hero conceived a child — fires for every couple in the world, so gate on the player clan; `childBorn` follows roughly nine in-game months later.
+
+- Source: `CampaignEvents.OnChildConceivedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `mother`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `mother` | Hero | the mother of the unborn child |
+
+```json
+"trigger": { "on": "childConceived", "subject": "playerClan", "where": { "mother.culture": "vlandia" } }
+```
+
 ### childEducationCompleted
 
 A child hero finished an education stage — it fires at every stage of a childhood, not only the last, and `age` is the child's age at that moment.
@@ -651,6 +790,22 @@ Two heroes are about to marry — the wedding action has begun but relations, ho
 
 ```json
 "trigger": { "on": "heroesAboutToMarry", "subject": "playerClan", "where": { "firstHero.culture": "vlandia" } }
+```
+
+### marriageOfferCancelled
+
+A marriage offer to the player's kin was withdrawn — refused, expired, the clans made war, or one of the two was captured or killed; the offer banner vanishes when the game removes it.
+
+- Source: `CampaignEvents.OnMarriageOfferCanceledEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `suitor`, `maiden`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `suitor` | Hero | the hero who had offered marriage |
+| `maiden` | Hero | the hero who had been offered marriage |
+
+```json
+"trigger": { "on": "marriageOfferCancelled", "subject": "playerClan", "where": { "suitor.culture": "vlandia" } }
 ```
 
 ### romanticStateChanged
@@ -753,6 +908,22 @@ A hero's skill ticked up one or more whole skill levels — companion skill-up r
 "trigger": { "on": "heroGainedSkill", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
 ```
 
+### heroGotBusy
+
+A hero took up a task or role — becoming a governor, emissary, caravan or alley leader, being handed an issue, or starting to travel; the Traveling value fires very often, so filter on `reason`.
+
+- Source: `CampaignEvents.OnHeroGetsBusyEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `hero`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who became busy |
+| `reason` | Text | the game's HeroGetsBusyReasons: BecomeGovernor, BecomeEmissary, BecomeCaravanLeader, BecomeAlleyLeader, SolvesIssue, Traveling |
+
+```json
+"trigger": { "on": "heroGotBusy", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
 ### heroJoinedParty
 
 A hero joined a party on the map — a just-hired wanderer riding out to their lord, a notable joining a caravan or a garrison turning over; it fires everywhere, not only for the player.
@@ -817,6 +988,41 @@ A hero's occupation changed — the classic case is a companion granted a fief t
 "trigger": { "on": "heroOccupationChanged", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
 ```
 
+### heroSharedFood
+
+A better-fed hero gave rations to a starving hero of the same army and gained influence for it — gratitude or indignation lines when the player's army is involved.
+
+- Source: `CampaignEvents.OnHeroSharedFoodWithAnotherHeroEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `supporter`, `supported`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `supporter` | Hero | the hero who gave the food |
+| `supported` | Hero | the hungry hero who got the food |
+| `influence` | Number | the influence the giver earned |
+
+```json
+"trigger": { "on": "heroSharedFood", "subject": "playerClan", "where": { "supporter.culture": "vlandia" } }
+```
+
+### heroTeleportRequested
+
+A hero is about to be teleported on the campaign map — it fires before the move and can still be refused by the game; the typical case is a companion re-placed after being garrisoned or released.
+
+- Source: `CampaignEvents.OnHeroTeleportationRequestedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `settlement:<id>`, `any`; default `playerClan` (matched on `hero`, `settlement`, `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `hero` | Hero | the hero who will be teleported |
+| `settlement` | Settlement | the settlement teleported to; empty when the target is a party |
+| `party` | Party | the party teleported to; empty when the target is a settlement |
+| `detail` | Text | the game's TeleportationDetail — immediate or delayed, to a settlement or a party (as governor / party leader) |
+
+```json
+"trigger": { "on": "heroTeleportRequested", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
 ### playerMetHero
 
 The player met a hero for the first time — a conversation happened or the encyclopedia revealed them; first-meeting chatter.
@@ -833,6 +1039,87 @@ The player met a hero for the first time — a conversation happened or the ency
 ```
 
 ## Category: kingdom
+
+### allianceEnded
+
+The alliance between two kingdoms ended — it expired, the two allies went to war with each other, or one of the kingdoms was destroyed.
+
+- Source: `CampaignEvents.OnAllianceEndedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `firstKingdom`, `secondKingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `firstKingdom` | Kingdom | one kingdom of the pair |
+| `secondKingdom` | Kingdom | the other kingdom of the pair |
+
+```json
+"trigger": { "on": "allianceEnded", "subject": "player", "where": { "firstKingdom.culture": "vlandia" } }
+```
+
+### allianceStarted
+
+Two kingdoms became allies — the receiving kingdom has already accepted, and wars against their enemies follow right after.
+
+- Source: `CampaignEvents.OnAllianceStartedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `proposerKingdom`, `receiverKingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `proposerKingdom` | Kingdom | the kingdom that proposed the alliance |
+| `receiverKingdom` | Kingdom | the kingdom that accepted it |
+
+```json
+"trigger": { "on": "allianceStarted", "subject": "player", "where": { "proposerKingdom.culture": "vlandia" } }
+```
+
+### callToWarEnded
+
+A call-to-war agreement ended — usually straight after the war was declared, later by expiry, by peace, or when the alliance behind it ended.
+
+- Source: `CampaignEvents.OnCallToWarAgreementEndedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `callingKingdom`, `calledKingdom`, `targetKingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `callingKingdom` | Kingdom | the kingdom that had asked |
+| `calledKingdom` | Kingdom | the ally that had been asked |
+| `targetKingdom` | Kingdom | the kingdom the call to war was against |
+
+```json
+"trigger": { "on": "callToWarEnded", "subject": "player", "where": { "callingKingdom.culture": "vlandia" } }
+```
+
+### callToWarStarted
+
+One kingdom asked its ally to join a war against `targetKingdom` — the agreement is made but the war is not declared yet; when `calledKingdom` is the player's realm it is being dragged in.
+
+- Source: `CampaignEvents.OnCallToWarAgreementStartedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `callingKingdom`, `calledKingdom`, `targetKingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `callingKingdom` | Kingdom | the kingdom asking its ally to join the war |
+| `calledKingdom` | Kingdom | the ally being asked |
+| `targetKingdom` | Kingdom | the kingdom the war will be declared on |
+
+```json
+"trigger": { "on": "callToWarStarted", "subject": "player", "where": { "callingKingdom.culture": "vlandia" } }
+```
+
+### kingdomCreated
+
+A new kingdom was founded somewhere in the world — a clan raised its banner; the player clan founding its own realm is the special case, and the outcome (ruling clan, its clans) is already set when this fires.
+
+- Source: `CampaignEvents.KingdomCreatedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `kingdom` | Kingdom | the new kingdom |
+
+```json
+"trigger": { "on": "kingdomCreated", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
 
 ### kingdomDecisionCancelled
 
@@ -897,6 +1184,38 @@ A kingdom was destroyed and is about to be gone — its clans have already left 
 "trigger": { "on": "kingdomDestroyed", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
 ```
 
+### mercenaryServiceEnded
+
+A clan's mercenary service ended — it left the kingdom or became a full vassal; for the player clan the hired-sword arc is over.
+
+- Source: `CampaignEvents.OnMercenaryServiceEndedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the clan that left mercenary service |
+| `detail` | Text | the game's EndMercenaryServiceActionDetail: ApplyByDefault, ApplyByLeavingKingdom, ApplyByBecomingVassal |
+
+```json
+"trigger": { "on": "mercenaryServiceEnded", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
+### mercenaryServiceStarted
+
+A clan went into mercenary service under a kingdom — for the player clan, right after accepting a hire offer; the new kingdom is readable live from the clan.
+
+- Source: `CampaignEvents.OnMercenaryServiceStartedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the clan that entered mercenary service |
+| `detail` | Text | the game's StartMercenaryServiceActionDetail — only ApplyByDefault in 1.4.8 |
+
+```json
+"trigger": { "on": "mercenaryServiceStarted", "subject": "player", "where": { "clan.culture": "vlandia" } }
+```
+
 ### peaceMade
 
 Two warring factions made peace — a full kingdom war or a single clan's private feud; `detail` is `ByKingdomDecision` when a council vote ended it.
@@ -929,6 +1248,53 @@ A kingdom got a new ruling clan — an elected new ruler or a clan that seized p
 
 ```json
 "trigger": { "on": "rulingClanChanged", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### serviceOfferCancelled
+
+A kingdom's offer to take the player's clan into mercenary or vassal service disappeared before the player decided — it expired or died from war, captivity or a changed allegiance; clicking Decline fires nothing.
+
+- Source: `CampaignEvents.OnVassalOrMercenaryServiceOfferCanceledEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `kingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `kingdom` | Kingdom | the kingdom that withdrew the offer |
+
+```json
+"trigger": { "on": "serviceOfferCancelled", "subject": "player", "where": { "kingdom.culture": "vlandia" } }
+```
+
+### tradeAgreementSigned
+
+Two kingdoms signed a trade agreement with each other — kingdom news bark.
+
+- Source: `CampaignEvents.OnTradeAgreementSignedEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `firstKingdom`, `secondKingdom`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `firstKingdom` | Kingdom | one kingdom of the pair |
+| `secondKingdom` | Kingdom | the other kingdom of the pair |
+
+```json
+"trigger": { "on": "tradeAgreementSigned", "subject": "player", "where": { "firstKingdom.culture": "vlandia" } }
+```
+
+### tributeEarned
+
+A clan received gold tribute from a faction it is at war with — fires for every clan in the daily income pass, so gate on the player clan for a purse bark.
+
+- Source: `CampaignEvents.OnClanEarnedGoldFromTributeEvent`
+- Subjects: `player`, `playerClan`, `any`; default `player` (matched on `clan`, `payer`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `clan` | Clan | the clan that got the gold |
+| `payer` | Faction | the clan or kingdom that paid the tribute |
+
+```json
+"trigger": { "on": "tributeEarned", "subject": "player", "where": { "clan.culture": "vlandia" } }
 ```
 
 ### warDeclared
@@ -1229,6 +1595,40 @@ A hero unlocked a perk — usually the player picking one at a level-up; AI hero
 
 ```json
 "trigger": { "on": "perkUnlocked", "subject": "playerClan", "where": { "hero.culture": "vlandia" } }
+```
+
+### playerCharacterAboutToChange
+
+The hero the player controls is about to change — fires before the old hero hands over and while they can still be read.
+
+- Source: `CampaignEvents.OnBeforePlayerCharacterChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `player` (matched on `oldPlayer`, `newPlayer`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `oldPlayer` | Hero | the hero played until now |
+| `newPlayer` | Hero | the hero played from now on |
+
+```json
+"trigger": { "on": "playerCharacterAboutToChange", "subject": "player", "where": { "oldPlayer.culture": "vlandia" } }
+```
+
+### playerCharacterChanged
+
+The player now controls a different hero — `heirSelected` and `clanLeaderChanged` came before; greetings for the new protagonist belong here.
+
+- Source: `CampaignEvents.OnPlayerCharacterChangedEvent`
+- Subjects: `self`, `player`, `playerParty`, `playerClan`, `companion:<id>`, `hero:<id>`, `any`; default `player` (matched on `newPlayer`, `oldPlayer`, `party`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `oldPlayer` | Hero | the hero played until now |
+| `newPlayer` | Hero | the hero played from now on |
+| `party` | Party | the party the new player hero commands |
+| `mainPartyChanged` | Bool | whether the main party itself changed hands |
+
+```json
+"trigger": { "on": "playerCharacterChanged", "subject": "player", "where": { "oldPlayer.culture": "vlandia" } }
 ```
 
 ### playerTraitChanged
@@ -1681,6 +2081,23 @@ A building in a town went up or down a level — normally construction finishing
 "trigger": { "on": "buildingLevelChanged", "subject": "playerClan", "where": { "town.culture": "vlandia" } }
 ```
 
+### governorChanged
+
+A town's governor changed — appointed, given up or replaced; on a removal `newGovernor` is empty, and an appointment is followed immediately by `heroGotBusy` with reason BecomeGovernor.
+
+- Source: `CampaignEvents.OnGovernorChangedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `oldGovernor`, `newGovernor`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the town or castle whose governor changed |
+| `oldGovernor` | Hero | the governor before; empty on a first appointment |
+| `newGovernor` | Hero | the new governor; empty when the governor was only removed |
+
+```json
+"trigger": { "on": "governorChanged", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
 ### settlementEntered
 
 The player entered a settlement (town, castle, village or hideout) with the party; walking in alone as a character fires too, then `party` is empty and `hero` is the player hero.
@@ -1712,6 +2129,26 @@ The player's party left a settlement it was inside; leaving alone as a character
 
 ```json
 "trigger": { "on": "settlementLeft", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
+```
+
+### settlementOwnerChanged
+
+A settlement changed hands — taken by siege, or handed over by barter, gift, a king's decision, rebellion, or the old owner's clan being destroyed or leaving its faction.
+
+- Source: `CampaignEvents.OnSettlementOwnerChangedEvent`
+- Subjects: `settlement:<id>`, `playerClan`, `self`, `player`, `playerParty`, `companion:<id>`, `hero:<id>`, `any`; default `playerClan` (matched on `settlement`, `newOwner`, `oldOwner`, `capturer`)
+
+| Field | Kind | Meaning |
+|---|---|---|
+| `settlement` | Settlement | the settlement that changed owner |
+| `openToClaim` | Bool | true when the fortification is now open to claim — the game sets it for changes by siege, clan destruction or the old clan leaving its faction |
+| `newOwner` | Hero | the hero of the clan that now owns it; empty when the fief went unassigned |
+| `oldOwner` | Hero | the hero of the clan that lost it |
+| `capturer` | Hero | the hero who took it by force; empty for peaceful transfers |
+| `detail` | Text | the game's ChangeOwnerOfSettlementDetail: Default, BySiege, ByBarter, ByLeaveFaction, ByKingDecision, ByGift, ByRebellion, ByClanDestruction |
+
+```json
+"trigger": { "on": "settlementOwnerChanged", "subject": "playerClan", "where": { "settlement.culture": "vlandia" } }
 ```
 
 ### villageStateChanged
