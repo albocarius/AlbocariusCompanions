@@ -28,10 +28,10 @@ Every worker task file (`orchestra/tasks/NN-slug.md`) starts with the full text 
 Rules: spec §0 decisions are fixed. Every schema change updates models + loader + validation + test_companion + fixtures +
 scaffold template + `docs/SCHEMA.md` in the same task. Every new game API → GAME_MAP section + API index row before code uses
 it. The trigger registry (Core) is the only list of triggers: validation, simulator, CLI docs and the Game adapters read it.
-Version `0.3.1` → **`0.4.0`** at the end (new feature set; change at the gate).
+Version `0.3.1` → **`0.4.0`** at the end. Plan approved at the gate 2026-10-27 with the changes noted (G5, G7, G11).
 
 ### Design decisions taken here (spec gaps; change at the gate if wrong)
-- G1 Trigger set = Q35–Q42 rows marked *useful* or *niche* (~215; the 3 *marginal* rows count as niche). Excluded besides
+- G1 Trigger set = Q35–Q42 rows marked *useful* or *niche* (161 after 112; the 3 *marginal* rows count as niche). Excluded besides
   *not useful*: (a) UI-raised on notification inspect, not exposed yet (§0): `OnRansomOfferedToPlayerEvent`,
   `OnPeaceOfferedToPlayerEvent`, `OnVassalOrMercenaryServiceOfferedToPlayerEvent`, `OnMarriageOfferedToPlayerEvent` — each
   with its in-game check in the report; (b) ticks dressed as events (`DailyTickClanEvent`, `HourlyTickClanEvent`,
@@ -54,12 +54,12 @@ Version `0.3.1` → **`0.4.0`** at the end (new feature set; change at the gate)
 - G5 Triggered conversations: `trigger` present → `entry` must be absent (never offered as hub/greeting), `start` = npc
   nodes (selection rule picks one). `delivery: conversation` opens it on the map (Q25 A); `notification` shows the text of
   the selected start npc node (its effects apply); `inquiry` needs exactly one start npc node whose `next` are 1..N player
-  nodes, each ending in `end`; the npc text is the pop-up body, the options are buttons (2 → `ShowInquiry`, 1 or 3+ →
-  `ShowMultiSelectionInquiry`), choosing applies that node's effects (and the npc node's at show time).
+  nodes, each ending in `end`; the npc text is the pop-up body, the options are buttons (1–2 → `ShowInquiry`, 3+ →
+  `ShowMultiSelectionInquiry`; user, gate 2026-10-27), choosing applies that node's effects (and the npc node's at show time).
 - G6 Triggered slot lines: a `lines` entry with `trigger` has **no `slot`** (it is not a fixed-dialog line), delivery must be
   `notification` (default for lines); it is never picked for a fixed dialog. Conversations default to `conversation`.
-- G7 Constants (Core `DeliveryRules`, documented in TRIGGERS.md + SCHEMA.md): interruption cooldown per companion **1 day**
-  (conversation + inquiry), global cap **3 interruptions/day**, **6 notifications/day**, `expiresAfterHours` default **24**,
+- G7 Constants (Core `DeliveryRules`, documented in TRIGGERS.md + SCHEMA.md): interruption cooldown per companion **3 days**
+  (conversation + inquiry), global cap **1 interruption/day**, **3 notifications/day** (user, gate 2026-10-27), `expiresAfterHours` default **24**,
   `chance` default 1, `cooldownDays` default 0. Day = in-game day from `CampaignTime`. `partyMorale` range **−20..+20**
   (validation; vanilla's own one-off morale events stay within that — confirmed in 120 against Q22).
 - G8 Queue order: selection rule over the deliverable items (priority = content `priority`, ties random); oldest first is
@@ -70,11 +70,15 @@ Version `0.3.1` → **`0.4.0`** at the end (new feature set; change at the gate)
 - G10 `varCrossed`: compared after every effect application and on the daily tick (variables change only by effects or
   console). `nearSettlement` hourly with the Q43 latch; `roleStarted/Ended` polled hourly per Q45/Q47. `daily` fires on the
   internal daily tick.
-- G11 Performance: the Game adapter for a trigger is subscribed only if some loaded content uses it (`.reload` re-subscribes
-  nothing; triggers are fixed per session).
+- G11 Performance (user: must be tested): the Game adapter for a trigger is subscribed only if some loaded content uses it
+  (`.reload` re-subscribes nothing; triggers are fixed per session). Core computes the used set
+  (`TriggerEngine.UsedTriggers`); the Game subscribes through one gate that takes that set. Tests: Core used-set tests +
+  a source/metadata test that adapters subscribe only through the gate.
 
 ### Tasks (owner; worker tasks get acceptance tests first)
-- [ ] 112-trigger-names (self) — G1 list from Q35–Q42 + naming pass (unique, camelCase, past tense; fixes the spec's list:
+- [x] 112-trigger-names (self) — done: 161 events + 5 polling = 166 triggers, 15 excluded with reasons (UI-raised 4, ticks 4,
+  lifecycle 1, duplicates 4, DLC 2). One event = one trigger (TournamentFinished is `tournamentFinished`; filter the winner by subject).
+  Original: — G1 list from Q35–Q42 + naming pass (unique, camelCase, past tense; fixes the spec's list:
   `hideoutCleared` vs `alleyCleared`, `alley*` for alley events, `tournamentFinished`, village raid trio) →
   `orchestra/triggers.tsv` (event, old name, new name, category, Q). Feeds 114 and the report table.
 - [ ] 113-trigger-core-model (self) — Core `Triggers/`: `TriggerDefinition`, field/entity kinds (G2), `TriggerPayload`,

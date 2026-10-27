@@ -1,0 +1,183 @@
+# M11 task 112 — trigger list (source of truth for the registry). event	gamemap	line	old_name	name	category	common	note
+event	q	line	old	name	category	common	note
+HeroWounded	Q35	3554	heroWounded	heroWounded	battle	1	useful
+BattleStarted	Q35	3555	battleStarted	battleStarted	battle	0	useful
+MapEventStarted	Q35	3556	mapEventStarted	mapEventStarted	battle	0	useful
+MapEventEnded	Q35	3557	mapEventEnded	mapEventEnded	battle	0	useful
+OnPlayerBattleEndEvent	Q35	3558	playerBattleEnded	playerBattleEnded	battle	1	useful
+PlayerDesertedBattleEvent	Q35	3559	playerDeserted	playerDesertedBattle	battle	0	useful
+OnHeroCombatHitEvent	Q35	3560	heroCombatHit	heroHitInCombat	battle	0	useful
+OnSiegeEventStartedEvent	Q35	3562	siegeStarted	siegeStarted	battle	0	useful
+OnPlayerSiegeStartedEvent	Q35	3563	playerSiegeJoined	playerJoinedSiege	battle	0	useful
+CrimeRatingChanged	Q35	3569	crimeAdded	crimeRatingChanged	crime	0	useful
+CharacterBecameFugitiveEvent	Q35	3570	companionBecameFugitive	heroBecameFugitive	crime	0	useful
+BanditPartyRecruited	Q35	3571	banditsAbsorbed	banditPartyRecruited	crime	0	useful
+TrackDetectedEvent	Q35	3578	trackSpotted	trackSpotted	party	0	useful
+TrackLostEvent	Q35	3579	trackLost	trackLost	party	0	niche
+HeroPrisonerTaken	Q35	3585	heroCaptured	heroCaptured	prisoners	1	useful
+HeroPrisonerReleased	Q35	3586	heroReleased	heroReleased	prisoners	1	useful
+PrisonersChangeInSettlement	Q35	3587	dungeonPopulationChanged	prisonersChangedInSettlement	prisoners	0	limited
+OnRansomOfferedToPlayerEvent	Q35	3588	ransomOffered	-	-	0	UI-raised (notification inspect), not exposed yet
+OnRansomOfferCancelledEvent	Q35	3589	ransomOfferExpired	ransomOfferCancelled	prisoners	0	niche
+VillageBeingRaided	Q35	3595	villageRaidStarted	villageRaidStarted	raids	0	useful
+VillageLooted	Q35	3596	villageLooted	villageLooted	raids	1	useful
+ItemsLooted	Q35	3597	itemsLooted	itemsLooted	raids	0	useful
+TownRebelliosStateChanged	Q35	3598	townBecameRebellious	townRebellionStateChanged	raids	0	useful
+RebellionFinished	Q35	3599	rebellionSucceeded	rebellionSucceeded	raids	0	useful
+HeroKilledEvent	Q35	3606	heroKilled	heroKilled	heroes	1	useful
+BeforeHeroKilledEvent	Q35	3607	beforeHeroKilled	heroAboutToBeKilled	heroes	0	useful
+OnSiegeEventEndedEvent	Q36	3678	siegeEnded	siegeEnded	siege	1	useful
+SiegeCompletedEvent	Q36	3679		siegeBattleEnded	siege	0	see
+AfterSiegeCompletedEvent	Q36	3680		-	-	0	duplicate of SiegeCompletedEvent (siegeBattleEnded)
+OnSiegeAftermathAppliedEvent	Q36	3681		siegeAftermathApplied	siege	0	see
+OnBlockadeActivatedEvent	Q36	3686	portBlockaded	blockadeStarted	siege	0	useful
+OnBlockadeDeactivatedEvent	Q36	3687	blockadeLifted	blockadeEnded	siege	0	useful
+OnMobilePartyJoinedToSiegeEventEvent	Q36	3688	siegeJoin	partyJoinedSiege	siege	0	useful
+OnMobilePartyLeftSiegeEventEvent	Q36	3689	siegeLeave	partyLeftSiege	siege	0	useful
+RaidCompletedEvent	Q36	3695		villageRaidEnded	raids	0	see
+ForceVolunteersCompletedEvent	Q36	3696	volunteersForced	volunteersForced	raids	0	useful
+ForceSuppliesCompletedEvent	Q36	3697	suppliesForced	suppliesForced	raids	0	useful
+OnPrisonerTakenEvent	Q36	3703	prisonersTaken	prisonersTaken	prisoners	0	useful
+OnPrisonerReleasedEvent	Q36	3704	prisonersReleased	prisonersReleased	prisoners	0	useful
+OnMainPartyPrisonerRecruitedEvent	Q36	3705	prisonersRecruited	prisonersRecruited	prisoners	0	useful
+OnPrisonerSoldEvent	Q36	3706	prisonersSold	prisonersSold	prisoners	0	useful
+OnPrisonerDonatedToSettlementEvent	Q36	3707	prisonersDonated	prisonersDonated	prisoners	0	useful
+OnLootDistributedToPartyEvent	Q36	3713	lootTaken	lootDistributed	battle	0	useful
+OnCollectLootsItemsEvent	Q36	3714	lootCollected	lootCollected	battle	0	useful
+OnHideoutSpottedEvent	Q36	3721	hideoutFound	hideoutSpotted	crime	0	useful
+OnHideoutDeactivatedEvent	Q36	3722	hideoutCleared	hideoutEmptied	crime	0	useful
+OnTroopsDesertedEvent	Q36	3728	desertion	troopsDeserted	party	0	useful
+ArmyCreated	Q37	3797	armyFormed	armyCreated	army	0	useful
+ArmyDispersed	Q37	3799	armyDismissed	armyDispersed	army	0	useful
+PartyAttachedAnotherParty	Q37	3800	playerJoinedHost	partyAttached	army	0	useful
+MobilePartyCreated	Q37	3806	partySpawned	partyCreated	party	0	niche
+MobilePartyDestroyed	Q37	3807	partyDestroyed	partyDestroyed	party	0	useful
+BeforeSettlementEnteredEvent	Q37	3818		-	-	0	duplicate of SettlementEntered (settlementEntered)
+SettlementEntered	Q37	3819	settlementEntered	settlementEntered	settlements	1	useful
+AfterSettlementEntered	Q37	3820		-	-	0	duplicate of SettlementEntered (settlementEntered)
+OnSettlementLeftEvent	Q37	3821	settlementLeft	settlementLeft	settlements	0	useful
+VillageStateChanged	Q37	3822	villageRaided	villageStateChanged	settlements	0	useful
+DailyTickTownEvent	Q37	3824	playerTownDailyTick	-	-	0	tick, internal
+OnBuildingLevelChangedEvent	Q37	3826	constructionFinished	buildingLevelChanged	settlements	0	useful
+AlleyOwnerChanged	Q37	3832	hideoutOwnershipChanged	alleyOwnerChanged	crime	0	useful
+AlleyOccupiedByPlayer	Q37	3833	hideoutTaken	alleyTakenOver	crime	0	useful
+AlleyClearedByPlayer	Q37	3834	hideoutCleared	alleyCleared	crime	0	useful
+TournamentStarted	Q37	3840	tournamentAnnounced	tournamentStarted	tournaments	0	useful
+TournamentFinished	Q37	3841	tournamentWon	tournamentFinished	tournaments	1	useful
+TournamentCancelled	Q37	3842	tournamentCancelled	tournamentCancelled	tournaments	0	useful
+PlayerEliminatedFromTournament	Q37	3844	tournamentLost	playerEliminatedFromTournament	tournaments	0	useful
+OnMissionStartedEvent	Q37	3851	sceneEntered	-	-	0	duplicate of AfterMissionStarted (sceneEntered)
+AfterMissionStarted	Q37	3852	prefer	sceneEntered	scenes	0	useful
+ConversationEnded	Q37	3854	conversationEnded	conversationEnded	scenes	0	useful
+HeroOrPartyTradedGold	Q37	3860	playerGaveGold	goldGiven	economy	0	niche
+HeroOrPartyGaveItem	Q37	3861	itemGifted	itemGiven	economy	0	niche
+DailyTickPartyEvent	Q37	3867		-	-	0	tick, internal
+OnPartyJoinedArmyEvent	Q38	3920	partyJoinedArmy	partyJoinedArmy	party	0	useful
+PartyRemovedFromArmyEvent	Q38	3921	partyLeftArmy	partyLeftArmy	party	0	useful
+OnPartyLeaderChangedEvent	Q38	3925	partyLeaderChanged	partyLeaderChanged	party	0	useful
+OnPartyDisbandStartedEvent	Q38	3927	partyDisbandStarted	partyDisbandStarted	party	0	useful
+OnPartyDisbandedEvent	Q38	3928	partyDisbanded	partyDisbanded	party	0	useful
+PartyVisibilityChangedEvent	Q38	3930	partySpotted	partyVisibilityChanged	party	0	niche
+OnUnitRecruitedEvent	Q38	3943	troopRecruited	playerRecruitedTroops	party	0	useful
+OnTroopRecruitedEvent	Q38	3944	allyRecruitedTroops	heroRecruitedTroops	party	0	useful
+PlayerUpgradedTroopsEvent	Q38	3946	troopsUpgraded	troopsUpgraded	party	0	useful
+OnTroopGivenToSettlementEvent	Q38	3947	allyGarrisonedTroops	troopsGivenToSettlement	party	0	niche
+OnMainPartyStarvingEvent	Q38	3949	partyStarving	playerPartyStarving	party	0	useful
+OnShipCreatedEvent	Q38	3970		-	-	0	DLC only
+PlayerStartTalkFromMenu	Q38	3977	playerStartTalk	playerStartedTalkFromMenu	scenes	0	niche
+OnPlayerJoinedTournamentEvent	Q38	3978	playerJoinedTournament	playerJoinedTournament	tournaments	0	niche
+OnMapMarkerCreatedEvent	Q38	3979		-	-	0	DLC only
+HeroCreated	Q39	4049	heroCreated	heroCreated	heroes	0	useful
+OnHeroActivatedEvent	Q39	4050	heroActivated	heroActivated	heroes	0	useful
+HeroOccupationChangedEvent	Q39	4051	heroOccupationChanged	heroOccupationChanged	heroes	0	useful
+HeroLevelledUp	Q39	4052	heroLeveledUp	heroLeveledUp	heroes	1	useful
+HeroGainedSkill	Q39	4053	heroSkillUp	heroGainedSkill	heroes	0	useful
+OnHeroJoinedPartyEvent	Q39	4054	heroJoinedParty	heroJoinedParty	heroes	0	useful
+NewCompanionAdded	Q39	4055	companionAdded	companionAdded	heroes	1	useful
+OnPlayerMetHeroEvent	Q39	4056	heroMet	playerMetHero	heroes	0	useful
+PlayerTraitChangedEvent	Q39	4064	traitChanged	playerTraitChanged	player	0	useful
+PerkOpenedEvent	Q39	4065	perkOpened	perkUnlocked	player	0	useful
+HeroRelationChanged	Q39	4072	relationChanged	relationChanged	clan	0	useful
+ClanTierIncrease	Q39	4073	clanTierUp	clanTierIncreased	clan	0	useful
+RenownGained	Q39	4074	renownGained	renownGained	clan	0	useful
+OnClanCreatedEvent	Q39	4075	clanCreated	clanCreated	clan	0	useful
+OnClanChangedKingdomEvent	Q39	4076	clanChangedKingdom	clanChangedKingdom	clan	0	useful
+OnClanDefectedEvent	Q39	4077	clanDefected	clanDefected	clan	0	useful
+KingdomDecisionAdded	Q39	4083	kingdomDecisionProposed	kingdomDecisionProposed	kingdom	0	useful
+KingdomDecisionCancelled	Q39	4084	kingdomDecisionCancelled	kingdomDecisionCancelled	kingdom	0	marginal
+KingdomDecisionConcluded	Q39	4085	kingdomDecisionConcluded	kingdomDecisionConcluded	kingdom	0	useful
+WarDeclared	Q39	4086	warDeclared	warDeclared	kingdom	1	useful
+MakePeace	Q39	4087	madePeace	peaceMade	kingdom	1	useful
+RulingClanChanged	Q39	4088	rulerChanged	rulingClanChanged	kingdom	0	useful
+KingdomDestroyedEvent	Q39	4089	kingdomDestroyed	kingdomDestroyed	kingdom	0	useful
+RomanticStateChanged	Q39	4095	romanceChanged	romanticStateChanged	family	0	useful
+BeforeHeroesMarried	Q39	4096	beforeMarriage	heroesAboutToMarry	family	0	useful
+ChildEducationCompletedEvent	Q39	4097	childEducationStage	childEducationCompleted	family	0	useful
+HeroComesOfAgeEvent	Q39	4098	comesOfAge	heroCameOfAge	family	0	useful
+HeroGrowsOutOfInfancyEvent	Q39	4099	outOfInfancy	heroGrewOutOfInfancy	family	0	useful
+HeroReachesTeenAgeEvent	Q39	4100	reachesTeenAge	heroBecameTeenager	family	0	useful
+KingdomCreatedEvent	Q40	4169	kingdomCreated	kingdomCreated	kingdom	0	useful
+OnPeaceOfferedToPlayerEvent	Q40	4170	peaceOfferReceived	-	-	0	UI-raised (notification inspect), not exposed yet
+OnTradeAgreementSignedEvent	Q40	4171	tradeAgreementSigned	tradeAgreementSigned	kingdom	0	useful
+OnAllianceStartedEvent	Q40	4173	allianceStarted	allianceStarted	kingdom	0	useful
+OnAllianceEndedEvent	Q40	4174	allianceEnded	allianceEnded	kingdom	0	useful
+OnCallToWarAgreementStartedEvent	Q40	4175	callToWarStarted	callToWarStarted	kingdom	0	useful
+OnCallToWarAgreementEndedEvent	Q40	4176	callToWarEnded	callToWarEnded	kingdom	0	useful
+OnClanEarnedGoldFromTributeEvent	Q40	4177	clanTributeEarned	tributeEarned	kingdom	0	useful
+OnSettlementOwnerChangedEvent	Q40	4183	settlementOwnerChanged	settlementOwnerChanged	settlements	1	useful
+OnGovernorChangedEvent	Q40	4184	governorChanged	governorChanged	settlements	0	useful
+OnVassalOrMercenaryServiceOfferedToPlayerEvent	Q40	4190	kingdomOfferReceived	-	-	0	UI-raised (notification inspect), not exposed yet
+OnVassalOrMercenaryServiceOfferCanceledEvent	Q40	4191	kingdomOfferWithdrawn	serviceOfferCancelled	kingdom	0	useful
+OnMercenaryServiceStartedEvent	Q40	4192	mercenaryHired	mercenaryServiceStarted	kingdom	0	useful
+OnMercenaryServiceEndedEvent	Q40	4193	mercenaryLeft	mercenaryServiceEnded	kingdom	0	useful
+OnMarriageOfferedToPlayerEvent	Q40	4199	marriageOfferReceived	-	-	0	UI-raised (notification inspect), not exposed yet
+OnMarriageOfferCanceledEvent	Q40	4200	marriageOfferCanceled	marriageOfferCancelled	family	0	useful
+OnChildConceivedEvent	Q40	4201	childConceived	childConceived	family	0	useful
+OnGivenBirthEvent	Q40	4202	childBorn	childBorn	family	1	useful
+OnHeirSelectionRequestedEvent	Q40	4203	heirSelectionRequested	heirSelectionRequested	clan	0	useful
+OnHeirSelectionOverEvent	Q40	4204	heirSelected	heirSelected	clan	0	useful
+OnBeforePlayerCharacterChangedEvent	Q40	4205	playerCharacterChanging	playerCharacterAboutToChange	player	0	useful
+OnPlayerCharacterChangedEvent	Q40	4206	playerCharacterChanged	playerCharacterChanged	player	0	useful
+OnClanLeaderChangedEvent	Q40	4207	clanLeaderChanged	clanLeaderChanged	clan	0	useful
+DailyTickClanEvent	Q40	4213	dailyClanTick	-	-	0	tick, internal
+HourlyTickClanEvent	Q40	4214	hourlyClanTick	-	-	0	tick, internal
+OnClanDestroyedEvent	Q40	4215	clanDestroyed	clanDestroyed	clan	0	useful
+OnHeroChangedClanEvent	Q40	4216	heroChangedClan	heroChangedClan	clan	0	useful
+OnClanInfluenceChangedEvent	Q40	4217	clanInfluenceChanged	clanInfluenceChanged	clan	0	useful
+CompanionRemoved	Q40	4218	companionRemoved	companionRemoved	clan	0	useful
+OnHeroGetsBusyEvent	Q40	4224	heroGotBusy	heroGotBusy	heroes	0	useful
+OnHeroSharedFoodWithAnotherHeroEvent	Q40	4225	sharedFood	heroSharedFood	heroes	0	useful
+OnHeroTeleportationRequestedEvent	Q40	4226	heroTeleportRequested	heroTeleportRequested	heroes	0	useful
+PlayerInventoryExchangeEvent	Q42	4297	tradeSessionClosed	inventoryExchanged	economy	0	useful
+OnItemsDiscardedByPlayerEvent	Q42	4298	itemsDiscarded	itemsDiscarded	economy	0	useful
+OnPlayerTradeProfitEvent	Q42	4299	tradeProfit	tradeProfitMade	economy	0	useful
+OnCaravanTransactionCompletedEvent	Q42	4300	caravanTradeCompleted	caravanTradeCompleted	economy	0	useful
+OnPlayerEarnedGoldFromAssetEvent	Q42	4301	assetIncome	assetIncomeEarned	economy	0	useful
+WorkshopOwnerChangedEvent	Q42	4308	workshopOwnerChanged	workshopOwnerChanged	economy	0	useful
+WorkshopTypeChangedEvent	Q42	4309	workshopTypeChanged	workshopTypeChanged	economy	0	useful
+OnItemProducedEvent	Q42	4310	fiefProduction	itemProduced	economy	0	useful
+OnItemConsumedEvent	Q42	4311	fiefConsumption	itemConsumed	economy	0	useful
+OnNewItemCraftedEvent	Q42	4317	itemCrafted	itemCrafted	crafting	0	useful
+CraftingPartUnlockedEvent	Q42	4318	craftingPartUnlocked	craftingPartUnlocked	crafting	0	useful
+OnEquipmentSmeltedByHeroEvent	Q42	4319	itemSmelted	itemSmelted	crafting	0	useful
+OnItemsRefinedEvent	Q42	4320	itemsRefined	itemsRefined	crafting	0	useful
+OnCraftingOrderCompletedEvent	Q42	4321	craftingOrderDone	craftingOrderCompleted	crafting	0	useful
+OnQuestStartedEvent	Q42	4327	questStarted	questStarted	quests	0	useful
+OnQuestCompletedEvent	Q42	4328	questCompleted	questCompleted	quests	1	useful
+OnNewIssueCreatedEvent	Q42	4330	issueCreated	issueCreated	quests	0	marginal
+OnIssueUpdatedEvent	Q42	4332	issueProgress	issueUpdated	quests	0	marginal
+OnIncidentResolvedEvent	Q42	4333	incidentResolved	incidentResolved	quests	0	useful
+PersuasionProgressCommittedEvent	Q42	4339	persuasionChoice	persuasionProgressed	scenes	0	useful
+OnCharacterCreationIsOverEvent	Q41	4715	playerCharacterCreated	-	-	0	lifecycle, internal
+QuestLogAddedEvent	Q41	4721	questLogAdded	questLogEntryAdded	quests	0	useful
+IssueLogAddedEvent	Q41	4722	issueLogAdded	issueLogEntryAdded	quests	0	useful
+OnBarterAcceptedEvent	Q41	4729	barterAccepted	barterAccepted	economy	0	useful
+OnBarterCanceledEvent	Q41	4730	barterRejected	barterCancelled	economy	0	useful
+CharacterPortraitPopUpOpenedEvent	Q41	4740	companionPortraitOpened	portraitOpened	scenes	0	useful
+OnPlayerBoardGameOverEvent	Q41	4749	boardGameFinished	boardGameFinished	scenes	0	useful
+OnTradeRumorIsTakenEvent	Q41	4750	tradeRumorHeard	tradeRumorHeard	scenes	0	useful
+poll:nearSettlement	Q43/Q45/Q47	-		nearSettlement	polling	1	polling
+poll:daily	-	-		daily	polling	1	polling
+poll:varCrossed	-	-		varCrossed	polling	1	polling
+poll:roleStarted	Q43/Q45/Q47	-		roleStarted	polling	1	polling
+poll:roleEnded	Q43/Q45/Q47	-		roleEnded	polling	1	polling
