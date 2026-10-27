@@ -9,6 +9,7 @@ public class TriggerAdapterBatchTests
     // One line per finished adapter batch (task 122x adds its Q when it is assigned).
     [Theory]
     [InlineData("Q35")]
+    [InlineData("Q36")]
     public void Every_trigger_of_the_batch_has_an_adapter(string q)
     {
         var names = TriggerGameWiringTests.Entries().Select(e => e.Name).ToHashSet();
