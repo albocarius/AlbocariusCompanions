@@ -90,6 +90,11 @@ Every task up to T19 (T20 needs Windows). Tests per task: `tests/test_ui_forms.p
 - [x] **T18** `ui/settings.py`: Settings… (CLI path checked by running `export schema`, default Companions directory,
   opened at start unless a folder is given on the command line); File → Open recent (5).
 - [x] **T19** Graph → Arrange (Ctrl+L), Edit → Find (Ctrl+F, Enter reveals the first match), toolbar icons.
+- [x] **Triggers tab reworked after user testing**: it listed every property of every entity and took the companion's
+  party state from the (hidden) Conversation tab, so content was dropped as "not in party" with no hint. Now: the
+  companion's triggers first (with their content), the listening content and what it needs, in party / hired / met on
+  the tab (ticked), event details prefilled from the content's `where` / `event.*` conditions (more with "+ detail"),
+  Fire & deliver, and a Result tab explaining each outcome in words (raw checks and the queue in their own tabs).
 
 ## Remaining tasks
 

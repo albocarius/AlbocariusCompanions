@@ -64,25 +64,48 @@ def test_play_and_stop_from_the_toolbar(window: MainWindow, sample: Path, qtbot)
     assert window.preview.session is None
 
 
+def fire(window: MainWindow, qtbot, deliver: bool = True) -> None:
+    preview = window.preview
+    before = preview.steps
+    preview.triggers.fire(deliver=deliver)
+    qtbot.waitUntil(lambda: preview.steps > before and not preview.sim.runner.busy, timeout=TIMEOUT)
+
+
 def test_fire_and_deliver_a_trigger(window: MainWindow, sample: Path, qtbot):
     assert window.open_path(sample)
-    preview = window.preview
-    preview.state_form.in_party.setChecked(True)  # triggered content needs the companion in the party
-    preview.state_form.hired.setChecked(True)
-    preview.state_form.met.setChecked(True)
-    triggers = preview.triggers
-    triggers.picker.setEditText("playerBattleEnded")
+    triggers = window.preview.triggers
     triggers.set_trigger("playerBattleEnded")
-    triggers.payload_widgets["playerWon"].setChecked(True)
-    triggers.payload_widgets["playerInvolved"].setChecked(True)
-    before = preview.steps
-    triggers.fire()
-    qtbot.waitUntil(lambda: "candidates" in triggers.last and not preview.sim.runner.busy, timeout=TIMEOUT)
-    outcomes = {c["content"]: c["outcome"] for c in triggers.last["candidates"]}
-    assert outcomes.get("battle_won") == "queued", triggers.last["candidates"]
-    assert triggers.queue.topLevelItemCount() >= 1
-    triggers.deliver()
-    qtbot.waitUntil(lambda: "delivered" in triggers.last and not preview.sim.runner.busy, timeout=TIMEOUT)
+    assert "battle_won" in triggers.listening.text()
+    # The content's "when" (event.playerWon = true) prefills the event details.
+    assert triggers.payload_widgets["playerWon"].isChecked()
+    fire(window, qtbot)  # fire, then deliver what was queued
+    qtbot.waitUntil(lambda: "delivered" in triggers.last, timeout=TIMEOUT)
     assert triggers.last["delivered"]["content"] == "battle_won"
-    assert "battle_won" in triggers.delivered.toPlainText()
-    assert preview.steps > before
+    result = triggers.result.toPlainText()
+    assert "✓ battle_won" in result and "Delivered battle_won" in result, result
+
+
+def test_companions_used_triggers_come_first_and_explain_outcomes(window: MainWindow, sample: Path, qtbot):
+    assert window.open_path(sample)
+    triggers = window.preview.triggers
+    first = [triggers.picker.itemData(i) for i in range(4)]
+    assert set(first) == {"daily", "nearSettlement", "playerBattleEnded", "varCrossed"}
+    triggers.set_trigger("nearSettlement")
+    assert set(triggers.payload_widgets) == {"settlement.id"}  # only the id until a detail is added
+    triggers.add_detail("settlement.culture")
+    assert set(triggers.payload_widgets) == {"settlement.id", "settlement.culture"}
+    triggers.in_party.setChecked(False)
+    fire(window, qtbot)
+    assert "not in the player's party" in triggers.result.toPlainText()
+    triggers.in_party.setChecked(True)  # a new session with the new state
+    fire(window, qtbot)
+    qtbot.waitUntil(lambda: "Delivered" in triggers.result.toPlainText(), timeout=TIMEOUT)
+    assert "near_town_01" in triggers.result.toPlainText()
+
+
+def test_suggested_payload_follows_where_and_event_conditions():
+    from albocarius_editor.ui.preview_triggers import suggested_payload
+
+    content = [{"trigger": {"on": "villageLooted", "where": {"village.culture": "vlandia"}},
+                "when": {"all": [{"var": "event.playerInvolved", "eq": True}], "hired": True}}]
+    assert suggested_payload(content) == {"village.culture": "vlandia", "playerInvolved": True}
