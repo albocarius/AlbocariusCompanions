@@ -55,8 +55,11 @@ def main(argv: list[str] | None = None) -> int:
     app.aboutToQuit.connect(_release_clipboard)
     window = MainWindow()
     args = [a for a in argv[1:] if not a.startswith("-")]
-    if args:
+    default = window.settings.value("companionsDir")
+    if args:  # the command line wins over the default Companions directory
         window.open_path(Path(args[0]).expanduser().resolve())
+    elif default and Path(str(default)).is_dir():
+        window.open_path(Path(str(default)))
     window.show()
     return app.exec()
 

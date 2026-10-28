@@ -17,6 +17,7 @@ from ..data import edit, graph, workspace
 from ..data.companion import ENGLISH, CompanionFolder, CompanionLoadError
 from ..data.edit import EditError
 from ..schema.catalog import SchemaCatalog
+from . import settings as settings_ui
 from . import workers
 from .blackboard import BlackboardPanel
 from .canvas.items import GRID
@@ -91,6 +92,8 @@ class MainWindow(QMainWindow):
         self.act_save = self._action("Save", self.save, QKeySequence.StandardKey.Save, "Save changed files")
         self.act_reload = self._action("Reload", self.reload, QKeySequence("Ctrl+R"), "Reload from disk")
         self.act_quit = self._action("Quit", self.close, QKeySequence.StandardKey.Quit)
+        self.act_settings = self._action("Settings…", self.open_settings, QKeySequence.StandardKey.Preferences,
+                                         "CLI path, default Companions directory")
         self.act_undo = self.undo_stack.createUndoAction(self, "Undo")
         self.act_undo.setShortcut(QKeySequence.StandardKey.Undo)
         self.act_redo = self.undo_stack.createRedoAction(self, "Redo")
@@ -120,7 +123,11 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         bar = self.menuBar()
         file = bar.addMenu("&File")
-        for a in (self.act_new, self.act_open, self.act_open_root, None, self.act_save, self.act_reload, None, self.act_quit):
+        for a in (self.act_new, self.act_open, self.act_open_root):
+            file.addAction(a)
+        self.recent_menu = file.addMenu("Open recent")
+        self._fill_recent()
+        for a in (None, self.act_save, self.act_reload, None, self.act_settings, None, self.act_quit):
             file.addSeparator() if a is None else file.addAction(a)
         edit = bar.addMenu("&Edit")
         edit.addAction(self.act_undo)
@@ -776,15 +783,45 @@ class MainWindow(QMainWindow):
             return self.save()
         return answer == QMessageBox.StandardButton.Discard
 
+    # ---- settings and recent folders (T18) ----
+
+    def _fill_recent(self) -> None:
+        self.recent_menu.clear()
+        recent = settings_ui.recent_list(self.settings)
+        for path in recent:
+            self.recent_menu.addAction(path, lambda p=path: self.open_path(Path(p)))
+        self.recent_menu.setEnabled(bool(recent))
+
+    def open_settings(self) -> bool:
+        dialog = settings_ui.SettingsDialog(self.settings, self)
+        if dialog.exec() != dialog.DialogCode.Accepted:
+            return False
+        self.apply_cli_setting()
+        return True
+
+    def apply_cli_setting(self) -> None:
+        """Finds the CLI again (after the setting changed) for validation and the preview."""
+        try:
+            self.cli, self.cli_error = Cli.find(self.settings.value("cliPath") or None), None
+        except CliError as e:
+            self.cli, self.cli_error = None, str(e)
+        self.status_cli.setText(f"CLI: {self.cli.path.name}" if self.cli else "CLI: not found")
+        self.status_cli.setToolTip(str(self.cli.path) if self.cli else (self.cli_error or ""))
+        self.preview.shutdown()
+        self.preview.set_cli(str(self.cli.path) if self.cli else None, self.cli_error)
+        self.preview.set_folder(self.folder)
+
+    def _start_dir(self) -> str:
+        return str(self.companions_root or self.settings.value("companionsDir") or self.settings.value("lastFolder")
+                   or Path.home())
+
     def open_dialog(self) -> None:
-        start = str(self.companions_root or self.settings.value("lastFolder") or Path.home())
-        path = QFileDialog.getExistingDirectory(self, "Open a companion folder", start)
+        path = QFileDialog.getExistingDirectory(self, "Open a companion folder", self._start_dir())
         if path:
             self.open_path(Path(path))
 
     def open_root_dialog(self) -> None:
-        start = str(self.companions_root or self.settings.value("lastFolder") or Path.home())
-        path = QFileDialog.getExistingDirectory(self, "Open a Companions directory", start)
+        path = QFileDialog.getExistingDirectory(self, "Open a Companions directory", self._start_dir())
         if path:
             self.open_path(Path(path))
 
@@ -813,6 +850,8 @@ class MainWindow(QMainWindow):
             return False
         self._set_folder(folder)
         self.settings.setValue("lastFolder", str(path))
+        settings_ui.add_recent(self.settings, Path(path))
+        self._fill_recent()
         return True
 
     def _set_folder(self, folder: CompanionFolder | None) -> None:
