@@ -50,3 +50,23 @@ def test_rename_delete_duplicate_and_reorder(window: MainWindow, sample: Path):
     for _ in range(4):
         window.undo_stack.undo()
     assert ids(window) == ["the_scar", "spare_coin", "after_scar", "battle_won", "campfire"]
+
+
+def test_new_button_makes_a_conversation_or_a_companion(window: MainWindow, sample: Path, monkeypatch):
+    from PySide6.QtWidgets import QFileDialog, QMessageBox, QPushButton
+
+    monkeypatch.setattr(QMessageBox, "question", lambda *a, **k: QMessageBox.StandardButton.Discard)
+
+    answers = iter([("chat", True), ("mira", True)])
+    monkeypatch.setattr(QInputDialog, "getText", lambda *a, **k: next(answers))
+    monkeypatch.setattr(QInputDialog, "getItem", lambda *a, **k: ("From the hub menu (player options)", True))
+    monkeypatch.setattr(QFileDialog, "getExistingDirectory", lambda *a, **k: str(sample.parent))
+    assert window.act_new.text() == "New companion"  # nothing open yet
+    assert window.open_path(sample)
+    assert window.act_new.text() == "New conversation"
+    assert window.act_new.shortcut().toString() == "Ctrl+N"
+    window.library.findChild(QPushButton, "new_conversation").click()
+    assert window.folder.conversation("chat") is not None
+    window.act_new_companion.trigger()
+    assert window.folder.id == "mira"
+    assert window.new_button.defaultAction() is window.act_new

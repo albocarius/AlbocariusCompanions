@@ -97,3 +97,16 @@ def test_missing_cli_still_opens_and_edits(qtbot, qapp, tmp_path: Path, sample: 
     assert "CLI was not found" in w.preview.status.text()
     assert w.open_path(sample)
     assert "the_scar" in w.open_tab("the_scar").scene().cards[graph.HEADER].content.title
+
+
+def test_the_bottom_panel_shrinks_and_hides(window: MainWindow, sample: Path):
+    from PySide6.QtWidgets import QToolButton
+
+    window.open_path(sample)
+    assert window.bottom_dock.minimumSizeHint().height() < 150  # tab bar + a few rows: the forms scroll inside
+    window.bottom_tabs.findChild(QToolButton, "hide_output").click()
+    assert not window.bottom_dock.isVisible()
+    toggle = window.bottom_dock.toggleViewAction()
+    assert toggle.shortcut().toString() == "Ctrl+J"
+    toggle.trigger()
+    assert window.bottom_dock.isVisible()

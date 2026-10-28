@@ -46,6 +46,7 @@ class DiagnosticsPanel(QWidget):
         top.addStretch(1)
         layout.addLayout(top)
         self.tree = QTreeWidget()
+        self.tree.setMinimumHeight(24)  # the bottom panel may be dragged small
         self.tree.setHeaderLabels(["", "Where", "Message"])
         self.tree.setRootIsDecorated(False)
         self.tree.setColumnWidth(0, 70)

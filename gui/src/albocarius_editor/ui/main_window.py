@@ -9,7 +9,7 @@ from pathlib import Path
 from PySide6.QtCore import QMimeData, QPointF, QRectF, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QCursor, QGuiApplication, QIcon, QKeySequence, QUndoStack
 from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMenu, QMessageBox, QTabWidget,
-                               QToolBar, QWidget)
+                               QToolBar, QToolButton, QWidget)
 
 from .. import __version__
 from ..cli.client import Cli, CliError
@@ -86,7 +86,13 @@ class MainWindow(QMainWindow):
         return action
 
     def _build_actions(self) -> None:
-        self.act_new = self._action("New", self.new_companion, QKeySequence.StandardKey.New, "New companion from the template")
+        # The toolbar's New: a conversation in the open companion (the common case), a companion when none is open.
+        self.act_new = self._action("New conversation", self.new_item, QKeySequence.StandardKey.New,
+                                    "New conversation in this companion (▾ for a line or a companion)")
+        self.act_new_companion = self._action("New companion…", self.new_companion, QKeySequence("Ctrl+Alt+N"),
+                                              "New companion folder from the template")
+        self.act_add_line = self._action("Add line…", lambda: self.add_line(ask=True), QKeySequence("Ctrl+Shift+L"),
+                                         "A line of dialogs.json \"lines\" (a slot, or a triggered line)")
         self.act_open = self._action("Open", self.open_dialog, QKeySequence.StandardKey.Open, "Open a companion folder")
         self.act_open_root = self._action("Open Companions folder…", self.open_root_dialog, tip="Open a Companions directory")
         self.act_save = self._action("Save", self.save, QKeySequence.StandardKey.Save, "Save changed files")
@@ -135,8 +141,8 @@ class MainWindow(QMainWindow):
     def _build_menus(self) -> None:
         bar = self.menuBar()
         file = bar.addMenu("&File")
-        for a in (self.act_new, self.act_open, self.act_open_root):
-            file.addAction(a)
+        for a in (self.act_new, self.act_new_companion, None, self.act_open, self.act_open_root):
+            file.addSeparator() if a is None else file.addAction(a)
         self.recent_menu = file.addMenu("Open recent")
         self._fill_recent()
         for a in (None, self.act_save, self.act_reload, None, self.act_settings, None, self.act_quit):
@@ -160,11 +166,9 @@ class MainWindow(QMainWindow):
                                           QKeySequence("Ctrl+Shift+P"), "A player option at the view center"))
         graph_menu.addAction(self.act_arrange)
         graph_menu.addSeparator()
-        graph_menu.addAction(self._action("New conversation…", self.new_conversation, QKeySequence("Ctrl+Shift+C"),
-                                          "A conversation from the hub menu, a greeting or a trigger"))
+        graph_menu.addAction(self.act_new)
         graph_menu.addSeparator()
-        graph_menu.addAction(self._action("Add line…", lambda: self.add_line(ask=True), QKeySequence("Ctrl+Shift+L"),
-                                          "A line of dialogs.json \"lines\" (a slot, or a triggered line)"))
+        graph_menu.addAction(self.act_add_line)
         graph_menu.addSeparator()
         graph_menu.addAction(self._action("Continue with: Back to hub", lambda: self.add_from_palette("hub"),
                                           tip="The selected node returns to the companion's menu"))
@@ -179,7 +183,18 @@ class MainWindow(QMainWindow):
         tb = QToolBar("Main")
         tb.setObjectName("mainToolbar")
         tb.setMovable(False)
-        for a in (self.act_new, self.act_open, self.act_save, self.act_reload):
+        new_button = QToolButton()
+        new_button.setObjectName("new_button")
+        new_button.setDefaultAction(self.act_new)
+        new_menu = QMenu(new_button)
+        for a in (self.act_new, self.act_add_line, None, self.act_new_companion):
+            new_menu.addSeparator() if a is None else new_menu.addAction(a)
+        new_button.setMenu(new_menu)
+        new_button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+        new_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        tb.addWidget(new_button)
+        self.new_button = new_button
+        for a in (self.act_open, self.act_save, self.act_reload):
             tb.addAction(a)
         tb.addSeparator()
         tb.addAction(self.act_validate)
@@ -231,6 +246,7 @@ class MainWindow(QMainWindow):
         self.library.open_companion.connect(self.open_companion)
         self.library.palette_activated.connect(self.add_from_palette)
         self.library.conversation_menu.connect(self._library_menu)
+        self.library.new_conversation.connect(self.new_item)
         self.library.search.returnPressed.connect(self.reveal_first_match)
         self.library_dock = self._dock("Library", self.library, Qt.DockWidgetArea.LeftDockWidgetArea, "library")
 
@@ -264,6 +280,17 @@ class MainWindow(QMainWindow):
         self.bottom_tabs = bottom
         self.bottom_dock = self._dock("Output", bottom, Qt.DockWidgetArea.BottomDockWidgetArea, "output")
         self.bottom_dock.setTitleBarWidget(QWidget())
+        toggle = self.bottom_dock.toggleViewAction()
+        toggle.setText("Diagnostics / Preview panel")
+        toggle.setShortcut(QKeySequence("Ctrl+J"))
+        hide = QToolButton()
+        hide.setObjectName("hide_output")
+        hide.setText("Hide ▾")
+        hide.setAutoRaise(True)
+        hide.setToolTip("Hide this panel (Ctrl+J shows it again; it also opens on Play and on validation problems)")
+        hide.clicked.connect(self.bottom_dock.hide)
+        bottom.setCornerWidget(hide, Qt.Corner.TopRightCorner)
+        bottom.setMinimumHeight(0)
 
         self.resizeDocks([self.library_dock, self.right_dock], [260, 340], Qt.Orientation.Horizontal)
         self.resizeDocks([self.bottom_dock], [190], Qt.Orientation.Vertical)
@@ -671,6 +698,13 @@ class MainWindow(QMainWindow):
         return self.edit(f"Delete conversation {conversation_id}", lambda f: edit.delete_conversation(f, conversation_id),
                          on_undo=lambda: self.open_tab(conversation_id))[0]
 
+    def new_item(self) -> None:
+        """The toolbar's New: a conversation, or a companion while none is open."""
+        if self.folder is None:
+            self.new_companion()
+        else:
+            self.new_conversation()
+
     def new_conversation(self, conversation_id: str | None = None, start: str | None = None) -> str | None:
         """A new conversation (asked for when not given): ``start`` is hub, greeting or trigger. Opens its tab."""
         if self.folder is None:
@@ -961,6 +995,7 @@ class MainWindow(QMainWindow):
     def play(self) -> None:
         if self.folder is None:
             return
+        self.bottom_dock.show()
         self.bottom_tabs.setCurrentWidget(self.preview)
         self.preview.tabs.setCurrentIndex(0)
         self.preview.start("hub")
@@ -1004,6 +1039,8 @@ class MainWindow(QMainWindow):
             warnings = len(result.diagnostics) - errors
             note = " (of the saved files; save to include your changes)" if self.folder.dirty else ""
             self.statusBar().showMessage(f"Validation: {errors} error(s), {warnings} warning(s){note}", 8000)
+            if errors:
+                self.bottom_dock.show()
             if result.diagnostics:
                 self.bottom_tabs.setCurrentWidget(self.diagnostics)
 
@@ -1071,6 +1108,8 @@ class MainWindow(QMainWindow):
         self.update_title()
 
     def update_title(self) -> None:
+        self.act_new.setText("New conversation" if self.folder is not None else "New companion")
+        self.act_add_line.setEnabled(self.folder is not None)
         if self.folder is None:
             self.setWindowTitle(APP_NAME)
             return

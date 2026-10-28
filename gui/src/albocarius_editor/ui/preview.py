@@ -60,6 +60,17 @@ def failed_conditions(conditions: list[dict], depth: int = 0) -> list[str]:
     return out
 
 
+def scrollable(widget: QWidget) -> QScrollArea:
+    """The widget in a frameless scroll area: the bottom panel can then be made as small as the user likes."""
+    scroll = QScrollArea()
+    scroll.setWidgetResizable(True)
+    scroll.setFrameShape(QFrame.Shape.NoFrame)
+    scroll.setWidget(widget)
+    widget.setMinimumHeight(260)  # below this the panel scrolls instead of squeezing the forms
+    scroll.setMinimumHeight(24)
+    return scroll
+
+
 class StateForm(QWidget):
     """The test state of one companion (docs/SIMULATOR_PROTOCOL.md "State"), read back from every response."""
 
@@ -212,7 +223,7 @@ class PreviewPanel(QWidget):
             from .preview_triggers import TriggersPreview
 
             self.triggers = TriggersPreview(self)
-            self.tabs.addTab(self.triggers, "Triggers")
+            self.tabs.addTab(scrollable(self.triggers), "Triggers")
         self.set_cli(None)
 
     # ---- layout ----
@@ -301,7 +312,7 @@ class PreviewPanel(QWidget):
         right_lay.addWidget(self.transcript, 1)
         split.addWidget(right)
         split.setSizes([300, 260, 520])
-        self.tabs.addTab(tab, "Conversation")
+        self.tabs.addTab(scrollable(tab), "Conversation")
         self._set_running(False)
 
     # ---- setup ----

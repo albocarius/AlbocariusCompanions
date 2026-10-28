@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from PySide6.QtCore import QMimeData, QPoint, Qt, Signal
-from PySide6.QtWidgets import QLabel, QLineEdit, QListWidget, QListWidgetItem, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (QHBoxLayout, QLabel, QLineEdit, QListWidget, QListWidgetItem, QPushButton, QTreeWidget,
+                               QTreeWidgetItem, QVBoxLayout, QWidget)
 
 from ..data.companion import CompanionFolder
 
@@ -51,6 +52,7 @@ class LibraryPanel(QWidget):
     open_node = Signal(str, str)             # conversation id (or LINES_TAB), node / line id
     open_companion = Signal(Path)
     palette_activated = Signal(str)          # "npc", "player", "hub", "end"
+    new_conversation = Signal()
     conversation_menu = Signal(str, QPoint)  # right click on a conversation: its id, the global position
 
     def __init__(self, parent=None):
@@ -75,7 +77,14 @@ class LibraryPanel(QWidget):
         self.palette.itemClicked.connect(lambda i: self.palette_activated.emit(i.data(Qt.ItemDataRole.UserRole)))
         layout.addWidget(self.palette)
 
-        layout.addWidget(_section("Graph navigation"))
+        head = QHBoxLayout()
+        head.addWidget(_section("Graph navigation"), 1)
+        add = QPushButton("+ Conversation")
+        add.setObjectName("new_conversation")
+        add.setToolTip("New conversation (Ctrl+N): from the hub menu, as a greeting, or started by a trigger")
+        add.clicked.connect(self.new_conversation)
+        head.addWidget(add)
+        layout.addLayout(head)
         self.tree = QTreeWidget()
         self.tree.setHeaderHidden(True)
         self.tree.itemActivated.connect(self._activated)
