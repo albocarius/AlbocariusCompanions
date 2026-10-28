@@ -85,7 +85,6 @@ class MainWindow(QMainWindow):
         return action
 
     def _build_actions(self) -> None:
-        later = "Comes in a later task (gui/PLAN.md)"
         self.act_new = self._action("New", self.new_companion, QKeySequence.StandardKey.New, "New companion from the template")
         self.act_open = self._action("Open", self.open_dialog, QKeySequence.StandardKey.Open, "Open a companion folder")
         self.act_open_root = self._action("Open Companions folder…", self.open_root_dialog, tip="Open a Companions directory")
@@ -114,8 +113,8 @@ class MainWindow(QMainWindow):
         self._toggle_snap(self.act_snap.isChecked())
         self.act_validate = self._action("Validate", self.validate, QKeySequence("F7"),
                                          "Validate the saved files with the mod's CLI (also runs on save)")
-        self.act_play = self._action("Play", tip=later, enabled=False)
-        self.act_stop = self._action("Stop", tip=later, enabled=False)
+        self.act_play = self._action("Play", self.play, QKeySequence("F5"), "Start a simulated talk from the hub (Preview)")
+        self.act_stop = self._action("Stop", self.stop_preview, QKeySequence("Shift+F5"), "Close the simulated talk")
         self.act_about = self._action("About", self.about)
 
     def _build_menus(self) -> None:
@@ -229,8 +228,10 @@ class MainWindow(QMainWindow):
 
         self.diagnostics = DiagnosticsPanel()
         self.diagnostics.activated.connect(self.reveal_diagnostic)
-        self.preview = PreviewPanel()
+        self.preview = PreviewPanel(self.catalog)
         self.preview.set_cli(str(self.cli.path) if self.cli else None, self.cli_error)
+        self.preview.highlight.connect(self._preview_highlight)
+        self.preview.message.connect(lambda text: self.statusBar().showMessage(text, 8000))
         bottom = QTabWidget()
         bottom.addTab(self.diagnostics, "Diagnostics")
         bottom.addTab(self.preview, "Preview")
@@ -822,6 +823,7 @@ class MainWindow(QMainWindow):
             self.tabs.removeTab(0)
         self.library.set_folder(folder)
         self.blackboard.set_folder(folder)
+        self.preview.set_folder(folder)
         self.inspector.show_nothing()
         if self.companions_root is not None:
             folders = workspace.companion_folders(self.companions_root)
@@ -850,10 +852,37 @@ class MainWindow(QMainWindow):
         self.diagnostics.set_diagnostics("layout", layout_diagnostics([], None))
         self.statusBar().showMessage(f"Saved {len(written)} file(s)" if written else "Nothing to save", 4000)
         self.update_title()
+        self.preview.files_saved()
         self.validate()
         return True
 
     # ---- validation (T15) ----
+
+    # ---- preview (T16/T17) ----
+
+    def play(self) -> None:
+        if self.folder is None:
+            return
+        self.bottom_tabs.setCurrentWidget(self.preview)
+        self.preview.tabs.setCurrentIndex(0)
+        self.preview.start("hub")
+
+    def stop_preview(self) -> None:
+        self.preview.stop()
+
+    def _preview_highlight(self, conversation_id: str, node_id: str) -> None:
+        """The canvas follows the simulation: the node of the last line said is highlighted (its tab opened)."""
+        for scene in self._scenes():
+            scene.set_highlight(None)
+        if not conversation_id or self.folder is None or self.folder.conversation(conversation_id) is None:
+            return
+        view = self.open_tab(conversation_id)
+        scene = view.scene() if isinstance(view, CanvasView) else None
+        if isinstance(scene, ConversationScene):
+            scene.set_highlight(node_id)
+            card = scene.cards.get(node_id)
+            if card is not None:
+                view.ensureVisible(card)
 
     def validate(self) -> None:
         """``validate --json`` of the companion folder (the files on disk) on a worker thread; the result replaces the
@@ -957,6 +986,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event: QCloseEvent) -> None:
         if self.confirm_discard():
+            self.preview.shutdown()
             event.accept()
         else:
             event.ignore()

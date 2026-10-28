@@ -657,7 +657,8 @@ class TriggerEditor(QFrame):
         out: dict[str, str] = {}
         for f in info.fields:
             kind = f.get("kind", "")
-            out[f["name"]] = "string" if f.get("entity") else {"Bool": "bool", "Number": "number"}.get(kind, "any")
+            kinds = {"Bool": "bool", "Number": "number", "Int": "int", "Text": "string"}
+            out[f["name"]] = "string" if f.get("entity") else kinds.get(kind, "any")
             if f.get("entity"):
                 bools = set(props.get(kind, {}).get("boolProperties", []))
                 for p in props.get(kind, {}).get("properties", []):
