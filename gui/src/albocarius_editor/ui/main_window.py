@@ -193,6 +193,7 @@ class MainWindow(QMainWindow):
         self.inspector.edge_remove.connect(lambda c, s, t: self.edit(
             f"Disconnect {s} → {t}", lambda f: edit.disconnect(f, c, s, t)))
         self.blackboard = BlackboardPanel(self.catalog)
+        self.blackboard.commit = lambda text, fn: self.edit(text, fn)[0]
         right = QTabWidget()
         right.addTab(self.inspector, "Inspector")
         right.addTab(self.blackboard, "Blackboard")

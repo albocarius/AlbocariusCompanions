@@ -72,6 +72,20 @@ class FormContext:
         return self.commit(f"Set {label}", lambda f: edit.replace_keys(f, self.ref, path, remove, values))
 
 
+def clear_layout(layout) -> None:
+    """Removes every widget of a layout, nested rows and forms too. Widgets are detached now and deleted later: the
+    widget that triggered a rebuild may still be inside its own signal."""
+    while layout.count():
+        item = layout.takeAt(0)
+        widget, inner = item.widget(), item.layout()
+        if widget is not None:
+            widget.setParent(None)
+            widget.deleteLater()
+        elif inner is not None:
+            clear_layout(inner)
+            inner.deleteLater()
+
+
 def _label(path: list) -> str:
     return ".".join(str(p) for p in path)
 

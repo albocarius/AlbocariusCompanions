@@ -103,19 +103,8 @@ class InspectorPanel(QWidget):
         self.layout_.setContentsMargins(10, 8, 10, 8)
         self.show_nothing()
 
-    def _clear(self, layout=None) -> None:
-        """Removes every widget, also those of nested rows and forms (detached now, deleted later: a widget may be
-        clearing the panel from inside its own signal)."""
-        layout = layout or self.layout_
-        while layout.count():
-            item = layout.takeAt(0)
-            widget, inner = item.widget(), item.layout()
-            if widget is not None:
-                widget.setParent(None)
-                widget.deleteLater()
-            elif inner is not None:
-                self._clear(inner)
-                inner.deleteLater()
+    def _clear(self) -> None:
+        forms.clear_layout(self.layout_)
 
     def show_nothing(self) -> None:
         self._clear()
