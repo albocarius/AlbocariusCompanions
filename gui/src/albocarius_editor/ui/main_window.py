@@ -125,6 +125,9 @@ class MainWindow(QMainWindow):
                                           QKeySequence("Ctrl+Shift+N"), "A companion (npc) node at the view center"))
         graph_menu.addAction(self._action("Add player line", lambda: self.add_from_palette("player"),
                                           QKeySequence("Ctrl+Shift+P"), "A player option at the view center"))
+        graph_menu.addAction(self._action("New conversation…", self.new_conversation, QKeySequence("Ctrl+Shift+C"),
+                                          "A conversation from the hub menu, a greeting or a trigger"))
+        graph_menu.addSeparator()
         graph_menu.addAction(self._action("Add line…", lambda: self.add_line(ask=True), QKeySequence("Ctrl+Shift+L"),
                                           "A line of dialogs.json \"lines\" (a slot, or a triggered line)"))
         graph_menu.addSeparator()
@@ -188,6 +191,7 @@ class MainWindow(QMainWindow):
         self.library.open_node.connect(self.reveal)
         self.library.open_companion.connect(self.open_companion)
         self.library.palette_activated.connect(self.add_from_palette)
+        self.library.conversation_menu.connect(self._library_menu)
         self.library_dock = self._dock("Library", self.library, Qt.DockWidgetArea.LeftDockWidgetArea, "library")
 
         self.inspector = InspectorPanel(self.catalog)
@@ -540,9 +544,61 @@ class MainWindow(QMainWindow):
         return self.edit(f"Delete conversation {conversation_id}", lambda f: edit.delete_conversation(f, conversation_id),
                          on_undo=lambda: self.open_tab(conversation_id))[0]
 
+    def new_conversation(self, conversation_id: str | None = None, start: str | None = None) -> str | None:
+        """A new conversation (asked for when not given): ``start`` is hub, greeting or trigger. Opens its tab."""
+        if self.folder is None:
+            return None
+        if conversation_id is None:
+            conversation_id, ok = QInputDialog.getText(self, "New conversation", "Conversation id (a-z, 0-9, _):")
+            if not ok or not conversation_id.strip():
+                return None
+            conversation_id = conversation_id.strip()
+        if start is None:
+            labels = {"From the hub menu (player options)": "hub", "As a greeting (companion speaks first)": "greeting",
+                      "Started by a trigger": "trigger"}
+            choice, ok = QInputDialog.getItem(self, "New conversation", "Starts:", list(labels), 0, False)
+            if not ok:
+                return None
+            start = labels[choice]
+        first_trigger = next(iter(sorted(self.catalog.triggers, key=lambda t: (not t.common, t.category, t.name))), None)
+
+        def create(f: CompanionFolder) -> str:
+            edit.add_conversation(f, conversation_id, None if start == "trigger" else start)
+            if start == "trigger" and first_trigger is not None:
+                edit.set_start_mode(f, conversation_id, "trigger", first_trigger.name)
+            return conversation_id
+        done, _ = self.edit(f"New conversation {conversation_id}", create)
+        if not done:
+            return None
+        self.open_tab(conversation_id)
+        self.reveal(conversation_id, graph.HEADER)
+        return conversation_id
+
+    def duplicate_conversation(self, conversation_id: str) -> str | None:
+        done, new_id = self.edit(f"Duplicate {conversation_id}", lambda f: edit.duplicate_conversation(f, conversation_id))
+        if done:
+            self.open_tab(new_id)
+        return new_id if done else None
+
+    def move_conversation(self, conversation_id: str, delta: int) -> bool:
+        return self.edit(f"Move {conversation_id} {'up' if delta < 0 else 'down'}",
+                         lambda f: edit.move_conversation(f, conversation_id, delta))[0]
+
     def _conversation_menu(self, menu: QMenu, conversation_id: str) -> None:
         menu.addAction("Rename conversation…", lambda: self.rename_conversation(conversation_id))
+        menu.addAction("Duplicate conversation", lambda: self.duplicate_conversation(conversation_id))
+        menu.addSeparator()
+        menu.addAction("Move up (hub menu order)", lambda: self.move_conversation(conversation_id, -1))
+        menu.addAction("Move down (hub menu order)", lambda: self.move_conversation(conversation_id, 1))
+        menu.addSeparator()
         menu.addAction("Delete conversation…", lambda: self.delete_conversation(conversation_id))
+
+    def _library_menu(self, conversation_id: str, pos) -> None:
+        menu = QMenu(self)
+        menu.addAction("Open", lambda: self.open_tab(conversation_id))
+        menu.addSeparator()
+        self._conversation_menu(menu, conversation_id)
+        menu.exec(pos)
 
     def _tab_menu(self, pos) -> None:
         index = self.tabs.tabBar().tabAt(pos)

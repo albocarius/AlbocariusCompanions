@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QMimeData, Qt, Signal
+from PySide6.QtCore import QMimeData, QPoint, Qt, Signal
 from PySide6.QtWidgets import QLabel, QLineEdit, QListWidget, QListWidgetItem, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 from ..data.companion import CompanionFolder
@@ -51,6 +51,7 @@ class LibraryPanel(QWidget):
     open_node = Signal(str, str)             # conversation id (or LINES_TAB), node / line id
     open_companion = Signal(Path)
     palette_activated = Signal(str)          # "npc", "player", "hub", "end"
+    conversation_menu = Signal(str, QPoint)  # right click on a conversation: its id, the global position
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -79,6 +80,8 @@ class LibraryPanel(QWidget):
         self.tree.setHeaderHidden(True)
         self.tree.itemActivated.connect(self._activated)
         self.tree.itemClicked.connect(self._activated)
+        self.tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.tree.customContextMenuRequested.connect(self._tree_menu)
         layout.addWidget(self.tree, 3)
 
         layout.addWidget(_section("Companions"))
@@ -126,6 +129,14 @@ class LibraryPanel(QWidget):
             self.companions.addItem(item)
             if current is not None and path == current:
                 item.setSelected(True)
+
+    def _tree_menu(self, pos) -> None:
+        item = self.tree.itemAt(pos)
+        if item is None:
+            return
+        conv_id, node_id = item.data(0, Qt.ItemDataRole.UserRole)
+        if conv_id != LINES_TAB and not node_id:
+            self.conversation_menu.emit(conv_id, self.tree.viewport().mapToGlobal(pos))
 
     def _activated(self, item: QTreeWidgetItem) -> None:
         conv_id, node_id = item.data(0, Qt.ItemDataRole.UserRole)
