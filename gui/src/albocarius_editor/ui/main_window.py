@@ -1075,7 +1075,8 @@ class MainWindow(QMainWindow):
             self.setWindowTitle(APP_NAME)
             return
         dirty = self.folder.dirty
-        self.setWindowTitle(f"{'• ' if dirty else ''}{self.folder.id} — {self.folder.path.parent} — {APP_NAME}")
+        # "[*]" is where Qt shows the modified marker (and macOS its dot); the bullet makes it visible everywhere.
+        self.setWindowTitle(f"{'• ' if dirty else ''}{self.folder.id}[*] — {self.folder.path.parent} — {APP_NAME}")
         self.setWindowModified(dirty)
 
     def about(self) -> None:

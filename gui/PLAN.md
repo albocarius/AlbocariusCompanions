@@ -61,6 +61,36 @@ external-change prompt, new companion from the template.
   PyInstaller, optionally with a self-contained CLI inside (`--with-cli`); `albocarius-editor --check`. See README.
   Built and checked on Linux (x64, 89 MB with the CLI; runs without .NET). Windows: part of T20.
 
+## Done in session 3
+
+Every task up to T19 (T20 needs Windows). Tests per task: `tests/test_ui_forms.py` (T06–T10), `test_ui_blackboard`
+(T11), `test_ui_lines` (T12), `test_ui_conversations` (T13), `test_ui_clipboard` (T14), `test_ui_validate` (T15),
+`test_ui_preview` (T16/T17, skipped without the CLI), `test_ui_settings` (T18), `test_ui_arrange` (T19); new
+`data.edit` functions in `tests/test_edit_ops.py`.
+
+- [x] **Link validation** (asked for by the user): `data.edit.link_problem` holds the schema's rules for `start`/`next`
+  (no player → player, no mixing player options and companion lines in one list, hub conversations start with player
+  options, greeting/triggered ones with companion lines, hub/end never a start, no duplicates). `edit.connect` refuses
+  them; while a link is dragged the card under the mouse turns green/red and the reason shows in the status bar.
+- [x] **T06–T10** `ui/forms.py` + the inspector rebuilt on it. Generic path edits in `data.edit` (`set_at`, `remove_at`
+  pruning emptied containers so removing the last condition restores the file, `merge_at`, `append_at`, `remove_keys`,
+  `replace_keys`). Conversation "starts from" hub / greeting / trigger (`edit.set_start_mode`). Every language editable;
+  + Language (`edit.add_language`), Copy English.
+- [x] **T11** blackboard: add, remove, rename (`edit.rename_variable`, references follow, a dialog warns about saved
+  values), type/scope/default (`edit.set_variable`; a new type drops the old default); names drag onto fields.
+- [x] **T12** `canvas/lines_scene.py` replaces `lines_view.py`. Placeholder cards (`@slot:<slot>`) for required slots
+  without a line; Graph → Add line… (Ctrl+Shift+L).
+- [x] **T13** Graph → New conversation… (Ctrl+Shift+C), duplicate (`edit.duplicate_conversation`), move up/down
+  (`edit.move_conversation`) from the tab, header-card and library context menus.
+- [x] **T14** Ctrl+C / Ctrl+V / Ctrl+D; mime `application/x-albocarius-nodes` + text; nodes keep file order. Copied
+  nodes are dropped from the clipboard on quit (`app._release_clipboard`): Qt deleting PySide-made clipboard data at
+  shutdown segfaults.
+- [x] **T15** validation on save and Build → Validate (F7) on a worker thread (`ui/workers.py`).
+- [x] **T16/T17** `ui/preview.py` (Conversation) and `ui/preview_triggers.py` (Triggers); Play F5 / Stop Shift+F5.
+- [x] **T18** `ui/settings.py`: Settings… (CLI path checked by running `export schema`, default Companions directory,
+  opened at start unless a folder is given on the command line); File → Open recent (5).
+- [x] **T19** Graph → Arrange (Ctrl+L), Edit → Find (Ctrl+F, Enter reveals the first match), toolbar icons.
+
 ## Remaining tasks
 
 ### ~~T01 Generic undoable edit command~~ (done, session 2)
@@ -97,7 +127,7 @@ dialog). Conversation rename/delete from the header card / tab context menu.
 **Done-check:** tests for delete (references gone, all lang keys gone), rename (lang keys in every file, layout key,
 `next` references), audio prompt path via a monkeypatched `QMessageBox`.
 
-### T06 Schema-driven field forms
+### ~~T06 Schema-driven field forms~~ (done, session 3)
 `ui/forms.py`: build a widget for a `FieldSpec` by `widget_kind()` (check, combo, editable-combo, spin with min/max,
 line with pattern validation, tags for string lists, json for `any`), two-way bound to a dict key, emitting one
 `EditCommand` per committed change; absent optional fields show their default as placeholder and an "×" to remove the
@@ -105,7 +135,7 @@ key. Use it in the inspector for scalars of `node`, `line`, `conversation` (not 
 **Done-check:** test sets `priority` and `voiced` on a node through the form, checks JSON and undo; a pattern-invalid id
 is refused.
 
-### T07 Conditions editor ("+" sections)
+### ~~T07 Conditions editor ("+" sections)~~ (done, session 3)
 Card section and inspector section for `when`: "+" opens a menu of `catalog.conditions` (description as tooltip); each
 item is a small form of its params (T06 widgets); "×" removes its keys; `all`/`any` hold nested lists (indented forms,
 own "+"), `not` a nested object. Variable fields offer the blackboard's names (and `event.<path>` for triggered content
@@ -113,12 +143,12 @@ from the trigger's fields). Writes only through `EditCommand`.
 **Done-check:** test adds `hasGold` and `any: [{flags}, {var,min}]` to a node, the JSON equals the expected object; removing
 them restores the original bytes of `dialogs.json` after save.
 
-### T08 Effects editor
+### ~~T08 Effects editor~~ (done, session 3)
 Same pattern for `effects` from `catalog.effects` (order `effectOrder`); `transfer` form (gold xor item+count; actors from
 `enums.actors` + companion ids); `set`/`add` as name → value rows typed by the variable's type.
 **Done-check:** test adds relation +2, a transfer and `add: {mood: 1}`; JSON and undo checked.
 
-### T09 Trigger editor
+### ~~T09 Trigger editor~~ (done, session 3)
 For a conversation header and for slot-free lines: trigger picker grouped by `catalog.trigger_categories` (common first,
 searchable), subject combo from the trigger's `subjects` (`kind:<id>` asks for the id), `where` rows from its fields and
 entity properties (`export triggers` `entityProperties`), chance/delivery/expiresAfterHours/cooldownDays/allowAbsent
@@ -126,48 +156,48 @@ from the `trigger` object fields, `params` form for polling triggers. Switching 
 other key.
 **Done-check:** test turns a hub conversation into a `villageLooted` triggered one with a `where`, then back; JSON checked.
 
-### T10 Translations and languages
+### ~~T10 Translations and languages~~ (done, session 3)
 Inspector translations editable for every language (one `EditCommand` per commit); "Add language" creates
 `lang/<code>.json` (code must match `patterns.languageCode`) with `schemaVersion` 1; missing translations shown in muted
 italics with "copy English" button.
 **Done-check:** test adds `de`, writes one text, saves: new file with only that line; undo removes the file from the
 in-memory state (and save does not create it).
 
-### T11 Blackboard editing
+### ~~T11 Blackboard editing~~ (done, session 3)
 Add/remove/rename variables (`edit.add_variable`/`remove_variable`; add `edit.rename_variable` that also renames
 references in `flags`/`notFlags`/`var`/`setFlags`/`clearFlags`/`set`/`add` of this companion — warn that saved values are
 lost, docs/SCHEMA.md "Variables"), type/scope/default editors from the `variable` object fields. Dragging a variable onto a
 condition/effect form fills its name.
 **Done-check:** tests for add, type change (default reset to the new type's default), rename with references, remove.
 
-### T12 Lines tab as a canvas
+### ~~T12 Lines tab as a canvas~~ (done, session 3)
 Replace `LinesView` with a scene of line cards (no edges) in labelled groups (`catalog.slot_group`), sorted by slot, with the
 same inspector/forms; add/delete lines (`edit.add_line`/`delete_line`); slot combo from `catalog.all_slots`; positions
 not stored (grid by group).
 **Done-check:** test adds a `greet` line and deletes it; required-slot groups show every required slot even when it has
 no line (an empty placeholder card).
 
-### T13 Conversations: new, entry, order
+### ~~T13 Conversations: new, entry, order~~ (done, session 3)
 Graph → New conversation (id, entry hub/greeting or triggered) via `edit.add_conversation`; tab context menu rename /
 delete / duplicate; library order follows file order, with move up/down (reorders `conversations`, which is the hub
 menu order for equal priorities).
 **Done-check:** tests for new/rename/delete/reorder; the new conversation opens in a tab.
 
-### T14 Copy / paste
+### ~~T14 Copy / paste~~ (done, session 3)
 Ctrl+C / Ctrl+V / Ctrl+D on selected cards using `edit.copy_nodes` / `edit.paste_nodes`; the payload goes to the system
 clipboard as JSON (mime `application/x-albocarius-nodes` + text); pasted cards placed at the mouse / offset by 40.
 Only within the same companion (the payload's `companion` must match; otherwise refuse with a message).
 **Done-check:** test copies two nodes, pastes into another conversation: new ids, internal edge kept, texts copied in
 every language.
 
-### T15 Validation through the CLI
+### ~~T15 Validation through the CLI~~ (done, session 3)
 On save and on Build → Validate (toolbar button enabled): run `Cli.validate(folder.path)` on a `QThreadPool` worker; put
 the result in the diagnostics panel as source "validate" (keeps "layout"); clicking reveals (already wired); status bar
 shows counts; a missing CLI or a `CliError` shows one diagnostic "validation unavailable: <reason>".
 **Done-check:** test with a broken copy (unknown `next` target) shows the error on `the_scar/scar_story` and revealing
 selects that card; with `ALBOCARIUS_CLI` pointing to a missing file the panel shows the unavailable message.
 
-### T16 Preview: conversations
+### ~~T16 Preview: conversations~~ (done, session 3)
 Preview panel with a `ServeClient` on a worker thread (one request at a time): `load` the Companions root (after every
 save), a state form generated from docs/SIMULATOR_PROTOCOL.md "State" (companion met/hired/inParty/relation/gold, player
 gold and items, clanIsFull, every declared variable from the blackboard, started), Start hub/greeting + seed, the step's
@@ -177,17 +207,17 @@ The canvas highlights (`ConversationScene.set_highlight`) the node of the last l
 **Done-check:** test (skipped without CLI) plays the sample sequence of ServeTests (start hub, hire, the_scar, spare_coin)
 by clicking the option buttons; the final transcript and state (player gold 400) match.
 
-### T17 Preview: triggers
+### ~~T17 Preview: triggers~~ (done, session 3)
 A "Triggers" sub-tab: `triggers` session with the state form, a trigger picker (T09's), payload form from the trigger's
 fields (entity fields as property rows), hours, Fire / Deliver buttons, candidate table (outcome per check) and queue view.
 **Done-check:** test fires `playerBattleEnded` with `playerWon: true` and delivers `battle_won` (skipped without CLI).
 
-### T18 Settings and recent files
+### ~~T18 Settings and recent files~~ (done, session 3)
 Settings dialog: CLI path (validated by running `export schema`), default Companions directory; File → Open recent (5).
 Command-line argument still wins.
 **Done-check:** test sets a CLI path in settings and `Cli.find` uses it; recent list updates on open.
 
-### T19 Arrange and view polish
+### ~~T19 Arrange and view polish~~ (done, session 3)
 Graph → Arrange (re-run `graph.auto_layout` for all or selected cards, one undoable command); a canvas minimap is
 optional; Ctrl+F focuses the library search, Enter reveals the first match; toolbar icons (SVG in `ui/icons/`).
 **Done-check:** test runs Arrange after scrambling positions: no overlapping cards, undo restores them.
@@ -212,3 +242,12 @@ companion works).
   `DiagnosticExport` then reading those fields instead of regexes. It touches `src/`, so it is done **outside the cloud
   sessions** (in the orchestra workflow), not by an editor task.
 - Hub and End are one card each per conversation; a conversation with many `["end"]` exits shows many edges into one card.
+- **Condition / effect editing lives in the inspector.** Cards show a read-only summary of `when` / `effects`; PLAN T07
+  also mentioned "+" sections on the cards themselves. Possible follow-up if editing on the canvas is wanted.
+- **Variable references** (`flags`, `notFlags`, `var`, `setFlags`, `clearFlags`, `set`, `add`) are named in
+  `data.edit.VARIABLE_LIST_KEYS` / `VARIABLE_MAP_KEYS` after docs/SCHEMA.md "Variables": the schema export does not
+  mark which fields name a variable. An export flag for it would remove this list.
+- A CLI path changed in Settings is used at once for validation and the preview; the schema catalog is re-read at
+  the next start.
+- Ideas after the prototype: label companion candidate links by priority instead of list position; show a
+  conversation's validation issues on its cards; a minimap.

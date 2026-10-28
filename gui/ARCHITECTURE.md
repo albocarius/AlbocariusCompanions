@@ -100,15 +100,19 @@ effects or triggers by hand; summaries on cards (`ui/canvas/summary.py`) format 
 |---|---|---|
 | `main_window` | `MainWindow` | menus, toolbar (New/Open/Save/Reload, Validate, Play/Stop, Snap), docks, status bar; open/save/reload, unsaved-changes guard, external-change check (every 2 s), undo stack |
 | `commands` | `EditCommand`, `MoveCommand` | undo: data edits as snapshots, moves as positions |
+| `forms` | `FormContext`, `field_editor`, `ConditionsEditor`, `EffectsEditor`, `TriggerEditor` | schema-driven forms used by the inspector |
+| `workers` | `run`, `SerialRunner` | CLI calls off the GUI thread (validation, the simulator) |
+| `settings` | `SettingsDialog` | CLI path, default Companions directory, recent folders |
 | `library` | `LibraryPanel` | left: search, add palette, graph navigation (Lines + conversations → nodes), companions of the opened directory |
 | `canvas/view` | `CanvasView`, `ZoomOverlay` | center: grid, wheel zoom, pan (middle button or Space+drag), fit (F), zoom box |
 | `canvas/scene` | `ConversationScene` | one conversation: builds cards/edges from `data.graph` + layout, selection, highlight, `place()` |
-| `canvas/items` | `Card`, `EdgeItem` | cards with colored headers (companion green, player violet, conversation/hub/end blue), ports, sections; ordered edges (index labels), dashed red stubs for missing targets |
-| `lines_view` | `LinesView` | the Lines tab (grouped by slot kind) |
-| `inspector` | `InspectorPanel` | right, first tab: every schema field of the selection, translations side by side, voice (play when QtMultimedia exists) |
-| `blackboard` | `BlackboardPanel` | right, second tab: variables as cards |
+| `canvas/lines_scene` | `LinesScene` | the Lines tab: line cards grouped by slot kind, placeholders for missing required slots |
+| `canvas/items` | `Card`, `EdgeItem`, `TextEditor` | cards with colored headers (companion green, player violet, conversation/hub/end blue), ports, sections; ordered edges (index labels), dashed red stubs for missing targets |
+| `inspector` | `InspectorPanel` | right, first tab: the selection's fields as forms (`forms`), Start/Next order, texts in every language, voice |
+| `blackboard` | `BlackboardPanel` | right, second tab: variables as editable cards (names drag onto fields) |
 | `diagnostics` | `DiagnosticsPanel` | bottom, first tab: diagnostics in the `validate --json` shape, by source; activating one reveals the node |
-| `preview` | `PreviewPanel` | bottom, second tab: simulator (layout only in session 1) |
+| `preview` | `PreviewPanel`, `StateForm`, `Simulator` | bottom, second tab: the simulator (`serve`): Conversation sub-tab |
+| `preview_triggers` | `TriggersPreview` | the preview's Triggers sub-tab (fire, deliver, candidates, queue) |
 | `theme` | `apply`, `CARD_STYLES` | the dark palette and style sheet |
 
 ### How the canvas maps to JSON
@@ -134,9 +138,19 @@ open scenes (closing tabs whose conversation is gone), the library, the Lines ta
 hooks run before the rebuild (a renamed conversation's tab follows its id). Snapshots are deep copies of the in-memory
 JSON (small: a companion is tens of KB).
 
-Widgets that edit commit once (focus out, Enter, a button) and emit a signal; the window turns it into one
-`EditCommand`. Inline card text uses `canvas/items.TextEditor`, which commits on the next event-loop turn because the
+Widgets that edit commit once (focus out, Enter, a button) and call the window (`inspector.commit`,
+`blackboard.commit` = `MainWindow.edit`), which runs one `EditCommand`; the panels are rebuilt from the data after it.
+Forms address values by **ref + path**: ref `("line", id)` / `("conversation", id)` / `("node", conversation, id)` and a
+list of keys and indexes below it (`["when", "any", 1, "min"]`); `data.edit.set_at` / `remove_at` / `merge_at` /
+`append_at` do the change. Links are checked by `data.edit.link_problem` (also while dragging). Inline card text uses `canvas/items.TextEditor`, which commits on the next event-loop turn because the
 commit rebuilds the scene that owns it.
+
+## Validation and preview
+
+`validate()` runs `Cli.validate(folder.path)` on a worker thread (`workers.run`, bound to the window) after every save
+and on Build → Validate; the result replaces the diagnostics of source "validate". The preview keeps one `ServeClient`
+behind a `SerialRunner` (one request at a time, in order); it `load`s the Companions directory before the first request
+after a save or folder change. The canvas highlight follows the last line said (`highlight` signal).
 
 ## Packaging (`packaging/`)
 
@@ -153,6 +167,9 @@ setting and a repository build). `albocarius-editor --check` prints what was fou
 `test_jsonfmt` (round trip, minimal diffs), `test_companion` (load/save/byte identity, edits, workspace),
 `test_layout_graph` (graph, auto layout, sidecar), `test_schema_cli` (catalog; real-CLI tests skip when the CLI is not
 built), `test_edit_ops` (edit functions added for the UI), `test_ui_smoke` (window, canvas, inspector, undo, diagnostics,
-missing CLI), `test_ui_edit` (editing through the window: PLAN T01–T05), `test_packaging` (bundled CLI/template lookup,
-`--check`).
+missing CLI), `test_ui_edit` (editing through the window: PLAN T01–T05, link checks), `test_ui_forms` (T06–T10),
+`test_ui_blackboard`, `test_ui_lines`, `test_ui_conversations`, `test_ui_clipboard`, `test_ui_validate`,
+`test_ui_preview` (real CLI; skipped without it), `test_ui_settings`, `test_ui_arrange`, `test_packaging` (bundled
+CLI/template lookup, `--check`). UI tests share one schema catalog and delete their window right away (see
+`conftest.py`).
 The CLI side (§3) is tested in `tests/AlbocariusCompanions.Acceptance/ExportTests.cs`.
