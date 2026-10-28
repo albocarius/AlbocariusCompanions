@@ -1,5 +1,10 @@
 """The preview's Triggers tab (PLAN T17): a ``triggers`` session of the simulator (docs/SIMULATOR_PROTOCOL.md "Triggers").
 
+It plays one game event against the companion's triggered content (lines and conversations with a ``trigger``) and
+shows what the game would do: which content reacts and why not, what waits in the delivery queue, what is shown. The
+campaign clock only moves with the Wait buttons: waiting delivers what is due, drops what expired, lets cooldowns and
+the daily delivery limits pass.
+
 Built around the question "does my triggered content play?":
 1. pick a trigger (the ones this companion's content listens to come first); the content listening to it is listed with
    what it requires (subject, where, when);
@@ -100,6 +105,8 @@ class TriggersPreview(QWidget):
         self.extra_paths: list[str] = []          # entity details the user added ("settlement.culture")
         self.payload_widgets: dict[str, QWidget] = {}
         self.last: dict[str, Any] = {}
+        self.hours = 0.0  # the campaign clock of the session, in hours
+        self.wait_buttons: list[QPushButton] = []
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, 4, 0, 0)
         split = QSplitter()
@@ -110,11 +117,20 @@ class TriggersPreview(QWidget):
         left_lay = QVBoxLayout(left)
         left_lay.setContentsMargins(0, 0, 6, 0)
         left_lay.setSpacing(4)
+        intro = self._muted("Plays one game event against this companion's triggered content: who reacts (or why "
+                            "not), what waits in the queue, what the player sees.")
+        left_lay.addWidget(intro)
         left_lay.addWidget(self._section("1. Trigger"))
         self.picker = QComboBox()
         self.picker.setObjectName("trigger_picker")
         forms._narrow(self.picker)
+        self.picker.setEditable(True)  # type to search
+        self.picker.setInsertPolicy(QComboBox.InsertPolicy.NoInsert)
         self.picker.activated.connect(lambda i: self.set_trigger(str(self.picker.itemData(i) or "")))
+        self.picker.completer().setFilterMode(Qt.MatchFlag.MatchContains)
+        self.picker.completer().setCompletionMode(self.picker.completer().CompletionMode.PopupCompletion)
+        self.picker.lineEdit().setPlaceholderText("type to search…")
+        self.picker.lineEdit().editingFinished.connect(self._picked_text)
         left_lay.addWidget(self.picker)
         self.description = self._muted("")
         left_lay.addWidget(self.description)
@@ -161,27 +177,36 @@ class TriggersPreview(QWidget):
         self.deliver_button.clicked.connect(self.deliver)
         self.new_button = QPushButton("Reset")
         self.new_button.setObjectName("reset")
-        self.new_button.setToolTip("A fresh trigger session: empty queue, no cooldowns, clock at 0")
+        self.new_button.setToolTip("A fresh trigger session: empty queue, no cooldowns, clock back to day 1")
         self.new_button.clicked.connect(self.new_session)
         for b in (self.fire_deliver_button, self.fire_button, self.deliver_button, self.new_button):
             row.addWidget(b)
         left_lay.addLayout(row)
         row = QHBoxLayout()
-        row.addWidget(QLabel("hour"))
-        self.hours = QDoubleSpinBox()
-        self.hours.setObjectName("hours")
-        self.hours.setRange(0, 1_000_000)
-        self.hours.setToolTip("The campaign clock in hours: it only moves forward. Raise it to let expiry, cooldowns "
-                              "and the daily delivery limits pass")
-        row.addWidget(self.hours, 1)
+        self.clock = QLabel()
+        self.clock.setObjectName("clock")
+        self.clock.setToolTip("The campaign clock of this test. Fire happens now; Wait moves the clock forward and "
+                              "delivers what is due (queued items expire after expiresAfterHours, cooldowns and the "
+                              "one-interruption-per-day limit pass with time)")
+        row.addWidget(self.clock)
+        for text, hours in (("Wait 1 hour", 1), ("Wait 1 day", 24), ("Wait 1 week", 168)):
+            b = QPushButton(text)
+            b.setObjectName(f"wait_{hours}")
+            b.setToolTip(f"Move the clock {text[5:]} forward, then deliver")
+            b.clicked.connect(lambda _=False, h=hours: self.wait(h))
+            row.addWidget(b)
+            self.wait_buttons.append(b)
+        left_lay.addLayout(row)
+        row = QHBoxLayout()
         self.on_map = QCheckBox("on the map")
         self.on_map.setChecked(True)
-        self.on_map.setToolTip("Conversations and inquiries are delivered only on the campaign map")
-        self.can_interrupt = QCheckBox("can interrupt")
+        self.on_map.setToolTip("Conversations and inquiries are delivered only on the campaign map, not in a scene")
+        self.can_interrupt = QCheckBox("the game can start a conversation now")
         self.can_interrupt.setChecked(True)
-        self.can_interrupt.setToolTip("Untick to simulate a moment when the game cannot start a conversation")
+        self.can_interrupt.setToolTip("Untick to simulate a moment the game cannot interrupt (a menu, an encounter)")
         row.addWidget(self.on_map)
         row.addWidget(self.can_interrupt)
+        row.addStretch(1)
         left_lay.addLayout(row)
         split.addWidget(left)
 
@@ -205,6 +230,20 @@ class TriggersPreview(QWidget):
         split.addWidget(right)
         split.setSizes([430, 650])
         self.set_available(False)
+        self._show_clock()
+
+    def _show_clock(self) -> None:
+        day, hour = divmod(int(self.hours), 24)
+        self.clock.setText(f"Clock: day {day + 1}, {hour:02d}:00")
+
+    def _set_clock(self, hours: float) -> None:
+        self.hours = float(hours)
+        self._show_clock()
+
+    def _picked_text(self) -> None:
+        text = self.picker.currentText().split("—")[0].strip()
+        if text and text != self.trigger and self.catalog.trigger(text) is not None:
+            self.set_trigger(text)
 
     @staticmethod
     def _section(text: str) -> QLabel:
@@ -220,7 +259,7 @@ class TriggersPreview(QWidget):
         return label
 
     def set_available(self, on: bool) -> None:
-        for b in (self.fire_deliver_button, self.fire_button, self.deliver_button, self.new_button):
+        for b in (self.fire_deliver_button, self.fire_button, self.deliver_button, self.new_button, *self.wait_buttons):
             b.setEnabled(on)
 
     def set_folder(self, folder: CompanionFolder | None) -> None:
@@ -405,11 +444,11 @@ class TriggersPreview(QWidget):
         if self.session is not None:
             self.panel.sim.request("close", {"session": self.session}, lambda _r: None, lambda _e: None)
         self.session = None
-        self.hours.setValue(0)
+        self._set_clock(0)
         self.candidates.clear()
         self.queue.clear()
         self.result.clear()
-        self._with_session(lambda: self.result.append("<p><i>New trigger session: empty queue, clock at hour 0.</i></p>"))
+        self._with_session(lambda: self.result.append("<p><i>New trigger session: empty queue, clock at day 1, 00:00.</i></p>"))
 
     def fire(self, deliver: bool = True) -> None:
         if not self.trigger:
@@ -418,16 +457,16 @@ class TriggersPreview(QWidget):
 
         def send() -> None:
             fields = {"session": self.session, "trigger": self.trigger, "payload": self.payload_value(),
-                      "hours": self.hours.value()}
+                      "hours": self.hours}
             self.panel._send("fire", fields, lambda r: self._fired(r, deliver))
         self._with_session(send)
 
     def _fired(self, response: dict, deliver: bool) -> None:
         self.last = response
-        self.hours.setValue(float(response.get("hours", self.hours.value())))
+        self._set_clock(response.get("hours", self.hours))
         candidates = [c for c in response.get("candidates") or []
                       if self.folder is None or c.get("companion") == self.folder.id]
-        self.result.append(f"<p><b>Fired {html.escape(self.trigger)}</b> at hour {response.get('hours', 0):g}</p>")
+        self.result.append(f"<p><b>Fired {html.escape(self.trigger)}</b> ({html.escape(self.clock.text().lower())})</p>")
         if not candidates:
             self.result.append("<p>Nothing of this companion listens to it.</p>")
         for c in candidates:
@@ -462,14 +501,22 @@ class TriggersPreview(QWidget):
 
     def deliver(self) -> None:
         def send() -> None:
-            fields = {"session": self.session, "hours": self.hours.value(), "onMap": self.on_map.isChecked(),
+            fields = {"session": self.session, "hours": self.hours, "onMap": self.on_map.isChecked(),
                       "canInterrupt": self.can_interrupt.isChecked()}
             self.panel._send("deliver", fields, self._delivered)
         self._with_session(send)
 
     def _delivered(self, response: dict) -> None:
         self.last = response
-        self.hours.setValue(float(response.get("hours", self.hours.value())))
+        self._set_clock(response.get("hours", self.hours))
+        for dropped in response.get("dropped") or []:
+            # A dropped item carries its queue key "<companion>/<kind>/<content>" and a reason.
+            content = str(dropped.get("content") or str(dropped.get("key", "")).split("/")[-1])
+            reason = str(dropped.get("reason"))
+            if reason == "expired":
+                reason = "expired: it was not delivered within its expiresAfterHours"
+            self.result.append(f'<p style="color:{theme.WARNING}">Dropped {html.escape(content)}: '
+                               f'{html.escape(reason)}</p>')
         d = response.get("delivered")
         if d:
             how = {"notification": "a line in the message log", "inquiry": "a pop-up",
@@ -484,13 +531,16 @@ class TriggersPreview(QWidget):
         else:
             waiting = len((response.get("queue") or {}).get("items") or [])
             why = (f"{waiting} item(s) still wait: delivery limits (one interruption per day, a companion speaks up at "
-                   f"most every few days), \"on the map\" or \"can interrupt\" hold them; raise the hour to let them pass"
+                   f"most every few days) or the checkboxes above hold them; Wait lets the limits pass"
                    if waiting else "the queue is empty")
             self.result.append(f"<p><i>Nothing delivered: {html.escape(why)}.</i></p>")
-        for dropped in response.get("dropped") or []:
-            self.result.append(f'<p style="color:{theme.WARNING}">Dropped {html.escape(str(dropped.get("content")))}: '
-                               f'{html.escape(str(dropped.get("reason")))}</p>')
         self._show_queue(response.get("queue") or {})
+
+    def wait(self, hours: float) -> None:
+        """Moves the clock forward and delivers: due items play, expired ones are dropped (the result says which)."""
+        self._set_clock(self.hours + hours)
+        self.result.append(f"<p><i>Waited until {html.escape(self.clock.text()[7:])}.</i></p>")
+        self.deliver()
 
     def _show_queue(self, queue: dict) -> None:
         self.queue.clear()

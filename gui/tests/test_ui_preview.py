@@ -109,3 +109,26 @@ def test_suggested_payload_follows_where_and_event_conditions():
     content = [{"trigger": {"on": "villageLooted", "where": {"village.culture": "vlandia"}},
                 "when": {"all": [{"var": "event.playerInvolved", "eq": True}], "hired": True}}]
     assert suggested_payload(content) == {"village.culture": "vlandia", "playerInvolved": True}
+
+
+def test_waiting_moves_the_clock_and_drops_expired_items(window: MainWindow, sample: Path, qtbot):
+    assert window.open_path(sample)
+    triggers = window.preview.triggers
+    triggers.set_trigger("playerBattleEnded")
+    fire(window, qtbot, deliver=False)  # queued; battle_won expires after 12 hours
+    assert triggers.queue.topLevelItemCount() == 1
+    before = window.preview.steps
+    triggers.findChild(QPushButton, "wait_24").click()
+    qtbot.waitUntil(lambda: window.preview.steps > before and not window.preview.sim.runner.busy, timeout=TIMEOUT)
+    assert triggers.clock.text() == "Clock: day 2, 00:00"
+    assert triggers.queue.topLevelItemCount() == 0
+    assert "Dropped battle_won" in triggers.result.toPlainText(), triggers.result.toPlainText()
+
+
+def test_trigger_picker_is_short_and_searchable(window: MainWindow, sample: Path):
+    assert window.open_path(sample)
+    picker = window.preview.triggers.picker
+    assert picker.maxVisibleItems() == 15 and picker.isEditable()
+    picker.setEditText("villageLooted")
+    picker.lineEdit().editingFinished.emit()
+    assert window.preview.triggers.trigger == "villageLooted"

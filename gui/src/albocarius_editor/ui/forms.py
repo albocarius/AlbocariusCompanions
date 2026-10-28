@@ -155,6 +155,7 @@ def _narrow(combo: QComboBox) -> QComboBox:
     """Combos as wide as the panel, not as their longest entry (the inspector does not scroll sideways)."""
     combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
     combo.setMinimumContentsLength(6)
+    combo.setMaxVisibleItems(15)
     return combo
 
 

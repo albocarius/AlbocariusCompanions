@@ -77,6 +77,7 @@ QTabBar::tab:selected {{ background: {ACCENT_SOFT}; color: {TEXT}; border-color:
 QTabBar::tab:hover:!selected {{ color: {TEXT}; }}
 QTabBar::close-button {{ image: url({ICONS}/close.svg); subcontrol-position: right; margin-left: 4px; }}
 QTabBar::close-button:hover {{ background: {BORDER}; border-radius: 3px; }}
+QComboBox {{ combobox-popup: 0; }}  /* a scrolling list of maxVisibleItems, not a full-screen popup */
 QComboBox::drop-down {{ border: none; width: 18px; }}
 QComboBox::down-arrow {{ image: url({ICONS}/chevron.svg); width: 10px; height: 10px; }}
 QLineEdit, QPlainTextEdit, QTextEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
