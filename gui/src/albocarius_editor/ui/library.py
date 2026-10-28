@@ -145,6 +145,18 @@ class LibraryPanel(QWidget):
         else:
             self.open_conversation.emit(conv_id)
 
+    def first_match(self) -> tuple[str, str] | None:
+        """(conversation id or LINES_TAB, node id) of the first node shown by the search."""
+        if not self.search.text().strip():
+            return None
+        for i in range(self.tree.topLevelItemCount()):
+            top = self.tree.topLevelItem(i)
+            for j in range(top.childCount()):
+                child = top.child(j)
+                if not child.isHidden() and not top.isHidden():
+                    return child.data(0, Qt.ItemDataRole.UserRole)
+        return None
+
     def _filter(self, text: str) -> None:
         """Shows nodes whose id or English text contains the search text (and their conversation)."""
         needle = text.strip().lower()

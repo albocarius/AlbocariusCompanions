@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from PySide6.QtCore import QMimeData, QPointF, QRectF, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QCloseEvent, QCursor, QGuiApplication, QKeySequence, QUndoStack
+from PySide6.QtGui import QAction, QCloseEvent, QCursor, QGuiApplication, QIcon, QKeySequence, QUndoStack
 from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMenu, QMessageBox, QTabWidget,
                                QToolBar, QWidget)
 
@@ -119,6 +119,18 @@ class MainWindow(QMainWindow):
         self.act_play = self._action("Play", self.play, QKeySequence("F5"), "Start a simulated talk from the hub (Preview)")
         self.act_stop = self._action("Stop", self.stop_preview, QKeySequence("Shift+F5"), "Close the simulated talk")
         self.act_about = self._action("About", self.about)
+        self.act_arrange = self._action("Arrange", self.arrange, QKeySequence("Ctrl+L"),
+                                        "Lay out the selected cards (or all) left to right by graph depth")
+        self.act_find = self._action("Find…", self.focus_search, QKeySequence.StandardKey.Find,
+                                     "Search nodes by id or text (Enter reveals the first match)")
+        self._set_icons()
+
+    def _set_icons(self) -> None:
+        icons = Path(__file__).with_name("icons")
+        for action, name in ((self.act_new, "new"), (self.act_open, "open"), (self.act_save, "save"),
+                             (self.act_reload, "reload"), (self.act_validate, "validate"), (self.act_play, "play"),
+                             (self.act_stop, "stop"), (self.act_snap, "snap"), (self.act_arrange, "arrange")):
+            action.setIcon(QIcon(str(icons / f"{name}.svg")))
 
     def _build_menus(self) -> None:
         bar = self.menuBar()
@@ -135,6 +147,8 @@ class MainWindow(QMainWindow):
         edit.addSeparator()
         for a in (self.act_copy, self.act_paste, self.act_duplicate, self.act_delete):
             edit.addAction(a)
+        edit.addSeparator()
+        edit.addAction(self.act_find)
         view = bar.addMenu("&View")
         for a in (self.act_zoom_in, self.act_zoom_out, self.act_fit, None, self.act_snap):
             view.addSeparator() if a is None else view.addAction(a)
@@ -144,6 +158,8 @@ class MainWindow(QMainWindow):
                                           QKeySequence("Ctrl+Shift+N"), "A companion (npc) node at the view center"))
         graph_menu.addAction(self._action("Add player line", lambda: self.add_from_palette("player"),
                                           QKeySequence("Ctrl+Shift+P"), "A player option at the view center"))
+        graph_menu.addAction(self.act_arrange)
+        graph_menu.addSeparator()
         graph_menu.addAction(self._action("New conversation…", self.new_conversation, QKeySequence("Ctrl+Shift+C"),
                                           "A conversation from the hub menu, a greeting or a trigger"))
         graph_menu.addSeparator()
@@ -172,6 +188,8 @@ class MainWindow(QMainWindow):
         tb.addAction(self.act_stop)
         tb.addSeparator()
         tb.addAction(self.act_snap)
+        tb.addAction(self.act_arrange)
+        tb.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
         self.addToolBar(tb)
 
     def _build_center(self) -> None:
@@ -213,6 +231,7 @@ class MainWindow(QMainWindow):
         self.library.open_companion.connect(self.open_companion)
         self.library.palette_activated.connect(self.add_from_palette)
         self.library.conversation_menu.connect(self._library_menu)
+        self.library.search.returnPressed.connect(self.reveal_first_match)
         self.library_dock = self._dock("Library", self.library, Qt.DockWidgetArea.LeftDockWidgetArea, "library")
 
         self.inspector = InspectorPanel(self.catalog)
@@ -896,6 +915,46 @@ class MainWindow(QMainWindow):
         return True
 
     # ---- validation (T15) ----
+
+    # ---- arrange, search (T19) ----
+
+    def arrange(self) -> bool:
+        """Auto layout (graph.auto_layout with the cards' real heights) of the selected cards, or of all; one step."""
+        scene = self.current_scene()
+        if self.folder is None or scene is None:
+            return False
+        conv = scene.conversation_id
+        selected = scene.selected_keys()
+        keys = selected if len(selected) > 1 else list(scene.cards)
+        heights = {k: c.height for k, c in scene.cards.items()}
+
+        def arrange_all(f: CompanionFolder) -> None:
+            conversation = f.conversation(conv)
+            positions = graph.auto_layout(graph.build(conversation), heights)
+            changed = False
+            for key in keys:
+                if key in positions and f.layout.get(conv, key) != positions[key]:
+                    f.layout.set(conv, key, *positions[key])
+                    changed = True
+            if not changed:
+                raise EditError("the cards are already arranged")
+        done, _ = self.edit(f"Arrange {'selection' if keys is selected else conv}", arrange_all)
+        if done:
+            self.tabs.currentWidget().fit_all()
+        return done
+
+    def focus_search(self) -> None:
+        self.library_dock.show()
+        self.library.search.setFocus()
+        self.library.search.selectAll()
+
+    def reveal_first_match(self) -> bool:
+        match = self.library.first_match()
+        if match is None:
+            self.statusBar().showMessage("No match", 3000)
+            return False
+        self.reveal(*match)
+        return True
 
     # ---- preview (T16/T17) ----
 
