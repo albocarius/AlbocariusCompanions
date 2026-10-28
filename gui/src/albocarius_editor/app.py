@@ -33,6 +33,17 @@ def check() -> int:
     return 0
 
 
+def _release_clipboard() -> None:
+    """Drops copied nodes from the clipboard on quit: Qt deleting that data during shutdown crashes PySide."""
+    from PySide6.QtGui import QGuiApplication
+
+    from .ui.main_window import NODES_MIME
+
+    clipboard = QGuiApplication.clipboard()
+    if clipboard.mimeData() is not None and clipboard.mimeData().hasFormat(NODES_MIME):
+        clipboard.clear()
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv if argv is None else argv
     if "--check" in argv[1:]:
@@ -41,6 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     app.setApplicationName(APP_NAME)
     app.setOrganizationName("Albocarius")
     theme.apply(app)
+    app.aboutToQuit.connect(_release_clipboard)
     window = MainWindow()
     args = [a for a in argv[1:] if not a.startswith("-")]
     if args:

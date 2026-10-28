@@ -3,10 +3,11 @@ diagnostics/preview (bottom), status bar — the layout of gui/docs/reference.pn
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QRectF, QSettings, Qt, QTimer
-from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoStack
+from PySide6.QtCore import QMimeData, QPointF, QRectF, QSettings, Qt, QTimer
+from PySide6.QtGui import QAction, QCloseEvent, QCursor, QGuiApplication, QKeySequence, QUndoStack
 from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMenu, QMessageBox, QTabWidget,
                                QToolBar, QWidget)
 
@@ -28,6 +29,7 @@ from .library import LINES_TAB, LibraryPanel
 from .preview import PreviewPanel
 
 APP_NAME = "AlbocariusCompanions Editor"
+NODES_MIME = "application/x-albocarius-nodes"
 
 
 class MainWindow(QMainWindow):
@@ -95,6 +97,13 @@ class MainWindow(QMainWindow):
         self.act_delete = self._action("Delete", self.delete_selection, QKeySequence.StandardKey.Delete,
                                        "Delete the selected cards, or disconnect the selected links")
         self.act_delete.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
+        self.act_copy = self._action("Copy", self.copy_selection, QKeySequence.StandardKey.Copy, "Copy the selected cards")
+        self.act_paste = self._action("Paste", self.paste, QKeySequence.StandardKey.Paste,
+                                      "Paste cards (same companion) into this conversation")
+        self.act_duplicate = self._action("Duplicate", self.duplicate_selection, QKeySequence("Ctrl+D"),
+                                          "Duplicate the selected cards")
+        for a in (self.act_copy, self.act_paste, self.act_duplicate):
+            a.setShortcutContext(Qt.ShortcutContext.WidgetWithChildrenShortcut)
         self.act_zoom_in = self._action("Zoom in", lambda: self._view_call("zoom_in"), QKeySequence.StandardKey.ZoomIn)
         self.act_zoom_out = self._action("Zoom out", lambda: self._view_call("zoom_out"), QKeySequence.StandardKey.ZoomOut)
         self.act_fit = self._action("Fit", lambda: self._view_call("fit_all"), QKeySequence("Ctrl+0"))
@@ -115,7 +124,8 @@ class MainWindow(QMainWindow):
         edit.addAction(self.act_undo)
         edit.addAction(self.act_redo)
         edit.addSeparator()
-        edit.addAction(self.act_delete)
+        for a in (self.act_copy, self.act_paste, self.act_duplicate, self.act_delete):
+            edit.addAction(a)
         view = bar.addMenu("&View")
         for a in (self.act_zoom_in, self.act_zoom_out, self.act_fit, None, self.act_snap):
             view.addSeparator() if a is None else view.addAction(a)
@@ -162,7 +172,9 @@ class MainWindow(QMainWindow):
         self.tabs.setMovable(True)
         self.tabs.tabCloseRequested.connect(self._close_tab)
         self.tabs.currentChanged.connect(self._tab_changed)
-        self.tabs.addAction(self.act_delete)  # Del acts while the canvas has focus (not in text fields)
+        # Del / copy / paste act while the canvas has focus (text fields keep their own).
+        for a in (self.act_delete, self.act_copy, self.act_paste, self.act_duplicate):
+            self.tabs.addAction(a)
         self.tabs.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tabs.tabBar().customContextMenuRequested.connect(self._tab_menu)
         self.setCentralWidget(self.tabs)
@@ -428,6 +440,91 @@ class MainWindow(QMainWindow):
             self.edit("Disconnect" if len(edges) == 1 else f"Disconnect {len(edges)} links", disconnect_all)
             return
         self.delete_nodes(conv, [k for k in scene.selected_keys() if not k.startswith("@")])
+
+    # ---- copy / paste (T14) ----
+
+    def _copy_payload(self) -> dict | None:
+        scene = self.current_scene()
+        if self.folder is None or scene is None:
+            return None
+        order = self.folder.node_ids_by_conversation().get(scene.conversation_id, [])
+        keys = sorted((k for k in scene.selected_keys() if not k.startswith("@")), key=order.index)  # file order
+        if not keys:
+            self.statusBar().showMessage("Select node cards to copy", 4000)
+            return None
+        payload = edit.copy_nodes(self.folder, scene.conversation_id, keys)
+        payload["positions"] = {k: [scene.cards[k].pos().x(), scene.cards[k].pos().y()] for k in keys if k in scene.cards}
+        return payload
+
+    def copy_selection(self) -> bool:
+        payload = self._copy_payload()
+        if payload is None:
+            return False
+        text = json.dumps(payload, ensure_ascii=False)
+        data = QMimeData()
+        data.setData(NODES_MIME, text.encode("utf-8"))
+        data.setText(text)
+        QGuiApplication.clipboard().setMimeData(data)
+        self.statusBar().showMessage(f"Copied {len(payload['nodes'])} node(s)", 3000)
+        return True
+
+    def paste(self, payload: dict | None = None, at: QPointF | None = None) -> list[str]:
+        """Pastes copied nodes into the current conversation with fresh ids (at ``at``, the mouse, or 40 px off the
+        originals). Only nodes copied from this companion are accepted."""
+        scene = self.current_scene()
+        if self.folder is None or scene is None:
+            self.statusBar().showMessage("Open a conversation tab to paste into", 4000)
+            return []
+        if payload is None:
+            data = QGuiApplication.clipboard().mimeData()
+            raw = bytes(data.data(NODES_MIME)).decode("utf-8") if data.hasFormat(NODES_MIME) else data.text()
+            try:
+                payload = json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                payload = None
+        if not isinstance(payload, dict) or payload.get("kind") != "albocarius-nodes":
+            self.statusBar().showMessage("The clipboard holds no nodes", 4000)
+            return []
+        if payload.get("companion") != self.folder.id:
+            self.statusBar().showMessage(f"These nodes were copied from {payload.get('companion')}; nodes are pasted only "
+                                         f"within the same companion", 6000)
+            return []
+        positions = payload.get("positions", {})
+        if positions:
+            left = min(p[0] for p in positions.values())
+            top = min(p[1] for p in positions.values())
+        else:
+            left = top = 0.0
+        if at is None:
+            view = self.tabs.currentWidget()
+            cursor = view.viewport().mapFromGlobal(QCursor.pos())
+            at = (view.mapToScene(cursor) if view.viewport().rect().contains(cursor)
+                  else QPointF(left + 40, top + 40))
+        conv = scene.conversation_id
+
+        def paste_all(f: CompanionFolder) -> list[str]:
+            new_ids = edit.paste_nodes(f, conv, payload)
+            for i, (node, new_id) in enumerate(zip(payload["nodes"], new_ids)):
+                old = positions.get(node["id"], [left + 40 * i, top + 40 * i])
+                f.layout.set(conv, new_id, at.x() + old[0] - left, at.y() + old[1] - top)
+            return new_ids
+        done, new_ids = self.edit(f"Paste {len(payload['nodes'])} node(s)", paste_all)
+        if not done:
+            return []
+        scene.clearSelection()
+        for new_id in new_ids:
+            if new_id in scene.cards:
+                scene.cards[new_id].setSelected(True)
+        return new_ids
+
+    def duplicate_selection(self) -> list[str]:
+        payload = self._copy_payload()
+        if payload is None:
+            return []
+        positions = payload.get("positions", {})
+        left = min((p[0] for p in positions.values()), default=0.0)
+        top = min((p[1] for p in positions.values()), default=0.0)
+        return self.paste(payload, QPointF(left + 40, top + 40))
 
     def delete_nodes(self, conversation_id: str, node_ids: list[str]) -> bool:
         """Deletes nodes (references, texts in every language, layout) as one step; asks first when they have text."""
