@@ -9,7 +9,7 @@ from albocarius_editor.data import graph
 from albocarius_editor.data.layout import NodeLayout
 from albocarius_editor.ui.canvas.items import Card, EdgeItem
 from albocarius_editor.ui.canvas.view import CanvasView
-from albocarius_editor.ui.lines_view import LinesView
+from albocarius_editor.ui.canvas.lines_scene import LinesScene
 from albocarius_editor.ui.main_window import MainWindow
 
 
@@ -18,7 +18,7 @@ def test_opens_the_sample_with_lines_and_a_conversation(window: MainWindow, samp
     assert window.folder is not None and window.folder.id == "test_companion"
     titles = [window.tabs.tabText(i) for i in range(window.tabs.count())]
     assert titles == ["Lines", "the_scar"]
-    assert isinstance(window.tabs.widget(0), LinesView)
+    assert isinstance(window.tabs.widget(0).scene(), LinesScene)
     assert window.library.companions.count() == 1
     assert window.library.tree.topLevelItemCount() == 1 + 5  # Lines + conversations
 

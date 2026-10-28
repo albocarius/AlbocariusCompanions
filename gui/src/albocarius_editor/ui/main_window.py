@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PySide6.QtCore import QPointF, QSettings, Qt, QTimer
+from PySide6.QtCore import QPointF, QRectF, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QKeySequence, QUndoStack
 from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMenu, QMessageBox, QTabWidget,
                                QToolBar, QWidget)
@@ -19,12 +19,12 @@ from ..schema.catalog import SchemaCatalog
 from .blackboard import BlackboardPanel
 from .canvas.scene import ConversationScene
 from .canvas.items import GRID
+from .canvas.lines_scene import PLACEHOLDER, LinesScene
 from .canvas.view import CanvasView
 from .commands import EditCommand, MoveCommand
 from .diagnostics import DiagnosticsPanel, layout_diagnostics
 from .inspector import InspectorPanel
 from .library import LINES_TAB, LibraryPanel
-from .lines_view import LinesView
 from .preview import PreviewPanel
 
 APP_NAME = "AlbocariusCompanions Editor"
@@ -125,6 +125,8 @@ class MainWindow(QMainWindow):
                                           QKeySequence("Ctrl+Shift+N"), "A companion (npc) node at the view center"))
         graph_menu.addAction(self._action("Add player line", lambda: self.add_from_palette("player"),
                                           QKeySequence("Ctrl+Shift+P"), "A player option at the view center"))
+        graph_menu.addAction(self._action("Add line…", lambda: self.add_line(ask=True), QKeySequence("Ctrl+Shift+L"),
+                                          "A line of dialogs.json \"lines\" (a slot, or a triggered line)"))
         graph_menu.addSeparator()
         graph_menu.addAction(self._action("Continue with: Back to hub", lambda: self.add_from_palette("hub"),
                                           tip="The selected node returns to the companion's menu"))
@@ -161,8 +163,13 @@ class MainWindow(QMainWindow):
         self.tabs.tabBar().setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.tabs.tabBar().customContextMenuRequested.connect(self._tab_menu)
         self.setCentralWidget(self.tabs)
-        self.lines_view = LinesView(self.catalog)
-        self.lines_view.line_selected.connect(lambda line_id: self._show_in_inspector(None, line_id))
+        self.lines_scene = LinesScene(None, self.catalog, self)
+        self.lines_scene.item_selected.connect(lambda line_id: self._show_in_inspector(None, line_id))
+        self.lines_scene.text_committed.connect(self.set_text)
+        self.lines_scene.add_requested.connect(self.add_line)
+        self.lines_scene.context_requested.connect(self._line_menu)
+        self.lines_view = CanvasView()
+        self.lines_view.setScene(self.lines_scene)
 
     def _dock(self, title: str, widget: QWidget, area: Qt.DockWidgetArea, name: str) -> QDockWidget:
         dock = QDockWidget(title, self)
@@ -254,7 +261,7 @@ class MainWindow(QMainWindow):
                 return i
         return -1
 
-    def open_tab(self, conversation_id: str) -> CanvasView | LinesView | None:
+    def open_tab(self, conversation_id: str) -> CanvasView | None:
         """Shows (opening if needed) the Lines tab or a conversation's canvas."""
         if self.folder is None:
             return None
@@ -275,7 +282,10 @@ class MainWindow(QMainWindow):
                 title = conversation_id
             widget.setProperty("tabKey", conversation_id)
             index = self.tabs.addTab(widget, title)
-            if isinstance(widget, CanvasView):
+            if widget is self.lines_view:  # many cards: start readable at the top left, not fitted
+                QTimer.singleShot(0, lambda: (self.lines_view.set_zoom(0.85),
+                                              self.lines_view.ensureVisible(QRectF(-20, -20, 10, 10))))
+            elif isinstance(widget, CanvasView):
                 QTimer.singleShot(0, widget.fit_all)
         self.tabs.setCurrentIndex(index)
         return self.tabs.widget(index)
@@ -301,13 +311,13 @@ class MainWindow(QMainWindow):
         if isinstance(widget, CanvasView) and isinstance(widget.scene(), ConversationScene):
             scene = widget.scene()
             self._show_in_inspector(scene.conversation_id, scene.selected_key())
+        elif widget is self.lines_view:
+            self._show_in_inspector(None, self.lines_scene.selected_key())
 
     def reveal(self, conversation_id: str, key: str) -> None:
         """Opens the tab of a node (or line) and selects it."""
         widget = self.open_tab(conversation_id)
-        if isinstance(widget, LinesView):
-            widget.select_line(key)
-        elif isinstance(widget, CanvasView):
+        if isinstance(widget, CanvasView):
             card = widget.scene().select(key)
             if card is not None:
                 widget.centerOn(card)
@@ -363,6 +373,9 @@ class MainWindow(QMainWindow):
         """npc/player: a new node in the current conversation at ``pos`` (default: the view center), selected with its
         text editor open; returns its id. hub/end: the selected node continues with Back to hub / End."""
         scene = self.current_scene()
+        if self.folder is not None and self.tabs.currentWidget() is self.lines_view and kind in ("npc", "player"):
+            self.statusBar().showMessage("Lines are added with Graph → Add line… or by double-clicking a missing slot", 5000)
+            return None
         if self.folder is None or scene is None:
             self.statusBar().showMessage("Open a conversation tab first", 4000)
             return None
@@ -396,6 +409,9 @@ class MainWindow(QMainWindow):
 
     def delete_selection(self) -> None:
         """Del on the canvas: selected edges are disconnected, else the selected node cards are deleted."""
+        if self.tabs.currentWidget() is self.lines_view:
+            self.delete_lines([k for k in self.lines_scene.selected_keys() if not k.startswith(PLACEHOLDER)])
+            return
         scene = self.current_scene()
         if scene is None:
             return
@@ -423,6 +439,52 @@ class MainWindow(QMainWindow):
             for node_id in node_ids:
                 edit.delete_node(f, conversation_id, node_id)
         return self.edit(f"Delete {node_ids[0]}" if len(node_ids) == 1 else f"Delete {len(node_ids)} nodes", delete_all)[0]
+
+    def delete_lines(self, line_ids: list[str]) -> bool:
+        if self.folder is None or not line_ids:
+            return False
+        if any(self.folder.text(n, code) for n in line_ids for code in self.folder.languages()):
+            what = line_ids[0] if len(line_ids) == 1 else f"{len(line_ids)} lines"
+            if QMessageBox.question(self, APP_NAME, f"Delete {what} and its texts in every language?") \
+                    != QMessageBox.StandardButton.Yes:
+                return False
+
+        def delete_all(f: CompanionFolder) -> None:
+            for line_id in line_ids:
+                edit.delete_line(f, line_id)
+        return self.edit(f"Delete {line_ids[0]}" if len(line_ids) == 1 else f"Delete {len(line_ids)} lines", delete_all)[0]
+
+    def add_line(self, slot: str | None = None, ask: bool = False) -> str | None:
+        """A new line for ``slot`` (None: a slot-free, triggered line), shown on the Lines tab with its text editor open.
+        With ``ask`` the slot is chosen in a dialog."""
+        if self.folder is None:
+            return None
+        if ask:
+            free = "(no slot: a triggered line)"
+            choice, ok = QInputDialog.getItem(self, "Add line", "Slot:", [*self.catalog.all_slots, free], 0, False)
+            if not ok:
+                return None
+            slot = None if choice == free else choice
+        done, line = self.edit(f"Add line {slot or 'triggered'}", lambda f: edit.add_line(f, slot))
+        if not done:
+            return None
+        self.open_tab(LINES_TAB)
+        card = self.lines_scene.select(line["id"])
+        if card is not None:
+            self.lines_view.centerOn(card)
+        self.lines_scene.edit_text(line["id"])
+        return line["id"]
+
+    def _line_menu(self, key: str, screen_pos) -> None:
+        menu = QMenu(self)
+        if key.startswith(PLACEHOLDER):
+            slot = key[len(PLACEHOLDER):]
+            menu.addAction(f"Add a line for {slot}", lambda: self.add_line(slot))
+        else:
+            menu.addAction("Edit text", lambda: self.lines_scene.edit_text(key))
+            menu.addSeparator()
+            menu.addAction("Delete", lambda: self.delete_lines([key]))
+        menu.exec(screen_pos)
 
     def rename_item(self, conversation_id: str | None, old: str, new: str) -> bool:
         """Renames a line/node id (or, with key @header, the conversation). Offers to rename the audio file too."""
@@ -524,7 +586,7 @@ class MainWindow(QMainWindow):
                     self.tabs.removeTab(i)
                 else:
                     scene.rebuild()
-        self.lines_view.set_folder(folder)
+        self.lines_scene.rebuild()
         self.library.set_folder(folder)
         self.blackboard.set_folder(folder)
         self._refresh_inspector()
@@ -610,7 +672,7 @@ class MainWindow(QMainWindow):
             self.library.set_companions(folders, folder.path if folder else None)
             self.inspector.companions = [p.name for p in folders]
         if folder is not None:
-            self.lines_view.set_folder(folder)
+            self.lines_scene.set_folder(folder)
             self.open_tab(LINES_TAB)
             first = next((c.get("id") for c in folder.conversations if isinstance(c.get("id"), str)), None)
             if first:
