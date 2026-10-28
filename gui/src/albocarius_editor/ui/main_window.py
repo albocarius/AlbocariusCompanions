@@ -185,6 +185,8 @@ class MainWindow(QMainWindow):
 
         self.inspector = InspectorPanel(self.catalog)
         self.inspector.text_committed.connect(self.set_text)
+        self.inspector.commit = lambda text, fn: self.edit(text, fn)[0]
+        self.inspector.message = lambda text: self.statusBar().showMessage(text, 6000)
         self.inspector.id_committed.connect(self.rename_item)
         self.inspector.edge_move.connect(lambda c, s, t, i: self.edit(
             f"Reorder {s} → {t}", lambda f: edit.move_edge(f, c, s, t, i)))
@@ -603,7 +605,9 @@ class MainWindow(QMainWindow):
         self.blackboard.set_folder(folder)
         self.inspector.show_nothing()
         if self.companions_root is not None:
-            self.library.set_companions(workspace.companion_folders(self.companions_root), folder.path if folder else None)
+            folders = workspace.companion_folders(self.companions_root)
+            self.library.set_companions(folders, folder.path if folder else None)
+            self.inspector.companions = [p.name for p in folders]
         if folder is not None:
             self.lines_view.set_folder(folder)
             self.open_tab(LINES_TAB)

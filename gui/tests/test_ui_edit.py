@@ -93,7 +93,7 @@ def test_inspector_english_box_edits_the_text(window: MainWindow, sample: Path):
     scene.select("scar_thanks")
     box = window.inspector.findChild(CommitTextEdit, "text_en")
     assert not box.isReadOnly()
-    assert window.inspector.findChild(CommitTextEdit, "text_tr").isReadOnly()
+    assert not window.inspector.findChild(CommitTextEdit, "text_tr").isReadOnly()  # every language (T10)
     box.setPlainText("Thanks, friend.")
     box.commit()
     assert window.folder.text("scar_thanks") == "Thanks, friend."

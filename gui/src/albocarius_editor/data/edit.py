@@ -140,6 +140,19 @@ def remove_at(folder: CompanionFolder, ref: Ref, path: Path_) -> None:
             break
 
 
+def remove_keys(folder: CompanionFolder, ref: Ref, path: Path_, keys: list[str]) -> None:
+    """Removes several keys of the object at ``path`` (a condition or effect with more than one key) in one step;
+    emptied containers are pruned as in :func:`remove_at`."""
+    item = resolve(folder, ref)
+    target = _walk(item, path) if path else item
+    present = [k for k in keys if isinstance(target, dict) and k in target]
+    if not present:
+        raise EditError("nothing to remove")
+    for k in present[:-1]:
+        del target[k]
+    remove_at(folder, ref, [*path, present[-1]])
+
+
 def append_at(folder: CompanionFolder, ref: Ref, path: Path_, value: Any) -> int:
     """Appends to the list at ``path`` (created when absent); returns the new element's index."""
     item = resolve(folder, ref)

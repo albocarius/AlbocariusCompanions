@@ -1,18 +1,19 @@
-"""Right panel, first tab: every field of the selected item (from the schema export), its translations side by side,
-and its voice (voiced flag, audio file, play button when QtMultimedia is available)."""
+"""Right panel, first tab: every field of the selected item as schema-driven forms (ui/forms.py: fields, conditions,
+effects, trigger), its links, its texts in every language, and its voice (voiced flag, audio file, play button when
+QtMultimedia is available). Every change is one undoable edit run by the window."""
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 from PySide6.QtCore import QUrl, Qt, Signal
-from PySide6.QtWidgets import (QFormLayout, QHBoxLayout, QLabel, QLineEdit, QPlainTextEdit, QPushButton, QScrollArea,
-                               QVBoxLayout, QWidget)
+from PySide6.QtWidgets import (QComboBox, QFormLayout, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QPlainTextEdit,
+                               QPushButton, QScrollArea, QVBoxLayout, QWidget)
 
-from ..data import graph
+from ..data import edit, graph
 from ..data.companion import ENGLISH, CompanionFolder
 from ..schema.catalog import SchemaCatalog
+from . import forms
 
 
 def _section(text: str) -> QLabel:
@@ -26,10 +27,6 @@ def _muted(text: str) -> QLabel:
     label.setProperty("role", "muted")
     label.setWordWrap(True)
     return label
-
-
-def _compact(value) -> str:
-    return value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
 
 
 class _Player:
@@ -92,7 +89,11 @@ class InspectorPanel(QWidget):
         self._player: _Player | None = None
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
-        scroll = QScrollArea()
+        # Set by the window: run an edit as one undoable step (→ done), show a refusal, the other companions' ids.
+        self.commit = lambda _text, _fn: False
+        self.message = lambda _text: None
+        self.companions: list[str] = []
+        self.scroll = scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         outer.addWidget(scroll)
         self.body = QWidget()
@@ -123,11 +124,13 @@ class InspectorPanel(QWidget):
 
     def show_item(self, folder: CompanionFolder, conversation_id: str | None, key: str) -> None:
         """A conversation header, a node, a hub/end terminal, or (conversation_id None) a line."""
+        scroll = self.scroll.verticalScrollBar().value()
         self._clear()
         if conversation_id is None:
-            item, object_name, title = folder.line(key), "line", f"Line {key}"
+            item, object_name, title, ref = folder.line(key), "line", f"Line {key}", ("line", key)
         elif key == graph.HEADER:
             item, object_name, title = folder.conversation(conversation_id), "conversation", f"Conversation {conversation_id}"
+            ref = ("conversation", conversation_id)
         elif key in (graph.HUB, graph.END):
             self.layout_.addWidget(_section("Back to hub" if key == graph.HUB else "End"))
             self.layout_.addWidget(_muted('A "next" of ["hub"] returns to the companion\'s menu; ["end"] closes the talk.'))
@@ -135,39 +138,83 @@ class InspectorPanel(QWidget):
             return
         else:
             item, object_name, title = folder.node(conversation_id, key), "node", f"Node {key}"
+            ref = ("node", conversation_id, key)
         if item is None:
             self.show_nothing()
             return
+        ctx = self._context(folder, ref, conversation_id, item)
 
         self.layout_.addWidget(_section(title))
         form = QFormLayout()
-        form.setContentsMargins(0, 4, 0, 8)
-        for spec in self.catalog.fields(object_name):
-            if spec.name == "nodes" or (object_name != "line" and spec.name in ("next", "start")):
-                continue
-            value = item.get(spec.name)
-            field = QLineEdit(_compact(value) if spec.name in item else "")
-            if spec.name == "id" and isinstance(value, str):
-                field.setObjectName("id_field")
-                field.editingFinished.connect(
-                    lambda f=field, old=value, c=conversation_id, k=key: self._commit_id(f, c, k, old))
-            else:
-                field.setReadOnly(True)
-            if spec.name not in item:
-                default = f"default {_compact(spec.default)}" if spec.has_default else "not set"
-                field.setPlaceholderText(default)
-            field.setToolTip(spec.description + ("\nRenaming also renames references, texts in every language and the "
-                                                 "layout (undoable)." if field.objectName() == "id_field" else ""))
-            form.addRow(spec.name, field)
+        form.setContentsMargins(0, 4, 0, 0)
+        id_spec = self.catalog.field(object_name, "id")
+        id_field = QLineEdit(str(item.get("id", "")))
+        id_field.setObjectName("id_field")
+        id_field.setToolTip(id_spec.description + "\nRenaming also renames references, texts in every language and the "
+                                                  "layout (undoable).")
+        id_field.editingFinished.connect(lambda f=id_field, old=str(item.get("id", "")), c=conversation_id, k=key:
+                                         self._commit_id(f, c, k, old))
+        form.addRow("id", id_field)
+        if object_name == "conversation":
+            form.addRow("starts from", self._start_mode(ctx, item))
         self.layout_.addLayout(form)
+        skip = {"id", "nodes", "next", "start", "when", "effects", "trigger"} | ({"entry"} if object_name == "conversation" else set())
+        self.layout_.addLayout(forms.scalar_form(ctx, object_name, skip))
+
+        if object_name == "conversation" and isinstance(item.get("trigger"), dict):
+            self.layout_.addWidget(forms.TriggerEditor(ctx, ["trigger"]))
+        elif object_name == "line" and not item.get("slot"):
+            if isinstance(item.get("trigger"), dict):
+                self.layout_.addWidget(forms.TriggerEditor(ctx, ["trigger"]))
+            else:
+                add = QPushButton("+ Trigger (a slot-free line is started by a trigger)")
+                add.setObjectName("add_trigger")
+                first = forms.trigger_items(self.catalog)[:1]
+                add.clicked.connect(lambda: first and ctx.set(["trigger"], {"on": first[0]}))
+                self.layout_.addWidget(add)
+        self.layout_.addWidget(forms.ConditionsEditor(ctx, ["when"]))
+        if object_name == "node":
+            self.layout_.addWidget(forms.EffectsEditor(ctx, ["effects"]))
 
         if conversation_id is not None:
             source = graph.HEADER if object_name == "conversation" else key
             self._edges(conversation_id, source, item.get("start" if object_name == "conversation" else "next"))
         if object_name in ("node", "line"):
-            self._translations(folder, key)
+            self._translations(folder, key, ctx)
             self._voice(folder, item, object_name)
         self.layout_.addStretch(1)
+        self.body.adjustSize()
+        self.scroll.verticalScrollBar().setValue(scroll)
+
+    def _context(self, folder: CompanionFolder, ref: tuple, conversation_id: str | None, item: dict) -> forms.FormContext:
+        variables = [*folder.variables, *(b["name"] for b in self.catalog.enum("builtinVariables"))]
+        ints = [n for n, d in folder.variables.items() if isinstance(d, dict) and d.get("type") == "int"]
+        ints += [b["name"] for b in self.catalog.enum("builtinVariables") if b["type"] == "int"]
+        trigger = item.get("trigger")
+        if conversation_id is not None and trigger is None:
+            trigger = (folder.conversation(conversation_id) or {}).get("trigger")
+        return forms.FormContext(self.catalog, folder, ref, self.commit, self.message, variables, ints,
+                                 forms.event_fields(self.catalog, trigger), [c for c in self.companions if c != folder.id])
+
+    def _start_mode(self, ctx: forms.FormContext, conv: dict) -> QComboBox:
+        """Hub menu / greeting (``entry``) or a trigger: switching removes the other key."""
+        combo = QComboBox()
+        combo.setObjectName("start_mode")
+        modes = [("Hub menu (entry: hub)", "hub"), ("Greeting (entry: greeting)", "greeting"), ("A trigger", "trigger")]
+        for text, mode in modes:
+            combo.addItem(text, mode)
+        current = "trigger" if isinstance(conv.get("trigger"), dict) else conv.get("entry", "hub")
+        combo.setCurrentIndex(max(0, combo.findData(current)))
+        conversation_id = ctx.ref[1]
+        first = (forms.trigger_items(self.catalog) or [None])[0]
+
+        def picked(i: int) -> None:
+            mode = combo.itemData(i)
+            if mode != current:
+                ctx.commit(f"{conversation_id} starts from {mode}",
+                           lambda f: edit.set_start_mode(f, conversation_id, mode, first))
+        combo.activated.connect(picked)
+        return combo
 
     def _commit_id(self, field: QLineEdit, conversation_id: str | None, key: str, old: str) -> None:
         new = field.text().strip()
@@ -202,20 +249,44 @@ class InspectorPanel(QWidget):
                 row.addWidget(button)
             self.layout_.addLayout(row)
 
-    def _translations(self, folder: CompanionFolder, local_id: str) -> None:
-        self.layout_.addWidget(_section("Text"))
+    def _translations(self, folder: CompanionFolder, local_id: str, ctx: forms.FormContext) -> None:
+        """The text in every language (T10): editable, one undoable step per commit; a missing translation shows the
+        English text greyed with a "Copy English" button."""
+        head = QHBoxLayout()
+        head.addWidget(_section("Text"), 1)
+        add = QPushButton("+ Language")
+        add.setObjectName("add_language")
+        add.setToolTip("Add lang/<code>.json (written on save)")
+        add.clicked.connect(lambda: self._add_language(ctx))
+        head.addWidget(add)
+        self.layout_.addLayout(head)
+        english = folder.text(local_id, ENGLISH) or ""
         for code in folder.languages():
             text = folder.text(local_id, code)
-            self.layout_.addWidget(_muted(code + ("" if text is not None else " — missing, English is shown")))
-            edit = CommitTextEdit(text or "")
-            edit.setObjectName(f"text_{code}")
-            edit.setMaximumHeight(70)
-            if code == ENGLISH:
-                edit.setToolTip("Ctrl+Enter or leaving the box saves the text (undoable)")
-                edit.committed.connect(lambda t, i=local_id, c=code: self.text_committed.emit(i, t, c))
-            else:
-                edit.setReadOnly(True)
-            self.layout_.addWidget(edit)
+            row = QHBoxLayout()
+            row.addWidget(_muted(code + ("" if text is not None else " — missing")), 1)
+            if text is None and code != ENGLISH:
+                copy_ = QPushButton("Copy English")
+                copy_.setObjectName(f"copy_en_{code}")
+                copy_.clicked.connect(lambda _=False, c=code: self.text_committed.emit(local_id, english, c))
+                row.addWidget(copy_)
+            self.layout_.addLayout(row)
+            box = CommitTextEdit(text or "")
+            box.setObjectName(f"text_{code}")
+            box.setMaximumHeight(70)
+            box.setToolTip("Ctrl+Enter or leaving the box saves the text (undoable)")
+            if text is None:
+                box.setPlaceholderText(english)
+                box.setStyleSheet("QPlainTextEdit { font-style: italic; }")
+            box.committed.connect(lambda t, c=code: self.text_committed.emit(local_id, t, c))
+            self.layout_.addWidget(box)
+
+    def _add_language(self, ctx: forms.FormContext) -> None:
+        code, ok = QInputDialog.getText(self, "Add language", "Language code (two letters, e.g. de):")
+        code = code.strip().lower()
+        if ok and code:
+            pattern = self.catalog.schema["patterns"]["languageCode"]
+            ctx.commit(f"Add language {code}", lambda f: edit.add_language(f, code, pattern))
 
     def _voice(self, folder: CompanionFolder, item: dict, object_name: str) -> None:
         self.layout_.addWidget(_section("Voice"))

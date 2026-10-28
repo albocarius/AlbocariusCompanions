@@ -28,14 +28,27 @@ def template_copy(tmp_path: Path) -> Path:
     return target
 
 
+_CATALOGS: dict = {}
+
+
 @pytest.fixture
-def window(qtbot, tmp_path: Path, qapp):
-    """The main window (headless), with its own settings file."""
+def window(qtbot, tmp_path: Path, qapp, monkeypatch):
+    """The main window (headless), with its own settings file. The schema catalog is loaded once per CLI and shared
+    (running the CLI exports costs seconds; test_schema_cli covers loading itself)."""
     from PySide6.QtCore import QSettings
 
+    from albocarius_editor.schema.catalog import SchemaCatalog
     from albocarius_editor.ui import theme
     from albocarius_editor.ui.main_window import MainWindow
 
+    real_load = SchemaCatalog.load.__func__
+
+    def cached_load(cls, cli):
+        key = str(cli.path) if cli is not None else None
+        if key not in _CATALOGS:
+            _CATALOGS[key] = real_load(cls, cli)
+        return _CATALOGS[key]
+    monkeypatch.setattr(SchemaCatalog, "load", classmethod(cached_load))
     theme.apply(qapp)
     w = MainWindow(QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat))
     w.show()
@@ -43,3 +56,5 @@ def window(qtbot, tmp_path: Path, qapp):
     w.folder = None  # closing must not stop on the unsaved-changes question
     w.close()
     w.deleteLater()
+    from PySide6.QtCore import QCoreApplication, QEvent
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)  # else windows pile up and slow every test
