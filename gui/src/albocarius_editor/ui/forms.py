@@ -137,6 +137,13 @@ def parse_scalar(text: str, type_: str) -> Any:
     return text
 
 
+def _narrow(combo: QComboBox) -> QComboBox:
+    """Combos as wide as the panel, not as their longest entry (the inspector does not scroll sideways)."""
+    combo.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+    combo.setMinimumContentsLength(6)
+    return combo
+
+
 # ---- one field ----
 
 class LineField(QLineEdit):
@@ -168,17 +175,20 @@ class ComboField(QComboBox):
 
     def __init__(self, items: list[str], text: str, on_commit: Callable[[str], None], editable: bool = True):
         super().__init__()
+        _narrow(self)
         self.setEditable(editable)
         self.addItems(items)
         self._on_commit = on_commit
         self._last = text
         if editable:
-            self.setEditText(text)
-            self.lineEdit().editingFinished.connect(lambda: self._commit(self.currentText()))
             completer = QCompleter(items, self)
             completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
             completer.setFilterMode(Qt.MatchFlag.MatchContains)
             self.setCompleter(completer)
+            # After the items and the completer: both may put the first item into the edit field.
+            self.setCurrentIndex(self.findText(text) if text in items else -1)
+            self.setEditText(text)
+            self.lineEdit().editingFinished.connect(lambda: self._commit(self.currentText()))
             self.lineEdit().setAcceptDrops(True)
         else:
             self.setCurrentIndex(max(0, self.findText(text)))
@@ -226,7 +236,7 @@ def field_editor(ctx: FormContext, spec: FieldSpec, path: list, suggestions: lis
         box.toggled.connect(lambda on: ctx.set(path, on))
         widget: QWidget = box
     elif kind == "combo":
-        combo = QComboBox()
+        combo = _narrow(QComboBox())
         if not present:
             combo.addItem(f"(default {_compact(spec.default)})" if spec.has_default else "(not set)", None)
         for a in _expand_allowed(spec.allowed, ctx):

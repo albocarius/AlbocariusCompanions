@@ -95,6 +95,7 @@ class InspectorPanel(QWidget):
         self.companions: list[str] = []
         self.scroll = scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)  # long texts wrap instead
         outer.addWidget(scroll)
         self.body = QWidget()
         scroll.setWidget(self.body)
@@ -183,7 +184,6 @@ class InspectorPanel(QWidget):
             self._translations(folder, key, ctx)
             self._voice(folder, item, object_name)
         self.layout_.addStretch(1)
-        self.body.adjustSize()
         self.scroll.verticalScrollBar().setValue(scroll)
 
     def _context(self, folder: CompanionFolder, ref: tuple, conversation_id: str | None, item: dict) -> forms.FormContext:
@@ -198,7 +198,7 @@ class InspectorPanel(QWidget):
 
     def _start_mode(self, ctx: forms.FormContext, conv: dict) -> QComboBox:
         """Hub menu / greeting (``entry``) or a trigger: switching removes the other key."""
-        combo = QComboBox()
+        combo = forms._narrow(QComboBox())
         combo.setObjectName("start_mode")
         modes = [("Hub menu (entry: hub)", "hub"), ("Greeting (entry: greeting)", "greeting"), ("A trigger", "trigger")]
         for text, mode in modes:
