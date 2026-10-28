@@ -83,6 +83,7 @@ class Card(QGraphicsObject):
         self.content = content
         self.style = theme.CARD_STYLES[kind]
         self.highlighted = False
+        self.link_state: str | None = None  # "ok" / "bad" while a link is dragged over the card
         self.snap = True
         self.edges: list[EdgeItem] = []
         self._press_pos: QPointF | None = None
@@ -194,9 +195,11 @@ class Card(QGraphicsObject):
                 painter.setPen(QColor(theme.MUTED))
                 painter.drawText(r, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, text)
 
-        # Border: highlight (preview) > selection > normal.
+        # Border: link drop feedback > highlight (preview) > selection > normal.
         painter.setBrush(Qt.BrushStyle.NoBrush)
-        if self.highlighted:
+        if self.link_state is not None:
+            painter.setPen(QPen(QColor(theme.LINK if self.link_state == "ok" else theme.ERROR), 3))
+        elif self.highlighted:
             painter.setPen(QPen(QColor(theme.HIGHLIGHT), 2.5))
         elif self.isSelected():
             painter.setPen(QPen(QColor(theme.ACCENT), 2))
@@ -210,6 +213,11 @@ class Card(QGraphicsObject):
             painter.drawEllipse(QPointF(0, HEADER_HEIGHT / 2), PORT_RADIUS, PORT_RADIUS)
         if self.content.has_output:
             painter.drawEllipse(QPointF(self.width, HEADER_HEIGHT / 2), PORT_RADIUS, PORT_RADIUS)
+
+    def set_link_state(self, state: str | None) -> None:
+        if self.link_state != state:
+            self.link_state = state
+            self.update()
 
     def set_highlighted(self, on: bool) -> None:
         if self.highlighted != on:

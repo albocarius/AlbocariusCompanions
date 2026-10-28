@@ -265,12 +265,7 @@ class MainWindow(QMainWindow):
                     return None
                 scene = ConversationScene(self.folder, conversation_id, self.catalog, self)
                 scene.set_snap(self.act_snap.isChecked())
-                scene.item_selected.connect(lambda key, c=conversation_id: self._show_in_inspector(c, key))
-                scene.item_moved.connect(lambda key, old, new, c=conversation_id:
-                                         self.undo_stack.push(MoveCommand(self, c, key, old, new)))
-                scene.text_committed.connect(self.set_text)
-                scene.context_requested.connect(lambda key, pos, c=conversation_id: self._card_menu(c, key, pos))
-                scene.connect_requested.connect(lambda source, target, c=conversation_id: self.connect_nodes(c, source, target))
+                self._wire_scene(scene)
                 widget = CanvasView()
                 widget.setScene(scene)
                 widget.palette_dropped.connect(lambda kind, pos: self.add_from_palette(kind, pos))
@@ -281,6 +276,19 @@ class MainWindow(QMainWindow):
                 QTimer.singleShot(0, widget.fit_all)
         self.tabs.setCurrentIndex(index)
         return self.tabs.widget(index)
+
+    def _wire_scene(self, scene: ConversationScene) -> None:
+        """Connects a conversation canvas; handlers read ``scene.conversation_id`` when called (renames retarget it)."""
+        scene.item_selected.connect(lambda key: self._show_in_inspector(scene.conversation_id, key))
+        scene.item_moved.connect(lambda key, old, new: self.undo_stack.push(
+            MoveCommand(self, scene.conversation_id, key, old, new)))
+        scene.text_committed.connect(self.set_text)
+        scene.context_requested.connect(lambda key, pos: self._card_menu(scene.conversation_id, key, pos))
+        scene.link_checker = lambda source, target: (
+            edit.link_problem(self.folder, scene.conversation_id, source, target) if self.folder else None)
+        scene.link_hint.connect(lambda text: self.statusBar().showMessage(f"Cannot link: {text}", 6000)
+                                if text else self.statusBar().clearMessage())
+        scene.connect_requested.connect(lambda source, target: self.connect_nodes(scene.conversation_id, source, target))
 
     def _close_tab(self, index: int) -> None:
         self.tabs.removeTab(index)

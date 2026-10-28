@@ -66,6 +66,7 @@ class ConversationScene(QGraphicsScene):
     text_committed = Signal(str, str)      # node id, new English text (inline editor)
     context_requested = Signal(str, QPoint)  # card key, screen position (right click)
     connect_requested = Signal(str, str)   # source key (@header or node id), target key (node id, @hub, @end)
+    link_hint = Signal(str)                # while dragging a link: why the card under the mouse refuses it ("" = fine)
 
     def __init__(self, folder: CompanionFolder, conversation_id: str, catalog: SchemaCatalog, parent=None):
         super().__init__(parent)
@@ -76,6 +77,9 @@ class ConversationScene(QGraphicsScene):
         self.editor: TextEditor | None = None
         self._link_source: Card | None = None  # a drag from an output port in progress
         self._link_item: QGraphicsPathItem | None = None
+        self._link_over: Card | None = None
+        # (source key, target key) → why the link is not allowed, or None; set by the window (data.edit.link_problem).
+        self.link_checker = None
         self.snap = True
         self.selectionChanged.connect(self._on_selection)
         self.rebuild()
@@ -89,7 +93,7 @@ class ConversationScene(QGraphicsScene):
         if self.editor is not None:
             self.editor.finished = True  # a rebuild drops an open inline editor without committing
             self.editor = None
-        self._link_source, self._link_item = None, None
+        self._link_source, self._link_item, self._link_over = None, None, None
         self.blockSignals(True)
         self.clear()
         self.cards = {}
@@ -188,6 +192,16 @@ class ConversationScene(QGraphicsScene):
             path = QPainterPath(start)
             path.cubicTo(start + QPointF(dx, 0), end - QPointF(dx, 0), end)
             self._link_item.setPath(path)
+            over = self.card_with_input_at(end)
+            over = over if over is not self._link_source else None
+            if over is not self._link_over:
+                if self._link_over is not None:
+                    self._link_over.set_link_state(None)
+                self._link_over = over
+                problem = self.link_checker(self._link_source.key, over.key) if over and self.link_checker else None
+                if over is not None:
+                    over.set_link_state("bad" if problem else "ok")
+                self.link_hint.emit(problem or "")
             event.accept()
             return
         super().mouseMoveEvent(event)
@@ -199,6 +213,9 @@ class ConversationScene(QGraphicsScene):
             if self._link_item is not None:
                 self.removeItem(self._link_item)
                 self._link_item = None
+            if self._link_over is not None:
+                self._link_over.set_link_state(None)
+                self._link_over = None
             target = self.card_with_input_at(event.scenePos())
             if target is not None and target is not source:
                 self.connect_requested.emit(source.key, target.key)

@@ -279,3 +279,23 @@ def test_rename_and_delete_a_conversation(window: MainWindow, sample: Path):
     assert window.folder.text("scar_story") is None
     window.undo_stack.undo()
     assert window._tab_index("the_scar") >= 0
+
+
+def test_link_drag_feedback_and_refusal(window: MainWindow, sample: Path, qtbot):
+    from PySide6.QtCore import Qt
+
+    scene = open_scar(window, sample)
+    view = window.tabs.currentWidget()
+    qtbot.wait(20)
+    source, target = scene.cards["p_scar_sorry"], scene.cards["p_scar_enough"]
+    view.centerOn(source)
+    start = view.mapFromScene(source.output_port())
+    end = view.mapFromScene(target.sceneBoundingRect().center())
+    qtbot.mousePress(view.viewport(), Qt.MouseButton.LeftButton, pos=start)
+    qtbot.mouseMove(view.viewport(), end)
+    assert target.link_state == "bad"
+    assert "never followed by another player option" in window.statusBar().currentMessage()
+    qtbot.mouseRelease(view.viewport(), Qt.MouseButton.LeftButton, pos=end)
+    assert target.link_state is None
+    assert window.folder.node("the_scar", "p_scar_sorry")["next"] == ["scar_thanks"]
+    assert window.undo_stack.count() == 0
