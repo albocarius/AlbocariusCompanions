@@ -17,10 +17,11 @@ from ..data import edit, graph, workspace
 from ..data.companion import ENGLISH, CompanionFolder, CompanionLoadError
 from ..data.edit import EditError
 from ..schema.catalog import SchemaCatalog
+from . import workers
 from .blackboard import BlackboardPanel
-from .canvas.scene import ConversationScene
 from .canvas.items import GRID
 from .canvas.lines_scene import PLACEHOLDER, LinesScene
+from .canvas.scene import ConversationScene
 from .canvas.view import CanvasView
 from .commands import EditCommand, MoveCommand
 from .diagnostics import DiagnosticsPanel, layout_diagnostics
@@ -39,6 +40,7 @@ class MainWindow(QMainWindow):
         self.folder: CompanionFolder | None = None
         self._inspected: tuple[str | None, str] | None = None  # (conversation id or None for a line, key)
         self._edit_error: EditError | None = None
+        self.validation_runs = 0  # finished validations (tests wait on it)
         self.companions_root: Path | None = None
         self.undo_stack = QUndoStack(self)
         self.undo_stack.cleanChanged.connect(self._clean_changed)
@@ -110,7 +112,8 @@ class MainWindow(QMainWindow):
         self.act_snap = self._action("Snap: On", self._toggle_snap, tip="Snap cards to the grid while dragging", checkable=True)
         self.act_snap.setChecked(self.settings.value("snap", "true") == "true")
         self._toggle_snap(self.act_snap.isChecked())
-        self.act_validate = self._action("Validate", tip=later, enabled=False)
+        self.act_validate = self._action("Validate", self.validate, QKeySequence("F7"),
+                                         "Validate the saved files with the mod's CLI (also runs on save)")
         self.act_play = self._action("Play", tip=later, enabled=False)
         self.act_stop = self._action("Stop", tip=later, enabled=False)
         self.act_about = self._action("About", self.about)
@@ -847,7 +850,47 @@ class MainWindow(QMainWindow):
         self.diagnostics.set_diagnostics("layout", layout_diagnostics([], None))
         self.statusBar().showMessage(f"Saved {len(written)} file(s)" if written else "Nothing to save", 4000)
         self.update_title()
+        self.validate()
         return True
+
+    # ---- validation (T15) ----
+
+    def validate(self) -> None:
+        """``validate --json`` of the companion folder (the files on disk) on a worker thread; the result replaces the
+        "validate" diagnostics."""
+        if self.folder is None:
+            return
+        if self.cli is None:
+            self._validation_unavailable(self.cli_error or "the CLI was not found")
+            return
+        path, cli = self.folder.path, self.cli
+        self.statusBar().showMessage("Validating…")
+        self.act_validate.setEnabled(False)
+
+        def done(result) -> None:
+            self.act_validate.setEnabled(True)
+            self.validation_runs += 1
+            if self.folder is None or self.folder.path != path:
+                return
+            self.diagnostics.set_diagnostics("validate", result.diagnostics)
+            errors = sum(1 for d in result.diagnostics if d.get("severity") == "error")
+            warnings = len(result.diagnostics) - errors
+            note = " (of the saved files; save to include your changes)" if self.folder.dirty else ""
+            self.statusBar().showMessage(f"Validation: {errors} error(s), {warnings} warning(s){note}", 8000)
+            if result.diagnostics:
+                self.bottom_tabs.setCurrentWidget(self.diagnostics)
+
+        def failed(error: Exception) -> None:
+            self.act_validate.setEnabled(True)
+            self.validation_runs += 1
+            self._validation_unavailable(str(error))
+        workers.run(lambda: cli.validate(path), done, failed, owner=self)
+
+    def _validation_unavailable(self, reason: str) -> None:
+        self.diagnostics.set_diagnostics("validate", [{
+            "severity": "warning", "code": "validation_unavailable", "folder": "", "file": None, "conversation": None,
+            "node": None, "message": f"validation unavailable: {reason}"}])
+        self.statusBar().showMessage(f"Validation unavailable: {reason}", 8000)
 
     def reload(self) -> None:
         if self.folder is None:
