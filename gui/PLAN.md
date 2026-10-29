@@ -96,6 +96,9 @@ Every task up to T19 (T20 needs Windows). Tests per task: `tests/test_ui_forms.p
   the tab (ticked), event details prefilled from the content's `where` / `event.*` conditions (more with "+ detail"),
   Fire & deliver, and a Result tab explaining each outcome in words (raw checks and the queue in their own tabs).
 
+- [x] **Translate with LLM** (asked for by the user): `translate/llm.py` + `ui/translate_dialog.py`, see ARCHITECTURE.md.
+  OpenAI-compatible endpoints only; an Anthropic-native or DeepL provider could be added behind the same review table.
+
 ## Remaining tasks
 
 ### ~~T01 Generic undoable edit command~~ (done, session 2)

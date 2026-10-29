@@ -79,6 +79,7 @@ class CommitTextEdit(QPlainTextEdit):
 
 class InspectorPanel(QWidget):
     text_committed = Signal(str, str, str)  # local id, text, language code
+    translate_requested = Signal()
     id_committed = Signal(object, str, str)  # conversation id (None for a line), old key (@header: conversation), new id
     edge_move = Signal(str, str, str, int)   # conversation id, source key, target name, new index
     edge_remove = Signal(str, str, str)      # conversation id, source key, target name
@@ -248,6 +249,11 @@ class InspectorPanel(QWidget):
         add.setToolTip("Add lang/<code>.json (written on save)")
         add.clicked.connect(lambda: self._add_language(ctx))
         head.addWidget(add)
+        translate = QPushButton("Translate…")
+        translate.setObjectName("translate")
+        translate.setToolTip("Translate texts with your own LLM endpoint (Graph → Translate with LLM…)")
+        translate.clicked.connect(self.translate_requested)
+        head.addWidget(translate)
         self.layout_.addLayout(head)
         english = folder.text(local_id, ENGLISH) or ""
         for code in folder.languages():

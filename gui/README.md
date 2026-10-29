@@ -18,7 +18,8 @@ Quick tour: double-click a card's text to write it; drag palette entries onto th
 port onto another card to link them (refused links turn the target red, with the reason in the status bar); select a
 card to edit its fields, conditions, effects, trigger and translations in the inspector; variables live on the
 Blackboard tab. Save (Ctrl+S) validates with the mod's CLI; Play (F5) simulates a talk in the Preview tab and follows it
-on the canvas. Undo/redo covers every edit.
+on the canvas. Undo/redo covers every edit. Graph → Translate with LLM… (Ctrl+Shift+T) sends texts to your own model endpoint
+(e.g. a local Ollama / LM Studio server) and lets you review the translations before applying them.
 
 Opening a folder writes nothing. Saving writes only the files you changed, plus `dialogs.layout.json` (card positions,
 next to `dialogs.json`; the mod ignores it).

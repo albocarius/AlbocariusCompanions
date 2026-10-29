@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QMimeData, QPointF, QRectF, QSettings, Qt, QTimer
 from PySide6.QtGui import QAction, QCloseEvent, QCursor, QGuiApplication, QIcon, QKeySequence, QUndoStack
-from PySide6.QtWidgets import (QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMenu, QMessageBox, QTabWidget,
+from PySide6.QtWidgets import (QDialog, QDockWidget, QFileDialog, QInputDialog, QLabel, QMainWindow, QMenu, QMessageBox, QTabWidget,
                                QToolBar, QToolButton, QWidget)
 
 from .. import __version__
@@ -29,6 +29,7 @@ from .diagnostics import DiagnosticsPanel, layout_diagnostics
 from .inspector import InspectorPanel
 from .library import LINES_TAB, LibraryPanel
 from .preview import PreviewPanel
+from .translate_dialog import TranslateDialog
 
 APP_NAME = "AlbocariusCompanions Editor"
 NODES_MIME = "application/x-albocarius-nodes"
@@ -169,6 +170,8 @@ class MainWindow(QMainWindow):
         graph_menu.addAction(self.act_new)
         graph_menu.addSeparator()
         graph_menu.addAction(self.act_add_line)
+        graph_menu.addAction(self._action("Translate with LLM…", self.open_translate, QKeySequence("Ctrl+Shift+T"),
+                                          "Translate texts with your own LLM endpoint (e.g. a local model)"))
         graph_menu.addSeparator()
         graph_menu.addAction(self._action("Continue with: Back to hub", lambda: self.add_from_palette("hub"),
                                           tip="The selected node returns to the companion's menu"))
@@ -253,6 +256,7 @@ class MainWindow(QMainWindow):
         self.inspector = InspectorPanel(self.catalog)
         self.inspector.text_committed.connect(self.set_text)
         self.inspector.commit = lambda text, fn: self.edit(text, fn)[0]
+        self.inspector.translate_requested.connect(self.open_translate)
         self.inspector.message = lambda text: self.statusBar().showMessage(text, 6000)
         self.inspector.id_committed.connect(self.rename_item)
         self.inspector.edge_move.connect(lambda c, s, t, i: self.edit(
@@ -949,6 +953,40 @@ class MainWindow(QMainWindow):
         return True
 
     # ---- validation (T15) ----
+
+    # ---- translation with an LLM ----
+
+    def open_translate(self) -> bool:
+        if self.folder is None:
+            return False
+        scene = self.current_scene()
+        dialog = TranslateDialog(self.folder, self.settings, self.catalog.schema["patterns"]["languageCode"],
+                                 scene.conversation_id if scene is not None else None, self)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return False
+        return self.apply_translations(dialog.target_code(), dialog.accepted_translations())
+
+    def apply_translations(self, code: str, texts: dict[str, str]) -> bool:
+        """Writes reviewed translations into lang/<code>.json (created when new) as one undoable step."""
+        if self.folder is None or not texts:
+            return False
+        pattern = self.catalog.schema["patterns"]["languageCode"]
+
+        def apply_all(f: CompanionFolder) -> int:
+            if code not in f.langs:
+                edit.add_language(f, code, pattern)
+            changed = 0
+            for local_id, text in texts.items():
+                if f.text(local_id, code) != text:
+                    edit.set_text(f, local_id, text, code)
+                    changed += 1
+            if not changed:
+                raise EditError("the translations are already there")
+            return changed
+        done, changed = self.edit(f"Translate {len(texts)} line(s) into {code}", apply_all)
+        if done:
+            self.statusBar().showMessage(f"Wrote {changed} translation(s) into lang/{code}.json (save to keep them)", 6000)
+        return done
 
     # ---- arrange, search (T19) ----
 

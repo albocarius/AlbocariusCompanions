@@ -13,6 +13,7 @@ gui/
     data/                   data layer — no Qt
     schema/                 schema layer — no Qt; reads the CLI exports (bundled copies in schema/fixtures/)
     cli/                    the CLI as a subprocess — no Qt
+    translate/              translating texts with the user's own LLM endpoint — no Qt
     ui/                     PySide6: window, panels, canvas
   tests/                    pytest (+ pytest-qt for the UI smoke test, headless)
 ```
@@ -152,6 +153,20 @@ and on Build → Validate; the result replaces the diagnostics of source "valida
 behind a `SerialRunner` (one request at a time, in order); it `load`s the Companions directory before the first request
 after a save or folder change. The canvas highlight follows the last line said (`highlight` signal).
 
+## Translation with an LLM (`translate/llm.py`, `ui/translate_dialog.py`)
+
+Graph → Translate with LLM… (Ctrl+Shift+T, or "Translate…" in the inspector's Text section). The user enters their own
+endpoint (URL, model, optional key: the OpenAI-compatible `/chat/completions` API that local servers such as Ollama,
+LM Studio or llama.cpp serve), the target language, the scope (whole companion or one conversation; only missing
+translations by default) and their own instructions. One request: a system message with the app's fixed instructions
+(reply with one JSON object id → text, keep `{…}` placeholders and line breaks) plus the user's instructions; a user
+message with `en.json` (and, when ticked, `dialogs.json` for context), the target's existing translations and the ids
+to translate. The dialog shows a token estimate (~4 characters per token) and the exact request. The reply is checked
+line by line (missing, empty, not text, placeholders changed); the review table ticks the good lines, every text stays
+editable, and the ticked ones are applied with `edit.set_text` (and `edit.add_language` for a new language) as one
+undoable step. Settings group `llm/` keeps URL, model, instructions and, only when "remember" is ticked, the key: the
+user's settings, never the companion folder. HTTP uses the standard library only.
+
 ## Packaging (`packaging/`)
 
 `packaging/build.py` builds one executable with PyInstaller (`--onefile`, no console) for the platform it runs on:
@@ -169,7 +184,8 @@ setting and a repository build). `albocarius-editor --check` prints what was fou
 built), `test_edit_ops` (edit functions added for the UI), `test_ui_smoke` (window, canvas, inspector, undo, diagnostics,
 missing CLI), `test_ui_edit` (editing through the window: PLAN T01–T05, link checks), `test_ui_forms` (T06–T10),
 `test_ui_blackboard`, `test_ui_lines`, `test_ui_conversations`, `test_ui_clipboard`, `test_ui_validate`,
-`test_ui_preview` (real CLI; skipped without it), `test_ui_settings`, `test_ui_arrange`, `test_packaging` (bundled
+`test_ui_preview` (real CLI; skipped without it), `test_translate` / `test_ui_translate` (against a fake local
+OpenAI-compatible server), `test_ui_settings`, `test_ui_arrange`, `test_packaging` (bundled
 CLI/template lookup, `--check`). UI tests share one schema catalog and delete their window right away (see
 `conftest.py`).
 The CLI side (§3) is tested in `tests/AlbocariusCompanions.Acceptance/ExportTests.cs`.
